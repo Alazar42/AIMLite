@@ -18,6 +18,13 @@ from typing import Any, Dict, Optional, Union
 class BaseConfig:
     """Manages project configuration parsing, directory path resolution, and hardware device discovery."""
 
+    def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
+        """Automatically registers BaseConfig subclasses into the ModelKit registry."""
+        super().__init_subclass__(**kwargs)
+        from modelkit.registry import register_class
+
+        register_class("config", cls, name=name)
+
     def __init__(self, config_path: Optional[Union[str, Path]] = None) -> None:
         """Initializes project settings by parsing mlkit.json or fallback defaults.
 
@@ -26,6 +33,45 @@ class BaseConfig:
         """
         self.config_path: Optional[Path] = Path(config_path) if config_path is not None else None
         self._config: Dict[str, Any] = self._load_config()
+
+    @property
+    def root_dir(self) -> Path:
+        """Returns the project root directory."""
+        if self.config_path is not None:
+            if self.config_path.is_dir():
+                return self.config_path
+            return self.config_path.parent
+        return Path.cwd()
+
+    @property
+    def data_dir(self) -> Path:
+        """Returns the resolved data directory."""
+        data_path = self._config.get("paths", {}).get("data", "data")
+        return self.root_dir / data_path
+
+    @property
+    def models_dir(self) -> Path:
+        """Returns the resolved models directory."""
+        models_path = self._config.get("paths", {}).get("models", "models")
+        return self.root_dir / models_path
+
+    @property
+    def experiments_dir(self) -> Path:
+        """Returns the resolved experiments directory."""
+        exp_path = self._config.get("paths", {}).get("experiments", "experiments")
+        return self.root_dir / exp_path
+
+    @property
+    def artifacts_dir(self) -> Path:
+        """Returns the resolved artifacts directory."""
+        art_path = self._config.get("paths", {}).get("artifacts", "artifacts")
+        return self.root_dir / art_path
+
+    @property
+    def checkpoints_dir(self) -> Path:
+        """Returns the resolved checkpoints directory."""
+        ckpt_path = self._config.get("paths", {}).get("checkpoints", "checkpoints")
+        return self.root_dir / ckpt_path
 
     def _load_config(self) -> Dict[str, Any]:
         """Loads configuration from config_path or searches for mlkit.json in parent directories."""
@@ -61,6 +107,8 @@ class BaseConfig:
             },
             "paths": {
                 "data": "data",
+                "models": "models",
+                "experiments": "experiments",
                 "artifacts": "artifacts",
                 "checkpoints": "checkpoints",
             },

@@ -20,6 +20,13 @@ if TYPE_CHECKING:
 class BaseTrainer(ABC):
     """Coordinates optimization steps, data consumption, convergence tracking, and checkpointing."""
 
+    def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
+        """Automatically registers BaseTrainer subclasses into the ModelKit registry."""
+        super().__init_subclass__(**kwargs)
+        from modelkit.registry import register_class
+
+        register_class("trainer", cls, name=name)
+
     @abstractmethod
     def fit(self, model: Model, dataset: Dataset, **kwargs: Any) -> Dict[str, Any]:
         """Coordinates optimization steps, data consumption, and convergence tracking.
@@ -39,13 +46,15 @@ class BaseTrainer(ABC):
         model: Model,
         destination: Union[str, Path],
         step: Optional[int] = None,
+        experiments_dir: Optional[Union[str, Path]] = None,
     ) -> Path:
         """Writes an experiment snapshot containing weights, config state, and metrics.
 
         Args:
             model: Active Model instance to serialize.
-            destination: Path to target checkpoint directory.
+            destination: Path to target model checkpoint directory.
             step: Optional training step or epoch number.
+            experiments_dir: Optional path to experiments directory for metadata tracking.
 
         Returns:
             Path to the saved checkpoint directory.
@@ -58,17 +67,27 @@ class BaseTrainer(ABC):
 
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-        # Trigger model weights persistence
+        # 1. Trigger model weights persistence into models/ folder
         model.save(checkpoint_dir)
 
-        # Write experiment snapshot metadata
+        # 2. Write experiment snapshot metadata into experiments/ folder
+        exp_target_dir = None
+        if experiments_dir is not None:
+            exp_target_dir = Path(experiments_dir)
+        elif (dest_path.parent / "experiments").is_dir():
+            exp_target_dir = dest_path.parent / "experiments"
+        else:
+            exp_target_dir = checkpoint_dir
+
+        exp_target_dir.mkdir(parents=True, exist_ok=True)
+
         metadata = {
             "model_name": getattr(model, "name", "unknown"),
             "step": step,
             "timestamp": time.time(),
             "config": getattr(model, "config", {}),
         }
-        metadata_file = checkpoint_dir / "experiment_snapshot.json"
+        metadata_file = exp_target_dir / "experiment_snapshot.json"
         try:
             with open(metadata_file, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=2)
@@ -80,6 +99,13 @@ class BaseTrainer(ABC):
 
 class BaseEvaluator(ABC):
     """Evaluates model quality against held-out splits (validation or test)."""
+
+    def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
+        """Automatically registers BaseEvaluator subclasses into the ModelKit registry."""
+        super().__init_subclass__(**kwargs)
+        from modelkit.registry import register_class
+
+        register_class("evaluator", cls, name=name)
 
     @abstractmethod
     def evaluate(self, model: Model, dataset: Dataset, **kwargs: Any) -> Dict[str, float]:
@@ -98,6 +124,13 @@ class BaseEvaluator(ABC):
 
 class BaseInference(ABC):
     """Normalizes raw payloads, triggers model inference, and packages structured responses."""
+
+    def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
+        """Automatically registers BaseInference subclasses into the ModelKit registry."""
+        super().__init_subclass__(**kwargs)
+        from modelkit.registry import register_class
+
+        register_class("inference", cls, name=name)
 
     @abstractmethod
     def run(self, model: Model, raw_input: Any, **kwargs: Any) -> Any:

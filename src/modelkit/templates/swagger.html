@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ModelKit - Swagger API Docs</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+  <style>
+    html {
+      box-sizing: border-box;
+      overflow: -moz-scrollbars-vertical;
+      overflow-y: scroll;
+    }
+    *, *:before, *:after {
+      box-sizing: inherit;
+    }
+    body {
+      margin: 0;
+      background: #fafafa;
+    }
+    .topbar-nav {
+      background-color: #0f172a;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+    }
+    .topbar-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    .topbar-link {
+      color: #38bdf8;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar-nav">
+    <div class="topbar-title">ModelKit API Documentation</div>
+    <a href="/" class="topbar-link">&larr; Back to Playground</a>
+  </div>
+  <div id="swagger-ui"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = function() {
+      SwaggerUIBundle({
+        url: "/openapi.json",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: "BaseLayout"
+      });
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ModelKit - Inference Server</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+    }
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 760px;
+      width: 100%;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    .badges {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .badge {
+      background-color: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .docs-btn {
+      background-color: #334155;
+      color: #38bdf8;
+      text-decoration: none;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .docs-btn:hover {
+      background-color: #475569;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      background-color: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      padding: 12px;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+    .output-section {
+      margin-top: 20px;
+    }
+    pre {
+      background-color: #0b1120;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      color: #38bdf8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 0;
+    }
+    .meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>ModelKit Inference Server</h1>
+        <div class="meta">Active Model: <strong>{{model_name}}</strong> | Endpoint: <code>POST /predict</code></div>
+      </div>
+      <div class="badges">
+        <a href="/docs" class="docs-btn">Swagger Docs</a>
+        <div class="badge">Online</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label for="payload">Request Payload (JSON):</label>
+      <textarea id="payload">{"features": [1.0, 2.0, 3.0]}</textarea>
+      <div class="btn-row">
+        <button id="sendBtn" onclick="sendPrediction()">Send Prediction Request</button>
+      </div>
+
+      <div class="output-section">
+        <label>Response Output:</label>
+        <pre id="output">Click "Send Prediction Request" to execute model inference.</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function sendPrediction() {
+      const btn = document.getElementById('sendBtn');
+      const output = document.getElementById('output');
+      const payloadText = document.getElementById('payload').value;
+
+      try {
+        JSON.parse(payloadText);
+      } catch (e) {
+        output.textContent = "Error: Invalid JSON payload.\n" + e.message;
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Processing...";
+      output.textContent = "Sending request to /predict...";
+
+      try {
+        const start = performance.now();
+        const response = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payloadText
+        });
+        const elapsed = (performance.now() - start).toFixed(1);
+        const data = await response.json();
+        output.textContent = `// Response received in ${elapsed}ms (Status: ${response.status})\n` + JSON.stringify(data, null, 2);
+      } catch (err) {
+        output.textContent = "Network Error: " + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Send Prediction Request";
+      }
+    }
+  </script>
+</body>
+</html>

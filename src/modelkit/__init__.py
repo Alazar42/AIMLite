@@ -14,8 +14,11 @@ from modelkit.lifecycle import (
 )
 from modelkit.models import Model
 from modelkit.registry import (
+    clear_registry,
     get,
+    get_all,
     register,
+    register_class,
 )
 
 __all__ = [
@@ -31,5 +34,8 @@ __all__ = [
     "BaseEvaluator",
     "BaseInference",
     "register",
+    "register_class",
     "get",
+    "get_all",
+    "clear_registry",
 ]
