@@ -48,6 +48,21 @@ export interface NavCategory {
 
 export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
+    name: 'The 3 AI Paradigms',
+    items: [
+      { id: 'paradigm-rag', label: '1. RAG (Retrieval-Augmented)', badge: 'RAG', badgeVariant: 'pillar' },
+      { id: 'paradigm-adapters', label: '2. Fine-Tuning (LoRA & Adapters)', badge: 'PEFT', badgeVariant: 'pillar' },
+      { id: 'paradigm-scratch', label: '3. Training from Scratch', badge: 'TRAIN', badgeVariant: 'pillar' },
+    ],
+  },
+  {
+    name: 'Multi-App Architecture',
+    items: [
+      { id: 'arch-multiapp', label: 'Django-Style Multi-App Layout', badge: 'ARCH', badgeVariant: 'util' },
+      { id: 'cli-startapp', label: 'modelkit startapp', badge: 'CLI', badgeVariant: 'cli' },
+    ],
+  },
+  {
     name: 'The 3 Pillars of ModelKit',
     items: [
       { id: 'pillar-data', label: '1. Data Pillar', badge: 'PILLAR', badgeVariant: 'pillar' },
@@ -66,6 +81,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     name: 'Zero-Path CLI Commands',
     items: [
       { id: 'cli-init', label: 'modelkit init', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-startapp', label: 'modelkit startapp', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-install', label: 'modelkit install', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-data', label: 'modelkit data validate', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-train', label: 'modelkit train', badge: 'CLI', badgeVariant: 'cli' },
@@ -741,4 +757,193 @@ console.log(data);`,
       template: 'modelkit/templates/swagger.html',
     },
   },
+
+  'paradigm-rag': {
+    id: 'paradigm-rag',
+    category: 'The 3 AI Paradigms',
+    title: 'Paradigm 1: RAG (Retrieval-Augmented Generation)',
+    subtitle: 'Ground foundation models in your private documents without retraining.',
+    badge: { label: 'PARADIGM 1', variant: 'pillar' },
+    signatureOrPath: 'from modelkit.rag import Document, RAGModel, MemoryVectorStore',
+    breadcrumbs: ['Paradigms', 'RAG'],
+    overview:
+      'The RAG paradigm turns enterprise knowledge into actionable intelligence. ModelKit provides first-class Document loaders, text chunkers, zero-dependency embeddings, vector stores, and RAGModel. Because RAGModel subclasses Model, it works out of the box with modelkit evaluate and modelkit serve.',
+    djangoAnalogy:
+      'In Django, you query the database using ORM QuerySets. In ModelKit RAG, you query your knowledge base using BaseRetriever and VectorStores to inject context passages into generation prompts.',
+    snippets: {
+      python: `from modelkit import Document, RAGModel, MemoryVectorStore, VectorRetriever, TfidfEmbedding
+
+# 1. Index your knowledge base
+embedder = TfidfEmbedding()
+store = MemoryVectorStore(embedding_fn=embedder)
+docs = [
+    Document(content="Refunds are processed within 14 business days.", metadata={"topic": "billing"}),
+    Document(content="Remote work requires manager pre-approval.", metadata={"topic": "hr"})
+]
+store.add_documents(docs)
+
+# 2. Bind Retriever to RAGModel
+retriever = VectorRetriever(vector_store=store, embedding_fn=embedder)
+
+class KnowledgeBot(RAGModel):
+    pass
+
+bot = KnowledgeBot("kb_bot", retriever=retriever)
+result = bot.predict("What is the refund timeline?")
+print(result["answer"])
+print(result["sources"])
+`,
+    },
+    defaultPayload: '{\n  "query": "What is the refund timeline?",\n  "top_k": 3\n}',
+    defaultResponse: {
+      query: "What is the refund timeline?",
+      answer: "Based on billing: Refunds are processed within 14 business days...",
+      sources: [
+        {
+          id: "doc-1",
+          content: "Refunds are processed within 14 business days.",
+          metadata: { topic: "billing" },
+          score: 0.9412
+        }
+      ]
+    },
+  },
+
+  'paradigm-adapters': {
+    id: 'paradigm-adapters',
+    category: 'The 3 AI Paradigms',
+    title: 'Paradigm 2: Fine-Tuning (LoRA & Adapters)',
+    subtitle: 'Parameter-efficient adaptation with lightweight delta checkpoints.',
+    badge: { label: 'PARADIGM 2', variant: 'pillar' },
+    signatureOrPath: 'from modelkit.adapters import AdapterConfig, AdapterModel, AdapterTrainer',
+    breadcrumbs: ['Paradigms', 'Fine-Tuning'],
+    overview:
+      'Fine-tuning adapts a base foundation model to your specific domain using low-rank adapters (LoRA/QLoRA). AdapterModel freezes the base model and saves only lightweight delta weights (~50MB instead of 14GB), saving gigabytes of storage and bandwidth.',
+    djangoAnalogy:
+      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the database table. In ModelKit, AdapterModel attaches trainable delta matrices to a frozen base model.',
+    snippets: {
+      python: `from modelkit.adapters import AdapterConfig, AdapterModel, AdapterTrainer
+
+# 1. Configure LoRA hyperparameters
+config = AdapterConfig(
+    r=16,
+    alpha=32.0,
+    target_modules=["q_proj", "v_proj"],
+    base_model_path="meta-llama/Llama-3-8B"
+)
+
+# 2. Attach adapter to base foundation model
+class DomainAdapter(AdapterModel):
+    pass
+
+model = DomainAdapter("customer_support_lora", adapter_config=config, base_model=base_llm)
+
+# 3. Train adapter weights (base model remains frozen)
+trainer = AdapterTrainer()
+trainer.fit(model, dataset, epochs=3)
+
+# 4. Saves ONLY the 50MB adapter weights!
+model.save("models/adapter_checkpoint")
+`,
+    },
+    defaultPayload: '{\n  "adapter_type": "lora",\n  "rank": 16,\n  "alpha": 32.0\n}',
+    defaultResponse: {
+      status: "trained",
+      adapter_size: "48.2 MB",
+      base_model_frozen: true,
+      checkpoint: "models/adapter_checkpoint/adapter_model.pkl"
+    },
+  },
+
+  'paradigm-scratch': {
+    id: 'paradigm-scratch',
+    category: 'The 3 AI Paradigms',
+    title: 'Paradigm 3: Training from Scratch',
+    subtitle: 'Bespoke neural architectures, full optimization loops, and custom weights.',
+    badge: { label: 'PARADIGM 3', variant: 'pillar' },
+    signatureOrPath: 'from modelkit import Model, Dataset, BaseTrainer',
+    breadcrumbs: ['Paradigms', 'From Scratch'],
+    overview:
+      'Training from scratch provides full control over custom architectures, optimizers, learning rate schedules, and loss functions. Ideal for custom tabular, vision, or specialized neural models.',
+    djangoAnalogy:
+      'Writing custom Django ORM models and custom managers from scratch when generic solutions do not fit.',
+    snippets: {
+      python: `from modelkit import Model, Dataset, BaseTrainer
+
+class CustomerDataset(Dataset):
+    filename = "customers.csv"
+
+class ChurnClassifier(Model):
+    dataset = CustomerDataset
+
+    def predict(self, inputs, **kwargs):
+        return [0.85]  # Probability of churn
+
+class ChurnTrainer(BaseTrainer):
+    def fit(self, model, dataset, **kwargs):
+        # Full training loop
+        return {"status": "completed", "final_loss": 0.042}
+`,
+    },
+    defaultPayload: '{\n  "epochs": 10,\n  "learning_rate": 0.001\n}',
+    defaultResponse: {
+      status: "completed",
+      loss: 0.042,
+      accuracy: 0.962
+    },
+  },
+
+  'arch-multiapp': {
+    id: 'arch-multiapp',
+    category: 'Multi-App Architecture',
+    title: 'Django-Style Multi-App Project Architecture',
+    subtitle: 'Organize enterprise AI projects into modular, decoupled applications.',
+    badge: { label: 'ARCHITECTURE', variant: 'util' },
+    signatureOrPath: 'my_ai/ [mlkit.json, knowledge/, classifier/]',
+    breadcrumbs: ['Architecture', 'Multi-App'],
+    overview:
+      'Just like a Django project consists of multiple apps (users/, blog/, billing/), an enterprise ModelKit project can contain multiple AI apps (knowledge/ for RAG, classifier/ for fine-tuning) sharing the same config and CLI lifecycle.',
+    djangoAnalogy:
+      'Direct equivalent of Django INSTALLED_APPS in settings.py: mlkit.json declares "apps": ["knowledge", "classifier"].',
+    snippets: {
+      cli: `# 1. Scaffold project
+modelkit init enterprise_ai
+cd enterprise_ai
+
+# 2. Add modular AI apps
+modelkit startapp knowledge      # RAG app
+modelkit startapp classifier     # Classifier / fine-tune app
+`,
+    },
+    defaultPayload: '{\n  "name": "enterprise_ai",\n  "apps": ["knowledge", "classifier"]\n}',
+    defaultResponse: {
+      project: "enterprise_ai",
+      apps: ["knowledge", "classifier"],
+      layout: "modular_multi_app"
+    },
+  },
+
+  'cli-startapp': {
+    id: 'cli-startapp',
+    category: 'Zero-Path CLI Commands',
+    title: 'modelkit startapp <app_name>',
+    subtitle: 'Scaffolds a new modular AI application directory within the project.',
+    badge: { label: 'CLI', variant: 'cli' },
+    signatureOrPath: 'modelkit startapp <app_name>',
+    breadcrumbs: ['CLI', 'startapp'],
+    overview:
+      'Scaffolds a new modular AI application directory with standard contracts (data.py, model.py, trainer.py, evaluator.py, inference.py) and registers the app in mlkit.json.',
+    djangoAnalogy:
+      'Direct equivalent of python manage.py startapp <app_name> in Django.',
+    snippets: {
+      cli: 'modelkit startapp knowledge',
+    },
+    defaultPayload: '{\n  "command": "modelkit startapp",\n  "app_name": "knowledge"\n}',
+    defaultResponse: {
+      status: "success",
+      app_created: "knowledge",
+      files: ["data.py", "model.py", "trainer.py", "evaluator.py", "inference.py"]
+    },
+  },
 };
+

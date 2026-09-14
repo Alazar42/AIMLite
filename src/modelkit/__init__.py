@@ -1,9 +1,16 @@
 from modelkit import (
+    adapters,
     config,
     data,
     lifecycle,
     models,
+    rag,
     registry,
+)
+from modelkit.adapters import (
+    AdapterConfig,
+    AdapterModel,
+    AdapterTrainer,
 )
 from modelkit.config import BaseConfig
 from modelkit.data import Dataset
@@ -13,6 +20,18 @@ from modelkit.lifecycle import (
     BaseTrainer,
 )
 from modelkit.models import Model
+from modelkit.rag import (
+    BaseEmbedding,
+    BaseRetriever,
+    BaseVectorStore,
+    Document,
+    DocumentLoader,
+    MemoryVectorStore,
+    RAGModel,
+    TextSplitter,
+    TfidfEmbedding,
+    VectorRetriever,
+)
 from modelkit.registry import (
     clear_registry,
     get,
@@ -22,10 +41,12 @@ from modelkit.registry import (
 )
 
 __all__ = [
+    "adapters",
     "config",
     "data",
     "lifecycle",
     "models",
+    "rag",
     "registry",
     "BaseConfig",
     "Dataset",
@@ -33,6 +54,19 @@ __all__ = [
     "BaseTrainer",
     "BaseEvaluator",
     "BaseInference",
+    "AdapterConfig",
+    "AdapterModel",
+    "AdapterTrainer",
+    "Document",
+    "DocumentLoader",
+    "TextSplitter",
+    "BaseEmbedding",
+    "TfidfEmbedding",
+    "BaseVectorStore",
+    "MemoryVectorStore",
+    "BaseRetriever",
+    "VectorRetriever",
+    "RAGModel",
     "register",
     "register_class",
     "get",

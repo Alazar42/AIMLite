@@ -285,7 +285,145 @@ class TestModelKitHeaders(unittest.TestCase):
         ds = m.get_dataset()
         self.assertIsInstance(ds, AutoRegisteredDataset)
 
+    def test_multi_app_config(self):
+        """Validates multi-app discovery and resolution in BaseConfig."""
+        import json
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manifest_path = Path(tmpdir) / "mlkit.json"
+            manifest_data = {
+                "name": "enterprise_ai",
+                "apps": ["knowledge", "classifier"],
+                "app_configs": {
+                    "knowledge": {"type": "rag", "retriever_k": 5},
+                    "classifier": {"type": "fine_tune", "learning_rate": 0.001},
+                },
+            }
+            manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
+
+            cfg = BaseConfig(config_path=manifest_path)
+            self.assertTrue(cfg.is_multi_app)
+            self.assertEqual(cfg.apps, ["knowledge", "classifier"])
+            self.assertEqual(cfg.get_app_dir("knowledge"), Path(tmpdir) / "knowledge")
+            self.assertEqual(cfg.get_app_config("knowledge")["type"], "rag")
+            self.assertEqual(cfg.get_app_config("classifier")["retriever_k" if "retriever_k" in cfg.get_app_config("classifier") else "type"], "fine_tune")
+
+        # Flat root fallback
+        default_cfg = BaseConfig()
+        self.assertFalse(default_cfg.is_multi_app)
+        self.assertEqual(default_cfg.apps, [])
+
+    def test_rag_pipeline(self):
+        """Validates first-class RAG components: Document, TextSplitter, Embedding, VectorStore, Retriever, RAGModel."""
+        from modelkit.rag import (
+            Document,
+            DocumentLoader,
+            MemoryVectorStore,
+            RAGModel,
+            TextSplitter,
+            TfidfEmbedding,
+            VectorRetriever,
+        )
+
+        # 1. Document & TextSplitter
+        doc = Document(content="ModelKit is the Django for AI. It unifies RAG, fine-tuning, and training.", metadata={"author": "team"})
+        splitter = TextSplitter(chunk_size=35, chunk_overlap=10)
+        chunks = splitter.split_documents([doc])
+        self.assertGreater(len(chunks), 1)
+        self.assertEqual(chunks[0].metadata["parent_id"], doc.id)
+
+        # 2. Embedding & VectorStore
+        embedder = TfidfEmbedding(dim=128)
+        vec = embedder.embed_text("Django for AI")
+        self.assertEqual(len(vec), 128)
+
+        store = MemoryVectorStore(embedding_fn=embedder)
+        docs = [
+            Document(content="Refunds are processed within 14 business days.", metadata={"topic": "billing"}),
+            Document(content="Remote work policy requires manager pre-approval.", metadata={"topic": "hr"}),
+        ]
+        store.add_documents(docs)
+
+        # 3. VectorRetriever
+        retriever = VectorRetriever(vector_store=store, embedding_fn=embedder)
+        results = retriever.retrieve("How do I get a refund?", top_k=1)
+        self.assertEqual(len(results), 1)
+        self.assertIn("Refunds", results[0].content)
+
+        # 4. RAGModel
+        class PolicyRAG(RAGModel):
+            pass
+
+        rag_model = PolicyRAG("policy_rag", retriever=retriever)
+        out = rag_model.predict("How do I get a refund?", top_k=1)
+        self.assertEqual(out["query"], "How do I get a refund?")
+        self.assertIn("Refunds are processed", out["answer"])
+        self.assertEqual(len(out["sources"]), 1)
+        self.assertEqual(out["sources"][0]["metadata"]["topic"], "billing")
+
+        # 5. Under-the-hood auto-registration under "model" and "rag"
+        self.assertIs(get("rag", "PolicyRAG"), PolicyRAG)
+        self.assertIs(get("model", "PolicyRAG"), PolicyRAG)
+
+    def test_adapter_fine_tuning_pipeline(self):
+        """Validates adapter fine-tuning: AdapterConfig, AdapterModel, delta persistence, AdapterTrainer."""
+        from modelkit.adapters import (
+            AdapterConfig,
+            AdapterModel,
+            AdapterTrainer,
+        )
+
+        # 1. AdapterConfig
+        cfg = AdapterConfig(r=16, alpha=32.0, base_model_path="meta-llama/Llama-3-8B")
+        cfg_dict = cfg.to_dict()
+        self.assertEqual(cfg_dict["r"], 16)
+        self.assertEqual(cfg_dict["alpha"], 32.0)
+
+        # 2. AdapterModel
+        class MockBaseLLM:
+            def predict(self, x, **kwargs):
+                return f"BaseLLM output: {x}"
+
+        class SummarizationAdapter(AdapterModel):
+            pass
+
+        base_llm = MockBaseLLM()
+        adapter_model = SummarizationAdapter("summary_lora", adapter_config=cfg, base_model=base_llm)
+        pred = adapter_model.predict("Summarize document")
+        self.assertEqual(pred, "BaseLLM output: Summarize document")
+
+        # 3. Lightweight delta persistence (saving only adapter weights)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            adapter_model.adapter_weights["lora_A"]["layer_0"] = [0.1, 0.2]
+            adapter_model.save(tmpdir)
+
+            dest_path = Path(tmpdir)
+            self.assertTrue((dest_path / "adapter_config.json").is_file())
+            self.assertTrue((dest_path / "adapter_model.pkl").is_file())
+            self.assertTrue((dest_path / "adapter_metadata.json").is_file())
+
+            # Load into fresh adapter
+            restored = SummarizationAdapter("restored_lora", base_model=base_llm)
+            restored.load(tmpdir)
+            self.assertEqual(restored.adapter_weights["lora_A"]["layer_0"], [0.1, 0.2])
+            self.assertEqual(restored.adapter_config.r, 16)
+
+        # 4. AdapterTrainer
+        class DummyDataset2(Dataset):
+            def load(self, source=None, **kwargs):
+                return self
+
+        trainer = AdapterTrainer()
+        res = trainer.fit(adapter_model, DummyDataset2("d"), epochs=2)
+        self.assertEqual(res["status"], "completed")
+        self.assertEqual(res["epochs"], 2)
+
+        # 5. Under-the-hood auto-registration under "model" and "adapter"
+        self.assertIs(get("adapter", "SummarizationAdapter"), SummarizationAdapter)
+        self.assertIs(get("model", "SummarizationAdapter"), SummarizationAdapter)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

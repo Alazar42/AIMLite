@@ -12,7 +12,7 @@ import os
 import platform
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 class BaseConfig:
@@ -72,6 +72,25 @@ class BaseConfig:
         """Returns the resolved checkpoints directory."""
         ckpt_path = self._config.get("paths", {}).get("checkpoints", "checkpoints")
         return self.root_dir / ckpt_path
+
+    @property
+    def apps(self) -> List[str]:
+        """Returns the list of installed application names declared in mlkit.json."""
+        return list(self._config.get("apps", []))
+
+    @property
+    def is_multi_app(self) -> bool:
+        """Returns True if the project defines one or more modular apps."""
+        return len(self.apps) > 0
+
+    def get_app_dir(self, app_name: str) -> Path:
+        """Returns the directory path for a specific app within the project."""
+        return self.root_dir / app_name
+
+    def get_app_config(self, app_name: str) -> Dict[str, Any]:
+        """Returns configuration dictionary for a specific app if defined, or empty dict."""
+        app_configs = self._config.get("app_configs", {})
+        return dict(app_configs.get(app_name, {}))
 
     def _load_config(self) -> Dict[str, Any]:
         """Loads configuration from config_path or searches for mlkit.json in parent directories."""
