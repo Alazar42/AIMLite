@@ -9,7 +9,7 @@ from typing import Any, Optional, Tuple, Type
 from cli.discovery import ProjectContext, resolve_project_context
 from cli.ui import C, arrow, check, cross, vite_header
 from modelkit.data import Dataset
-from modelkit.lifecycle import BaseTrainer
+from modelkit.lifecycle import BaseTrainer, _model_weights_filename
 from modelkit.models import Model
 
 
@@ -202,6 +202,8 @@ def run_train(
     try:
         dataset = dataset_cls(name=f"{model_cls.__name__.lower()}_data", config=ctx.config)
         records = dataset.load()
+        if records and not getattr(dataset, "_data", None):
+            dataset._data = records
     except Exception as e:
         print(f"{cross(f'Error loading dataset ({dataset_cls.__name__}): {e}')}\n")
         return 1
@@ -215,7 +217,10 @@ def run_train(
             print(f"  {C.DIM}Checked path: {ctx.data_dir}{C.RESET}")
             print(f"  {C.YELLOW}Please add your data file before running train.{C.RESET}\n")
         else:
-            target_fn = getattr(dataset, "filename", None) or "data file"
+            resolved_p = getattr(dataset, "resolved_path", None) or (
+                dataset.get_file_path() if hasattr(dataset, "get_file_path") else None
+            )
+            target_fn = resolved_p.name if resolved_p else (getattr(dataset, "filename", None) or "data file")
             print(f"{cross(f'Data validation failed for {dataset_cls.__name__}: No valid records loaded.')}")
             print(f"  {C.DIM}Loaded 0 rows from {target_fn} in {ctx.data_dir}.{C.RESET}")
             print(f"  {C.YELLOW}Ensure your data file contains valid rows and headers.{C.RESET}\n")
@@ -263,15 +268,22 @@ def run_train(
         destination=ctx.models_dir,
         experiments_dir=ctx.experiments_dir,
     )
-    weights_file = ctx.models_dir / "model.pkl"
-    snapshot_file = ctx.experiments_dir / "experiment_snapshot.json"
+
+    # Derive the per-model filenames matching lifecycle.checkpoint() convention
+    weights_filename = _model_weights_filename(model)
+    snapshot_filename = f"{model_cls.__name__.lower()}_snapshot.json"
+    weights_file = ctx.models_dir / weights_filename
+    snapshot_file = ctx.experiments_dir / snapshot_filename
+
+    # Fall back to the checkpoint dir path if the per-model file wasn't written
+    weights_display = weights_file if weights_file.is_file() else ckpt_dir
 
     metrics_str = " | ".join(f"{k}: {v}" for k, v in (metrics or {}).items()) if metrics else "status: completed"
 
     print(arrow("Model", model_cls.__name__))
     print(arrow("Dataset", f"{dataset_cls.__name__} ({len(records):,} records)"))
     print(arrow("Device", device.upper()))
-    print(arrow("Weights", str(weights_file if weights_file.is_file() else ckpt_dir)))
+    print(arrow("Weights", str(weights_display)))
     print(arrow("Snapshot", str(snapshot_file)))
     print(arrow("Metrics", metrics_str))
     print(f"\n{check(f'Training finished in {elapsed}s.')}\n")

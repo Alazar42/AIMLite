@@ -10,6 +10,7 @@ from cli.commands import (
     run_data_validate,
     run_doctor,
     run_evaluate,
+    run_headers,
     run_init,
     run_install,
     run_serve,
@@ -33,6 +34,7 @@ def print_custom_help() -> None:
     print(f"    {C.GREEN}train{C.RESET} [class]               {C.DIM}Execute zero-path model training for specified class{C.RESET}")
     print(f"    {C.GREEN}evaluate{C.RESET} [class]            {C.DIM}Assess model performance against held-out splits{C.RESET}")
     print(f"    {C.GREEN}serve{C.RESET} [class] [options]     {C.DIM}Launch inference server & custom frontend{C.RESET}")
+    print(f"    {C.GREEN}headers{C.RESET}                   {C.DIM}Generate IDE headers (py.typed, pyrightconfig, .vscode){C.RESET}")
     print(f"    {C.GREEN}doctor{C.RESET}                    {C.DIM}Inspect runtime, accelerators & directory permissions{C.RESET}\n")
 
     print(f"  {C.BOLD}Options:{C.RESET}")
@@ -68,13 +70,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     # install
     install_parser = subparsers.add_parser("install")
-    install_parser.add_argument("packages", nargs="+")
+    install_parser.add_argument("packages", nargs="*", default=[])
     install_parser.add_argument("--upgrade", action="store_true")
 
     # data
     data_parser = subparsers.add_parser("data")
     data_subparsers = data_parser.add_subparsers(dest="data_command")
-    data_subparsers.add_parser("validate")
+    data_validate_parser = data_subparsers.add_parser("validate")
+    data_validate_parser.add_argument("target", nargs="?", default=None, help="Optional Dataset class name or file to validate")
 
     # train
     train_parser = subparsers.add_parser("train")
@@ -90,6 +93,9 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--port", type=int, default=8000, help="Port to listen on (default: 8000)")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     serve_parser.add_argument("--frontend", default=None, help="Custom frontend build directory (e.g. dist/, frontend/)")
+
+    # headers
+    subparsers.add_parser("headers")
 
     # doctor
     subparsers.add_parser("doctor")
@@ -125,7 +131,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return run_install(packages=args.packages, upgrade=args.upgrade)
 
     if args.command == "data":
-        return run_data_validate()
+        target = getattr(args, "target", None)
+        return run_data_validate(target=target)
 
     if args.command == "train":
         return run_train(target=args.target)
@@ -138,6 +145,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "doctor":
         return run_doctor()
+
+    if args.command == "headers":
+        return run_headers()
 
     print_custom_help()
     return 1

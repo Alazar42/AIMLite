@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from cli.discovery import resolve_project_context
 from cli.ui import C, arrow, check, cross, vite_header
 from modelkit.data import Dataset
-from modelkit.lifecycle import BaseEvaluator
+from modelkit.lifecycle import BaseEvaluator, _model_weights_filename
 from modelkit.models import Model
 
 
@@ -60,8 +60,8 @@ def run_evaluate(
         print(f"{cross('No Model subclass found in model.py')}\n")
         return 1
 
-    # 2. Locate checkpoint or serialized weights
-    checkpoint_file = _discover_checkpoint(ctx)
+    # 2. Locate checkpoint or serialized weights for this specific model class
+    checkpoint_file = _discover_checkpoint(ctx, model_cls=model_cls)
     if checkpoint_file is None:
         print(f"{cross('No model checkpoint found in models/ or artifacts/.')}")
         print(f"  {C.YELLOW}Run 'modelkit train' first to generate model weights.{C.RESET}\n")
@@ -105,29 +105,67 @@ def run_evaluate(
     return 0
 
 
-def _discover_checkpoint(ctx) -> Optional[Path]:
-    """Finds the most recent model checkpoint or weights file."""
-    direct_model = ctx.models_dir / "model.pkl"
-    if direct_model.is_file():
-        return direct_model
+def _discover_checkpoint(
+    ctx,
+    model_cls: Optional[Any] = None,
+) -> Optional[Path]:
+    """Finds the most recent model checkpoint or weights file.
 
-    candidate_dirs = [ctx.checkpoints_dir, ctx.models_dir, ctx.artifacts_dir]
+    Search order:
+    1. Per-model named file (e.g. churn_classifier.pkl) in models/
+    2. Any .pkl file in models/ (newest first)
+    3. Common ML checkpoint extensions (.pt, .pth, .joblib, .bin) in models/
+    4. Repeat search in checkpoints/ and artifacts/
+    """
+    candidate_dirs = [ctx.models_dir, ctx.checkpoints_dir, ctx.artifacts_dir]
+
+    # 1. Look for per-model named checkpoint first (highest priority)
+    if model_cls is not None:
+        try:
+            tmp_instance = object.__new__(model_cls)
+            tmp_instance.name = "_"
+            weights_name = _model_weights_filename(tmp_instance)
+        except Exception:
+            # Fallback: derive name from class name directly
+            import re
+            snake = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", model_cls.__name__).lower()
+            weights_name = f"{snake}.pkl"
+
+        for cdir in candidate_dirs:
+            if cdir.is_dir():
+                candidate = cdir / weights_name
+                if candidate.is_file():
+                    return candidate
+                # Also search in subdirs (e.g. checkpoint-step-N/)
+                matches = sorted(
+                    cdir.glob(f"**/{weights_name}"),
+                    key=lambda p: p.stat().st_mtime,
+                    reverse=True,
+                )
+                if matches:
+                    return matches[0]
+
+    # 2. Any .pkl file (newest first)
     for cdir in candidate_dirs:
         if cdir.is_dir():
-            ckpts = sorted(
-                cdir.glob("**/model.pkl"),
+            pkls = sorted(
+                cdir.glob("**/*.pkl"),
                 key=lambda p: p.stat().st_mtime,
                 reverse=True,
             )
-            if ckpts:
-                return ckpts[0]
+            if pkls:
+                return pkls[0]
+
+    # 3. Other ML checkpoint extensions
+    for cdir in candidate_dirs:
+        if cdir.is_dir():
             for ext in ["*.pt", "*.pth", "*.joblib", "*.bin"]:
-                generic = sorted(
+                matches = sorted(
                     cdir.glob(f"**/{ext}"),
                     key=lambda p: p.stat().st_mtime,
                     reverse=True,
                 )
-                if generic:
-                    return generic[0]
+                if matches:
+                    return matches[0]
 
     return None

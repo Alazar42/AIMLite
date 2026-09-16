@@ -1,12 +1,13 @@
 """Zero-Path Discovery & Execution Engine for ModelKit.
 
-Discovers mlkit.json, resolves project conventions, imports component modules,
+Discovers modelkit.json, resolves project conventions, imports component modules,
 and extracts registered classes from modelkit.registry.
 """
 
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import json
 import sys
 from dataclasses import dataclass, field
@@ -68,23 +69,64 @@ def _is_framework_class(cls: Type[Any]) -> bool:
 
 
 def find_project_root(start_dir: Optional[Path] = None) -> Optional[Path]:
-    """Traverses up from start_dir to find the directory containing mlkit.json."""
+    """Traverses up from start_dir to find the directory containing modelkit.json."""
     current = (start_dir or Path.cwd()).resolve()
     for parent in [current, *current.parents]:
-        if (parent / "mlkit.json").is_file():
+        if (parent / "modelkit.json").is_file():
             return parent
     return None
 
 
+def get_manifest_path(project_root: Path) -> Path:
+    """Returns the manifest path (modelkit.json)."""
+    return project_root / "modelkit.json"
+
+
+def inject_venv_site_packages(project_root: Path) -> None:
+    """Injects the project .venv site-packages into sys.path so installed libraries are available.
+
+    This enables the standalone modelkit CLI to use libraries (pandas, scikit-learn, torch, etc.)
+    installed via `modelkit install` in the project's virtual environment without needing
+    to activate the venv manually.
+
+    Works on Linux/macOS (.venv/lib/pythonX.Y/site-packages) and Windows (.venv/Lib/site-packages).
+    """
+    venv_dir = project_root / ".venv"
+    if not venv_dir.is_dir():
+        return
+
+    # Discover all site-packages directories inside .venv
+    site_pkgs_candidates: List[Path] = []
+
+    # Unix / macOS: .venv/lib/python3.X/site-packages
+    lib_dir = venv_dir / "lib"
+    if lib_dir.is_dir():
+        for py_dir in sorted(lib_dir.iterdir()):
+            if py_dir.is_dir() and py_dir.name.startswith("python"):
+                sp = py_dir / "site-packages"
+                if sp.is_dir():
+                    site_pkgs_candidates.append(sp)
+
+    # Windows: .venv/Lib/site-packages
+    win_lib = venv_dir / "Lib" / "site-packages"
+    if win_lib.is_dir():
+        site_pkgs_candidates.append(win_lib)
+
+    for sp in site_pkgs_candidates:
+        sp_str = str(sp)
+        if sp_str not in sys.path:
+            sys.path.insert(1, sp_str)
+
+
 def load_project_manifest(project_root: Path) -> Dict[str, Any]:
-    """Loads and parses mlkit.json from the project root."""
-    manifest_path = project_root / "mlkit.json"
+    """Loads and parses modelkit.json from the project root."""
+    manifest_path = get_manifest_path(project_root)
     if not manifest_path.is_file():
         raise FileNotFoundError(f"Missing project manifest at: {manifest_path}")
     with open(manifest_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, dict):
-        raise ValueError(f"Invalid mlkit.json format: expected a JSON object at {manifest_path}")
+        raise ValueError(f"Invalid manifest format: expected a JSON object at {manifest_path}")
     return data
 
 
@@ -97,7 +139,7 @@ def resolve_project_context(
 
     Args:
         start_dir: Optional starting directory for discovery.
-        require_manifest: If True, raises RuntimeError if mlkit.json is not found.
+        require_manifest: If True, raises RuntimeError if modelkit.json is not found.
 
     Returns:
         ProjectContext with loaded classes and convention paths.
@@ -106,7 +148,7 @@ def resolve_project_context(
     if root_dir is None:
         if require_manifest:
             raise RuntimeError(
-                "Zero-Path error: 'mlkit.json' not found in current or parent directories.\n"
+                "Zero-Path error: 'modelkit.json' not found in current or parent directories.\n"
                 "Please run this command from within an initialized ModelKit project, "
                 "or run 'modelkit init <project_name>' to create one."
             )
@@ -120,8 +162,12 @@ def resolve_project_context(
     if root_str not in sys.path:
         sys.path.insert(0, root_str)
 
+    # Inject project .venv site-packages so installed libraries are available
+    inject_venv_site_packages(root_dir)
+
     # Initialize BaseConfig bound to root
-    config_file = root_dir / "mlkit.json" if (root_dir / "mlkit.json").is_file() else None
+    manifest_file = get_manifest_path(root_dir)
+    config_file = manifest_file if manifest_file.is_file() else None
     config = BaseConfig(config_path=config_file)
 
     # Determine target module
@@ -133,6 +179,10 @@ def resolve_project_context(
 
     # Import target modules to trigger automatic registry discovery
     _import_project_modules(root_dir, target_module, entrypoint_dir)
+
+    # Register bare module aliases in sys.modules so both `from data import X`
+    # and `from telecom_churn.data import X` resolve correctly everywhere.
+    _register_bare_module_aliases(target_module, entrypoint_dir)
 
     # Extract registered subclasses scoped to the active project (excluding framework base classes)
     project_datasets = {}
@@ -259,26 +309,60 @@ def _import_project_modules(root_dir: Path, module_name: str, entrypoint_dir: Pa
         full_name = f"{module_name}.{mod}" if entrypoint_dir != root_dir else mod
         try:
             importlib.import_module(full_name)
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as exc:
             target_file = entrypoint_dir / f"{mod}.py"
             if target_file.is_file():
-                _import_file_directly(target_file, full_name)
+                _import_file_directly(target_file, full_name, parent_package=module_name)
         except Exception:
             pass
 
 
-def _import_file_directly(file_path: Path, module_name: str) -> None:
-    """Directly loads a Python file into sys.modules."""
-    import importlib.util
+def _import_file_directly(
+    file_path: Path,
+    module_name: str,
+    parent_package: Optional[str] = None,
+) -> None:
+    """Directly loads a Python file as a module into sys.modules.
 
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    Registers the module under `module_name` (e.g. `telecom_churn.data`) so that
+    subsequent imports like `from telecom_churn.data import X` resolve correctly.
+    """
+    spec = importlib.util.spec_from_file_location(
+        module_name, file_path, submodule_search_locations=[]
+    )
     if spec and spec.loader:
         module = importlib.util.module_from_spec(spec)
+        # Set __package__ so relative imports inside the file can resolve
+        if parent_package:
+            module.__package__ = parent_package
         sys.modules[module_name] = module
         try:
             spec.loader.exec_module(module)
-        except Exception:
-            pass
+        except Exception as exc:
+            # Keep module registered so partial imports don't error on re-import,
+            # but surface the error so it can be debugged if needed.
+            import os
+            if os.environ.get("MODELKIT_DEBUG"):
+                import traceback
+                traceback.print_exc()
+
+
+def _register_bare_module_aliases(module_name: str, entrypoint_dir: Path) -> None:
+    """Creates bare-name aliases in sys.modules so user code can use either style:
+
+        from data import FEATURE_COLUMNS          # bare import (direct alias)
+        from telecom_churn.data import FEATURE_COLUMNS  # full qualified import
+
+    Without this, bare `from data import X` can accidentally resolve to an
+    unrelated system 'data' module (e.g. matplotlib.dates shim) instead of
+    the project's data.py.
+    """
+    bare_names = ["config", "data", "model", "trainer", "evaluator", "inference", "serve"]
+    for mod in bare_names:
+        full_name = f"{module_name}.{mod}"
+        # Only alias if the full-qualified module was successfully loaded
+        if full_name in sys.modules and mod not in sys.modules:
+            sys.modules[mod] = sys.modules[full_name]
 
 
 def _resolve_registered_class(category: str, base_cls: Type[Any]) -> Optional[Type[Any]]:

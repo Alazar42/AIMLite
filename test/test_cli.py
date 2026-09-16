@@ -15,11 +15,14 @@ from http.client import HTTPConnection
 from pathlib import Path
 from typing import Any, Dict
 
+from unittest.mock import MagicMock, patch
+
 from cli.commands import (
     run_data_validate,
     run_doctor,
     run_evaluate,
     run_init,
+    run_install,
     run_serve,
     run_train,
 )
@@ -78,7 +81,7 @@ class TestModelKitCLI(unittest.TestCase):
         self.assertEqual(run_doctor(project_root=self.test_root), 0)
 
     def test_init_scaffolds_project(self):
-        """CLI init creates convention folders, starter code, and mlkit.json without task_type."""
+        """CLI init creates convention folders, starter code, and modelkit.json without task_type."""
         proj_name = "test_ai"
         os.chdir(self.test_root)
 
@@ -86,7 +89,7 @@ class TestModelKitCLI(unittest.TestCase):
         self.assertEqual(code, 0)
 
         proj_dir = self.test_root / proj_name
-        self.assertTrue((proj_dir / "mlkit.json").is_file())
+        self.assertTrue((proj_dir / "modelkit.json").is_file())
 
         manifest = load_project_manifest(proj_dir)
         self.assertEqual(manifest["name"], proj_name)
@@ -113,7 +116,7 @@ class TestModelKitCLI(unittest.TestCase):
         self.assertEqual(code, 0)
 
         # Manifest must be directly in target_folder
-        self.assertTrue((target_folder / "mlkit.json").is_file())
+        self.assertTrue((target_folder / "modelkit.json").is_file())
         manifest = load_project_manifest(target_folder)
         self.assertEqual(manifest["name"], "my_custom_workspace")
         self.assertEqual(manifest["entrypoint"], "my_custom_workspace")
@@ -205,9 +208,9 @@ class TestModelKitCLI(unittest.TestCase):
         train_code = run_train(project_root=proj_dir)
         self.assertEqual(train_code, 0)
 
-        # Assert checkpoint and weights exist
-        self.assertTrue((proj_dir / "models" / "model.pkl").is_file())
-        self.assertTrue((proj_dir / "experiments" / "experiment_snapshot.json").is_file())
+        # Assert checkpoint and weights exist (AppModel → app_model.pkl)
+        self.assertTrue((proj_dir / "models" / "app_model.pkl").is_file())
+        self.assertTrue((proj_dir / "experiments" / "appmodel_snapshot.json").is_file())
 
         # 3. Run evaluate
         eval_code = run_evaluate(project_root=proj_dir)
@@ -407,8 +410,8 @@ class MultiModel(Model):
         train_code = run_train(project_root=proj_dir)
         self.assertEqual(train_code, 0)
 
-        # Verify weights were written
-        self.assertTrue((proj_dir / "models" / "model.pkl").is_file())
+        # Verify weights were written (MultiModel → multi_model.pkl)
+        self.assertTrue((proj_dir / "models" / "multi_model.pkl").is_file())
 
     def test_train_fails_when_custom_dataset_has_no_matching_model(self):
         """If developer created a custom dataset in data.py but no model in model.py, train fails cleanly."""
@@ -473,7 +476,7 @@ class UserModel(Model):
         # Train specifically UserModel
         code = run_train(target="UserModel", project_root=proj_dir)
         self.assertEqual(code, 0)
-        self.assertTrue((proj_dir / "models" / "model.pkl").is_file())
+        self.assertTrue((proj_dir / "models" / "user_model.pkl").is_file())
 
     def test_train_fails_when_multiple_models_without_target(self):
         """When multiple custom models exist in model.py, modelkit train without args halts and asks for class name."""
@@ -522,6 +525,136 @@ class ModelB(Model):
         res = subprocess.run([str(executable), "doctor"], capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
         self.assertIn("ModelKit Doctor", res.stdout)
+
+    @patch("subprocess.run")
+    def test_install_command_updates_manifest_and_manages_venv(self, mock_run):
+        """Tests that modelkit install manages .venv and writes dependencies into modelkit.json."""
+        mock_res = MagicMock()
+        mock_res.returncode = 0
+        mock_run.return_value = mock_res
+
+        proj_dir = self.test_root / "test_install_app"
+        run_init("test_install_app", target_dir=str(self.test_root))
+
+        # Check initial manifest state
+        manifest_data = json.loads((proj_dir / "modelkit.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest_data.get("dependencies"), [])
+
+        # Create dummy .venv/bin/python
+        venv_bin = proj_dir / ".venv" / "bin"
+        venv_bin.mkdir(parents=True, exist_ok=True)
+        (venv_bin / "python").touch()
+
+        # Run install with package list
+        code = run_install(["scikit-learn", "pandas"], project_root=proj_dir)
+        self.assertEqual(code, 0)
+
+        # Verify modelkit.json was updated with dependencies
+        updated_modelkit = json.loads((proj_dir / "modelkit.json").read_text(encoding="utf-8"))
+        self.assertEqual(updated_modelkit["dependencies"], ["pandas", "scikit-learn"])
+
+        # Run install without packages (should read dependencies from manifest)
+        code_empty = run_install([], project_root=proj_dir)
+        self.assertEqual(code_empty, 0)
+
+    @patch("subprocess.run")
+    def test_cli_main_install_without_args(self, mock_run):
+        """Tests that cli_main(['install']) succeeds without throwing required argument errors."""
+        mock_res = MagicMock()
+        mock_res.returncode = 0
+        mock_run.return_value = mock_res
+
+        proj_dir = self.test_root / "test_install_cli"
+        run_init("test_install_cli", target_dir=str(self.test_root))
+        os.chdir(proj_dir)
+
+        # Write sample dependency to modelkit.json
+        manifest_file = proj_dir / "modelkit.json"
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        manifest["dependencies"] = ["pandas"]
+        manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+        # Fake venv python
+        venv_bin = proj_dir / ".venv" / "bin"
+        venv_bin.mkdir(parents=True, exist_ok=True)
+        (venv_bin / "python").touch()
+
+        # Invoking cli_main(["install"]) with no package arguments should exit 0
+        ret = cli_main(["install"])
+        self.assertEqual(ret, 0)
+
+    def test_data_validate_multiple_csvs_and_telecom_churn(self):
+        """Tests data validate discovers multiple CSVs and resolves TelecomChurnDataset with explicit filename."""
+        proj_name = "churn_app"
+        os.chdir(self.test_root)
+        run_init(project_name=proj_name)
+        proj_dir = self.test_root / proj_name
+        os.chdir(proj_dir)
+
+        # 1. Add telecom_churn.csv and another.csv in data/
+        churn_csv = proj_dir / "data" / "telecom_churn.csv"
+        churn_csv.write_text(
+            "AccountWeeks,ContractRenewal,DataPlan,DataUsage,CustServCalls,DayMins,DayCalls,MonthlyCharge,OverageFee,RoamMins,Churn\n"
+            "128,1,1,2.7,1,265.1,110,89.0,9.87,10.0,0\n"
+            "107,1,1,3.7,1,161.6,123,82.0,9.78,13.7,0\n"
+            "137,1,0,0.0,0,243.4,114,52.0,6.06,12.2,0\n",
+            encoding="utf-8",
+        )
+        another_csv = proj_dir / "data" / "holdout.csv"
+        another_csv.write_text("x,y\n1,2\n3,4\n", encoding="utf-8")
+
+        # 2. Write TelecomChurnDataset in data.py
+        data_py = proj_dir / proj_name / "data.py"
+        data_py.write_text('''import csv
+from modelkit import Dataset
+
+class TelecomChurnDataset(Dataset):
+    filename = "telecom_churn.csv"
+
+    def load(self, source=None, **kwargs):
+        resolved = self._resolve_file_path(source or self.filename)
+        if not resolved or not resolved.is_file():
+            return []
+        records = []
+        with open(resolved, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            self.columns = list(reader.fieldnames or [])
+            for row in reader:
+                records.append({k: float(v) for k, v in row.items()})
+        self._data = records
+        return self._data
+''', encoding="utf-8")
+
+        # Validate should pass and recognize TelecomChurnDataset
+        val_code = run_data_validate(project_root=proj_dir)
+        self.assertEqual(val_code, 0)
+
+        # Targeted validation
+        val_target = run_data_validate(target="TelecomChurnDataset", project_root=proj_dir)
+        self.assertEqual(val_target, 0)
+
+    def test_convention_snake_case_matches_telecom_churn(self):
+        """Tests that TelecomChurnDataset automatically resolves telecom_churn.csv even without filename attribute."""
+        proj_name = "churn_auto_proj"
+        os.chdir(self.test_root)
+        run_init(project_name=proj_name)
+        proj_dir = self.test_root / proj_name
+        os.chdir(proj_dir)
+
+        # Add telecom_churn.csv
+        churn_csv = proj_dir / "data" / "telecom_churn.csv"
+        churn_csv.write_text("Churn,AccountWeeks\n0,100\n1,50\n", encoding="utf-8")
+
+        # Define dataset without explicit filename
+        data_py = proj_dir / proj_name / "data.py"
+        data_py.write_text('''from modelkit import Dataset
+
+class TelecomChurnDataset(Dataset):
+    pass
+''', encoding="utf-8")
+
+        val_code = run_data_validate(project_root=proj_dir)
+        self.assertEqual(val_code, 0)
 
 
 if __name__ == "__main__":

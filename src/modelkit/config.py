@@ -26,7 +26,7 @@ class BaseConfig:
         register_class("config", cls, name=name)
 
     def __init__(self, config_path: Optional[Union[str, Path]] = None) -> None:
-        """Initializes project settings by parsing mlkit.json or fallback defaults.
+        """Initializes project settings by parsing modelkit.json or fallback defaults.
 
         Args:
             config_path: Optional file path to the project configuration manifest.
@@ -75,7 +75,7 @@ class BaseConfig:
 
     @property
     def apps(self) -> List[str]:
-        """Returns the list of installed application names declared in mlkit.json."""
+        """Returns the list of installed application names declared in modelkit.json."""
         return list(self._config.get("apps", []))
 
     @property
@@ -93,14 +93,14 @@ class BaseConfig:
         return dict(app_configs.get(app_name, {}))
 
     def _load_config(self) -> Dict[str, Any]:
-        """Loads configuration from config_path or searches for mlkit.json in parent directories."""
+        """Loads configuration from config_path or searches for modelkit.json in parent directories."""
         target_path: Optional[Path] = self.config_path
 
         if target_path is None:
-            # Search upwards for mlkit.json starting from current working directory
+            # Search upwards for modelkit.json starting from current working directory
             current_dir = Path.cwd()
             for directory in [current_dir, *current_dir.parents]:
-                candidate = directory / "mlkit.json"
+                candidate = directory / "modelkit.json"
                 if candidate.is_file():
                     target_path = candidate
                     self.config_path = candidate

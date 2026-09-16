@@ -1,6 +1,6 @@
 """Dynamic Discovery & Registry: modelkit/registry.py
 
-Binds string identifiers declared in mlkit.json to user subclasses dynamically.
+Binds string identifiers declared in modelkit.json to user subclasses dynamically.
 Automatically tracks subclasses of Model, Dataset, BaseTrainer, BaseEvaluator,
 BaseInference, and BaseConfig under the hood without requiring explicit decorators.
 """

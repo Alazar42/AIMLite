@@ -81,9 +81,28 @@ class Model(ABC):
             destination: Target directory or file destination path.
             **kwargs: Additional serialization parameters.
         """
+        import re as _re
+
         dest = Path(destination)
-        dest.mkdir(parents=True, exist_ok=True)
-        target_file = dest / "model.pkl" if dest.is_dir() else dest
+
+        # Determine if we're writing to a specific file or into a directory:
+        # - If dest exists and is a directory → write <class_name>.pkl inside it
+        # - If dest has a file extension (e.g. .pkl, .pt, .pt2) → write directly to that file
+        # - Otherwise (non-existent, no extension) → create as directory, write <class_name>.pkl inside
+        if dest.is_dir():
+            cls_name = type(self).__name__
+            snake = _re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", cls_name).lower()
+            target_file = dest / f"{snake}.pkl"
+        elif dest.suffix:
+            # Explicit file path (e.g. models/churn_classifier.pkl)
+            target_file = dest
+            target_file.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            # Treat as directory path (create it)
+            dest.mkdir(parents=True, exist_ok=True)
+            cls_name = type(self).__name__
+            snake = _re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", cls_name).lower()
+            target_file = dest / f"{snake}.pkl"
 
         state = getattr(self, "weights", None)
         if state is None:
@@ -95,14 +114,37 @@ class Model(ABC):
     def load(self, source: Union[str, Path], **kwargs: Any) -> None:
         """Restores weights from storage or connects to an external local runtime process.
 
-        Unless overridden by a subclass, restores model weights from model.pkl via pickle.
+        Unless overridden by a subclass, restores model weights from pickle.
+        When source is a directory, searches for:
+        1. <snake_case_class_name>.pkl  (e.g. churn_classifier.pkl for ChurnClassifier)
+        2. model.pkl                    (legacy fallback)
+        3. Any .pkl file in the directory
 
         Args:
             source: Checkpoint directory, file path, or service connection string.
             **kwargs: Additional restoration parameters.
         """
+        import re as _re
+
         src = Path(source)
-        target_file = src / "model.pkl" if src.is_dir() else src
+
+        if src.is_dir():
+            # Prefer the per-class named file
+            cls_name = type(self).__name__
+            snake = _re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", cls_name).lower()
+            named_file = src / f"{snake}.pkl"
+            legacy_file = src / "model.pkl"
+
+            if named_file.is_file():
+                target_file = named_file
+            elif legacy_file.is_file():
+                target_file = legacy_file
+            else:
+                # Any .pkl in the directory (newest)
+                pkls = sorted(src.glob("*.pkl"), key=lambda p: p.stat().st_mtime, reverse=True)
+                target_file = pkls[0] if pkls else named_file
+        else:
+            target_file = src
         if target_file.is_file():
             with open(target_file, "rb") as f:
                 loaded = pickle.load(f)

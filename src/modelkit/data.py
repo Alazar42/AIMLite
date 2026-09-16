@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
@@ -69,11 +70,11 @@ class Dataset:
         elif self.source is not None:
             self.source = Path(self.source)
 
-        if filename is not None:
-            self.filename = filename
+        self.filename: Optional[str] = filename or getattr(self.__class__, "filename", None)
         if combine_all is not None:
             self.combine_all = combine_all
 
+        self.resolved_path: Optional[Path] = None
         self.columns: List[str] = []
         self._data: List[Dict[str, Any]] = []
         self._train_data: Optional[List[Dict[str, Any]]] = None
@@ -98,85 +99,123 @@ class Dataset:
             return Path(self.config.data_dir)
         return Path.cwd() / "data"
 
+    def get_file_path(self) -> Optional[Path]:
+        """Returns the resolved file path for this dataset."""
+        if self.resolved_path is not None and self.resolved_path.is_file():
+            return self.resolved_path
+        return self._resolve_file_path()
+
     def _resolve_file_path(self, source: Optional[Union[str, Path]] = None) -> Optional[Path]:
         """Resolves the dataset file path using explicit source, filename attribute, or convention."""
+        data_dir = self._get_data_dir()
+
         # 1. Explicit source passed to load()
         if source is not None:
             s_path = Path(source)
             if s_path.is_file():
+                self.resolved_path = s_path
                 return s_path
-            data_dir = self._get_data_dir()
-            if (data_dir / s_path.name).is_file():
-                return data_dir / s_path.name
+            if data_dir.is_dir() and (data_dir / s_path.name).is_file():
+                self.resolved_path = data_dir / s_path.name
+                return self.resolved_path
+            self.resolved_path = s_path
             return s_path
 
         # 2. Explicit self.source attribute on class or instance
         if self.source is not None:
             s_path = Path(self.source)
             if s_path.is_file():
+                self.resolved_path = s_path
                 return s_path
-            data_dir = self._get_data_dir()
-            if (data_dir / s_path.name).is_file():
-                return data_dir / s_path.name
+            if data_dir.is_dir() and (data_dir / s_path.name).is_file():
+                self.resolved_path = data_dir / s_path.name
+                return self.resolved_path
             if self.config is not None and getattr(self.config, "config_path", None):
                 root = Path(self.config.config_path).parent
                 if (root / s_path).is_file():
-                    return root / s_path
+                    self.resolved_path = root / s_path
+                    return self.resolved_path
+            self.resolved_path = s_path
             return s_path
 
-        data_dir = self._get_data_dir()
-
         # 3. Explicit self.filename attribute on class or instance
-        if self.filename is not None:
-            target = data_dir / self.filename
+        fn = self.filename or getattr(self.__class__, "filename", None)
+        if fn:
+            target = data_dir / fn
             if target.is_file():
+                self.resolved_path = target
                 return target
-            if Path(self.filename).is_file():
-                return Path(self.filename)
+            if Path(fn).is_file():
+                self.resolved_path = Path(fn)
+                return self.resolved_path
 
         if not data_dir.is_dir():
             return None
 
-        # 4. Convention: Check if file matches class name or dataset name
-        class_name = self.__class__.__name__.lower()
-        cleaned_class = class_name.replace("dataset", "").replace("_data", "").strip("_")
-        dataset_name = self.name.lower().replace("dataset", "").replace("_data", "").strip("_")
+        # 4. Convention: Check if file matches class name (CamelCase, snake_case) or dataset name
+        raw_cls = self.__class__.__name__
+        snake_cls = re.sub(r'(?<!^)(?=[A-Z])', '_', raw_cls).lower()
+        cleaned_snake = snake_cls.replace("_dataset", "").replace("_data", "").strip("_")
+        cleaned_class = raw_cls.lower().replace("dataset", "").replace("_data", "").strip("_")
 
-        name_candidates = [
-            n for n in [cleaned_class, class_name, dataset_name, self.name.lower()]
-            if n and n != "dataset" and n != "app"
-        ]
+        raw_name = getattr(self, "name", "")
+        snake_name = re.sub(r'(?<!^)(?=[A-Z])', '_', raw_name).lower() if raw_name else ""
+        cleaned_name = snake_name.replace("_dataset", "").replace("_data", "").strip("_") if snake_name else ""
+
+        name_candidates: List[str] = []
+        for n in [cleaned_snake, snake_cls, cleaned_class, raw_cls.lower(), cleaned_name, snake_name, raw_name.lower()]:
+            if n and n not in ["dataset", "app", "app_dataset"] and n not in name_candidates:
+                name_candidates.append(n)
 
         for base in name_candidates:
             for ext in SUPPORTED_EXTENSIONS:
                 cand = data_dir / f"{base}{ext}"
                 if cand.is_file() and cand.stat().st_size > 0:
+                    self.resolved_path = cand
                     return cand
 
-        # 5. Standard conventions: dataset.*, train.*, data.*
+        # 5. Word-based matching: e.g. TelecomChurnDataset matches telecom_churn.csv
+        words = [w for w in cleaned_snake.split("_") if len(w) > 2]
+        if words:
+            for f in sorted(data_dir.iterdir()):
+                if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS and f.stat().st_size > 0:
+                    f_stem = f.stem.lower().replace("-", "_")
+                    if all(w in f_stem for w in words):
+                        self.resolved_path = f
+                        return f
+
+        # 6. Standard conventions: dataset.*, train.*, data.*
         for base in ["dataset", "train", "data"]:
             for ext in SUPPORTED_EXTENSIONS:
                 candidate = data_dir / f"{base}{ext}"
                 if candidate.is_file() and candidate.stat().st_size > 0:
+                    self.resolved_path = candidate
                     return candidate
 
-        # 6. Any non-empty supported data file in data/
-        non_empty_files = [
+        # 7. Single non-empty supported data file in data/
+        data_files = [
             f for f in sorted(data_dir.iterdir())
             if f.is_file()
             and f.suffix.lower() in SUPPORTED_EXTENSIONS
             and f.stat().st_size > 0
             and not f.name.startswith(".")
         ]
-        if non_empty_files:
-            return non_empty_files[0]
+        if len(data_files) == 1:
+            self.resolved_path = data_files[0]
+            return data_files[0]
 
-        # 7. Fallback: Any file in data/ (even if 0 bytes, so load() can inspect and report cleanly)
+        # 8. Any non-empty supported data file
+        if data_files:
+            self.resolved_path = data_files[0]
+            return data_files[0]
+
+        # 9. Fallback: Any file in data/ (even if 0 bytes, so load() can inspect and report cleanly)
         all_files = [
             f for f in sorted(data_dir.iterdir())
             if f.is_file() and not f.name.startswith(".")
         ]
         if all_files:
+            self.resolved_path = all_files[0]
             return all_files[0]
 
         return None
@@ -399,5 +438,7 @@ class Dataset:
     def validate(self) -> bool:
         """Verifies that dataset exists and contains records."""
         if not self._data:
-            self.load()
+            records = self.load()
+            if records and not self._data:
+                self._data = records
         return bool(self._data and len(self._data) > 0)

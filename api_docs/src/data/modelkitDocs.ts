@@ -1,3 +1,13 @@
+import {
+  type GuideStep,
+  SCRATCH_FILES,
+  SCRATCH_GUIDE_STEPS,
+  RAG_FILES,
+  RAG_GUIDE_STEPS,
+  ADAPTER_FILES,
+  ADAPTER_GUIDE_STEPS,
+} from './paradigmGuides';
+
 export interface DocParameter {
   name: string;
   type: string;
@@ -21,6 +31,10 @@ export interface DocSection {
   breadcrumbs: string[];
   overview: string;
   djangoAnalogy: string;
+  whyCode?: {
+    component: string;
+    reason: string;
+  }[];
   parametersTitle?: string;
   parameters?: DocParameter[];
   conventions?: { title: string; description: string }[];
@@ -29,7 +43,9 @@ export interface DocSection {
     cli?: string;
     curl?: string;
     typescript?: string;
+    files?: Record<string, string>;
   };
+  guideSteps?: GuideStep[];
   defaultPayload?: string;
   defaultResponse?: any;
 }
@@ -50,16 +66,9 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'The 3 AI Paradigms',
     items: [
-      { id: 'paradigm-rag', label: '1. RAG (Retrieval-Augmented)', badge: 'RAG', badgeVariant: 'pillar' },
-      { id: 'paradigm-adapters', label: '2. Fine-Tuning (LoRA & Adapters)', badge: 'PEFT', badgeVariant: 'pillar' },
-      { id: 'paradigm-scratch', label: '3. Training from Scratch', badge: 'TRAIN', badgeVariant: 'pillar' },
-    ],
-  },
-  {
-    name: 'Multi-App Architecture',
-    items: [
-      { id: 'arch-multiapp', label: 'Django-Style Multi-App Layout', badge: 'ARCH', badgeVariant: 'util' },
-      { id: 'cli-startapp', label: 'modelkit startapp', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'paradigm-scratch', label: '1. Scratch (Customer Churn)', badge: 'TRAIN', badgeVariant: 'pillar' },
+      { id: 'paradigm-rag', label: '2. RAG (Knowledge QA)', badge: 'RAG', badgeVariant: 'pillar' },
+      { id: 'paradigm-adapters', label: '3. Adapters (LoRA & PEFT)', badge: 'PEFT', badgeVariant: 'pillar' },
     ],
   },
   {
@@ -81,7 +90,6 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     name: 'Zero-Path CLI Commands',
     items: [
       { id: 'cli-init', label: 'modelkit init', badge: 'CLI', badgeVariant: 'cli' },
-      { id: 'cli-startapp', label: 'modelkit startapp', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-install', label: 'modelkit install', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-data', label: 'modelkit data validate', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-train', label: 'modelkit train', badge: 'CLI', badgeVariant: 'cli' },
@@ -176,7 +184,8 @@ export const DOC_SECTIONS: Record<string, DocSection> = {
       },
     ],
     snippets: {
-      python: `from modelkit import Dataset
+      files: {
+        'data.py': `from modelkit import Dataset
 
 # Option 1: Standard dataset with file source
 class AIDataset(Dataset):
@@ -189,6 +198,8 @@ class CustomerDataset(Dataset):
 # Option 3: Concatenate multiple shards
 class ShardedDataset(Dataset):
     combine_all = True`,
+      },
+      cli: `modelkit data validate`,
     },
     defaultPayload: '{\n  "source": "data/housing_prices.csv",\n  "test_split": 0.2\n}',
     defaultResponse: {
@@ -227,7 +238,7 @@ class ShardedDataset(Dataset):
       },
       {
         title: 'Config Binding',
-        description: 'Hyperparameters in mlkit.json are automatically bound to self.config during zero-path discovery.',
+        description: 'Hyperparameters in modelkit.json are automatically bound to self.config during zero-path discovery.',
       },
     ],
     parametersTitle: 'Model Class Methods & Contracts',
@@ -260,7 +271,8 @@ class ShardedDataset(Dataset):
       },
     ],
     snippets: {
-      python: `from modelkit import Model, Dataset
+      files: {
+        'model.py': `from modelkit import Model, Dataset
 
 # Option 1: Automatic convention (auto-discovers default Dataset in data.py)
 class AIModel(Model):
@@ -273,6 +285,8 @@ class ChurnModel(Model):
 
     def predict(self, inputs, **kwargs):
         return [1 if sum(x) > 0.5 else 0 for x in inputs]`,
+      },
+      cli: `modelkit train AIModel`,
     },
     defaultPayload: '{\n  "inputs": [1.0, 2.0, 3.0, 4.0]\n}',
     defaultResponse: {
@@ -333,21 +347,26 @@ class ChurnModel(Model):
       },
     ],
     snippets: {
-      python: `from modelkit import BaseTrainer, BaseEvaluator, BaseInference
+      files: {
+        'trainer.py': `from modelkit import BaseTrainer
 
 class AITrainer(BaseTrainer):
     def fit(self, model, dataset, **kwargs):
         # Optimization loop here
-        return {"status": "success", "loss": 0.035, "step": 100}
+        return {"status": "success", "loss": 0.035, "step": 100}`,
+        'evaluator.py': `from modelkit import BaseEvaluator
 
 class AIEvaluator(BaseEvaluator):
     def evaluate(self, model, dataset, **kwargs):
-        return {"accuracy": 0.965}
+        return {"accuracy": 0.965}`,
+        'inference.py': `from modelkit import BaseInference
 
 class AIInference(BaseInference):
     def run(self, model, raw_input, **kwargs):
         features = raw_input.get("features", [])
         return model.predict(features)`,
+      },
+      cli: `modelkit train AIModel && modelkit evaluate AIModel && modelkit serve AIModel`,
     },
     defaultPayload: '{\n  "features": [0.45, 1.28, 3.14]\n}',
     defaultResponse: {
@@ -371,7 +390,7 @@ class AIInference(BaseInference):
     signatureOrPath: 'from modelkit import BaseConfig',
     breadcrumbs: ['Foundations', 'BaseConfig'],
     overview:
-      'BaseConfig parses mlkit.json and provides automatic hardware device resolution. It probes for NVIDIA CUDA GPUs, Apple Silicon MPS (Metal Performance Shaders), or gracefully falls back to CPU.',
+      'BaseConfig parses modelkit.json and provides automatic hardware device resolution. It probes for NVIDIA CUDA GPUs, Apple Silicon MPS (Metal Performance Shaders), or gracefully falls back to CPU.',
     djangoAnalogy:
       'Equivalent to Django settings.py. Automatically resolves paths and hardware accelerators.',
     parametersTitle: 'BaseConfig Properties & Methods',
@@ -386,7 +405,7 @@ class AIInference(BaseInference):
         name: 'data_dir, models_dir, experiments_dir',
         type: 'property (Path)',
         required: false,
-        description: 'Resolved absolute paths to project directories defined in mlkit.json.',
+        description: 'Resolved absolute paths to project directories defined in modelkit.json.',
       },
       {
         name: 'to_dict()',
@@ -456,24 +475,29 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     id: 'cli-init',
     category: 'Zero-Path CLI Commands',
     title: 'modelkit init',
-    subtitle: 'Scaffolds a new project directory with Django-style zero-code starter files.',
+    subtitle: 'Scaffolds a new project directory or initializes inside the current folder.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'modelkit init <project_name>',
+    signatureOrPath: 'modelkit init [project_name | .]',
     breadcrumbs: ['CLI', 'init'],
     overview:
-      'Scaffolds a new project directory with convention layout: data/ (strictly empty, no starter CSV), models/, experiments/, artifacts/, and starter files with comments only (no dummy code or fake math).',
+      'Scaffolds a new project directory with convention layout: data/ (strictly empty), models/, experiments/, artifacts/, checkpoints/, and starter package files. Supports both new directory creation (modelkit init my_ai) and in-place current folder initialization (modelkit init .).',
     djangoAnalogy:
-      'Direct equivalent of django-admin startproject <name>. Generates clean boilerplate with instructional comments.',
+      'Direct equivalent of django-admin startproject <name> or npm init. Generates clean boilerplate with instructional contracts.',
     snippets: {
-      cli: 'modelkit init my_ai',
+      cli: `# Option 1: Create a new project directory
+modelkit init my_ai
+cd my_ai
+
+# Option 2: Initialize directly inside current folder with parent folder name
+modelkit init .`,
     },
-    defaultPayload: '{\n  "command": "modelkit init",\n  "project": "my_ai"\n}',
+    defaultPayload: '{\n  "command": "modelkit init",\n  "project": "."\n}',
     defaultResponse: {
       status: 'success',
       output: [
-        "[OK] Successfully initialized MLKit project 'my_ai'",
-        'Starter files: data.py, model.py, trainer.py, evaluator.py, inference.py',
-        'Directory data/ created empty (no starter CSV provided)',
+        "[OK] Successfully initialized ModelKit project 'my_ai'",
+        'Package files: data.py, model.py, trainer.py, evaluator.py, inference.py, config.py',
+        'Directory data/ created empty (ready for your dataset files)',
       ],
     },
   },
@@ -484,20 +508,27 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     title: 'modelkit install',
     subtitle: 'Installs libraries safely into project .venv using uv (preferred) or pip.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'uv run modelkit install <package_name ...> [--upgrade]',
+    signatureOrPath: 'modelkit install <package_name ...> [--upgrade]',
     breadcrumbs: ['CLI', 'install'],
     overview:
       'Manages your project virtual environment (.venv). If .venv does not exist, automatically creates it. Uses uv pip install --python <venv> for lightning fast, conflict-free dependency installation.',
     djangoAnalogy:
       'Eliminates environment mismatches and global package collisions automatically.',
     snippets: {
-      cli: 'uv run modelkit install torch torchvision pandas scikit-learn',
+      cli: `# Paradigm 1 (Scratch):
+modelkit install scikit-learn pandas
+
+# Paradigm 2 (RAG):
+modelkit install sentence-transformers numpy
+
+# Paradigm 3 (Adapters):
+modelkit install torch peft`,
     },
-    defaultPayload: '{\n  "packages": ["torch", "pandas"],\n  "upgrade": false\n}',
+    defaultPayload: '{\n  "packages": ["scikit-learn", "pandas"],\n  "upgrade": false\n}',
     defaultResponse: {
       status: 'success',
       venv_path: '.venv',
-      installed: ['torch', 'pandas'],
+      installed: ['scikit-learn', 'pandas'],
       backend: 'uv pip install',
     },
   },
@@ -506,26 +537,31 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     id: 'cli-train',
     category: 'Zero-Path CLI Commands',
     title: 'modelkit train',
-    subtitle: 'Runs model training cycle through zero-path discovery.',
+    subtitle: 'Runs model training cycle through zero-path discovery or targeted model class.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'uv run modelkit train',
+    signatureOrPath: 'modelkit train [ModelName]',
     breadcrumbs: ['CLI', 'train'],
     overview:
-      'Discovers and executes your training cycle. Strictly validates that classes are implemented and that data files exist in data/. If the user did nothing, it halts with error code 1.',
+      'Discovers and executes your training cycle. Supports targeted training by passing the model class name (e.g. modelkit train ChurnClassifier). Strictly validates that classes are implemented and that data files exist in data/. If multiple models exist in model.py, prompts you to select one.',
     djangoAnalogy:
       'Equivalent to running database migrations or test runner. Halts cleanly if models or data are missing.',
     snippets: {
-      cli: 'uv run modelkit train',
+      cli: `# Train single or default model
+modelkit train
+
+# Targeted training by model class name
+modelkit train ChurnClassifier`,
     },
-    defaultPayload: '{\n  "device": "auto"\n}',
+    defaultPayload: '{\n  "target_model": "ChurnClassifier"\n}',
     defaultResponse: {
       status: 'success',
-      elapsed_time: '3.42s',
-      model_weights: 'models/model.pkl',
+      model: 'ChurnClassifier',
+      elapsed_time: '2.14s',
+      model_weights: 'artifacts/churn_classifier.pkl',
       experiment_snapshot: 'experiments/experiment_snapshot.json',
       metrics: {
-        loss: 0.042,
-        accuracy: 0.984,
+        train_accuracy: 0.984,
+        val_accuracy: 0.962,
       },
     },
   },
@@ -534,22 +570,29 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     id: 'cli-serve',
     category: 'Zero-Path CLI Commands',
     title: 'modelkit serve',
-    subtitle: 'Launches zero-path HTTP inference server with web playground & Swagger UI.',
+    subtitle: 'Headless JSON inference API server with optional custom frontend hosting.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'uv run modelkit serve [--port 8000]',
+    signatureOrPath: 'modelkit serve [ModelName] [--port 8000] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
-      'Starts the built-in HTTP inference server on port 8000. Serves interactive web playground at GET / and GET /predict, Swagger documentation at GET /docs, OpenAPI specification at GET /openapi.json, and executes predictions at POST /predict.',
+      'Starts a high-performance, headless JSON inference server on port 8000. Serves API root metadata at GET /, prediction endpoint at POST /predict, server health at GET /health, Swagger UI at GET /docs, and OpenAPI specification at GET /openapi.json. When you build a custom frontend (e.g. React/Vite in frontend/dist/), pass --frontend frontend/dist to host it directly alongside the API.',
     djangoAnalogy:
-      'Direct equivalent of python manage.py runserver 8000, with Swagger UI built in!',
+      'Direct equivalent of python manage.py runserver 8000, with Swagger UI and developer-customizable endpoints.',
     snippets: {
-      cli: 'uv run modelkit serve --port 8000',
+      cli: `# Run pure headless JSON API server
+modelkit serve --port 8000
+
+# Serve targeted model class
+modelkit serve ChurnClassifier --port 8000
+
+# Serve custom frontend bundle alongside API
+modelkit serve --frontend ./frontend/dist`,
     },
-    defaultPayload: '{\n  "port": 8000\n}',
+    defaultPayload: '{\n  "port": 8000,\n  "target_model": "ChurnClassifier"\n}',
     defaultResponse: {
       status: 'server_active',
       endpoints: {
-        'GET /': 'Interactive Web Playground',
+        'GET /': 'ModelKit API Root & Metadata',
         'GET /docs': 'Swagger UI Documentation',
         'GET /openapi.json': 'OpenAPI 3.0 Schema',
         'POST /predict': 'Inference API',
@@ -758,191 +801,274 @@ console.log(data);`,
     },
   },
 
+  'paradigm-scratch': {
+    id: 'paradigm-scratch',
+    category: 'The 3 AI Paradigms',
+    title: 'Paradigm 1: Training from Scratch (Customer Churn)',
+    subtitle: 'End-to-end tabular classification pipeline using scikit-learn on the Kaggle Telecom Churn dataset.',
+    badge: { label: 'PARADIGM 1', variant: 'pillar' },
+    signatureOrPath: 'from modelkit import Dataset, Model, BaseTrainer, BaseEvaluator, BaseInference',
+    breadcrumbs: ['Paradigms', 'From Scratch'],
+    overview:
+      'Training from scratch provides total algorithmic freedom over feature transformations, loss functions, and optimization schedules. In this real-world guide, we build a production customer churn classifier using the Kaggle Telecom Churn dataset (https://www.kaggle.com/datasets/barun2104/telecom-churn). Required dependencies: modelkit install scikit-learn pandas.',
+    djangoAnalogy:
+      'Like building custom Django models, managers, and service layers with full database index and query control, Training from Scratch gives you total ownership over weights, hyperparameters, and persistence.',
+    whyCode: [
+      {
+        component: 'data.py (TelecomChurnDataset)',
+        reason:
+          'Handles tabular ingestion and normalization of customer account metrics. Decoupling data loading from model logic ensures you can switch from pandas to streaming loaders without modifying training or inference code.',
+      },
+      {
+        component: 'model.py (ChurnClassifier)',
+        reason:
+          'Subclasses Model, inheriting standard predict(), predict_proba(), and save()/load() contracts. Wrapping scikit-learn RandomForest ensures automatic compatibility with ModelKit CLI discovery and REST serving.',
+      },
+      {
+        component: 'trainer.py (ChurnTrainer)',
+        reason:
+          'Isolates data partitioning, classifier fitting, and metric logging from model definitions. Automatically logs train/val metrics and writes model weights to artifacts/churn_classifier.pkl.',
+      },
+      {
+        component: 'evaluator.py (ChurnEvaluator)',
+        reason:
+          'Calculates precision, recall, and F1-score on evaluation splits. This provides objective validation benchmarks before deploying models to production.',
+      },
+      {
+        component: 'inference.py (ChurnInference)',
+        reason:
+          'The production API gateway. Translates incoming raw JSON payloads into feature vectors, executes risk scoring, and returns actionable business recommendations (e.g. "Intervene (High Churn Risk)").',
+      },
+    ],
+    conventions: [
+      {
+        title: 'Kaggle Telecom Churn Dataset',
+        description:
+          'Download telecom_churn.csv from https://www.kaggle.com/datasets/barun2104/telecom-churn and place into data/. Features: AccountWeeks, ContractRenewal, CustServCalls, MonthlyCharge, RoamMins, Churn.',
+      },
+      {
+        title: 'Required Dependencies',
+        description: 'Run `modelkit install scikit-learn pandas` (or `pip install scikit-learn pandas`).',
+      },
+      {
+        title: 'Zero-Path Execution',
+        description:
+          '`modelkit train ChurnClassifier` fits the classifier and writes weights to artifacts/. `modelkit serve` exposes the prediction API.',
+      },
+    ],
+    snippets: {
+      files: SCRATCH_FILES,
+      cli: `# 1. Install dependencies & auto-manage .venv
+modelkit install scikit-learn pandas
+
+# 2. Initialize project (or in current folder with .)
+modelkit init telecom_churn
+cd telecom_churn
+
+# 3. Download Kaggle dataset to data/telecom_churn.csv:
+# https://www.kaggle.com/datasets/barun2104/telecom-churn
+
+# 4. Validate and train
+modelkit data validate
+modelkit train ChurnClassifier
+
+# 5. Evaluate benchmark metrics
+modelkit evaluate ChurnClassifier
+
+# 6. Serve inference API
+modelkit serve ChurnClassifier --port 8000`,
+      curl: `curl -X POST http://127.0.0.1:8000/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "AccountWeeks": 128,
+    "ContractRenewal": 1,
+    "DataPlan": 1,
+    "DataUsage": 2.7,
+    "CustServCalls": 1,
+    "DayMins": 265.1,
+    "DayCalls": 110,
+    "MonthlyCharge": 89.0,
+    "OverageFee": 9.87,
+    "RoamMins": 10.0
+  }'`,
+    },
+    guideSteps: SCRATCH_GUIDE_STEPS,
+    defaultPayload: '{\n  "AccountWeeks": 128,\n  "ContractRenewal": 1,\n  "DataPlan": 1,\n  "DataUsage": 2.7,\n  "CustServCalls": 1,\n  "DayMins": 265.1,\n  "DayCalls": 110,\n  "MonthlyCharge": 89.0,\n  "OverageFee": 9.87,\n  "RoamMins": 10.0\n}',
+    defaultResponse: {
+      churn_prediction: 0,
+      churn_risk: 0.12,
+      decision: "Retain (Low Risk)",
+      status: "success",
+    },
+  },
+
   'paradigm-rag': {
     id: 'paradigm-rag',
     category: 'The 3 AI Paradigms',
-    title: 'Paradigm 1: RAG (Retrieval-Augmented Generation)',
-    subtitle: 'Ground foundation models in your private documents without retraining.',
-    badge: { label: 'PARADIGM 1', variant: 'pillar' },
-    signatureOrPath: 'from modelkit.rag import Document, RAGModel, MemoryVectorStore',
+    title: 'Paradigm 2: RAG (Retrieval-Augmented Generation)',
+    subtitle: 'Ground foundation models in private documents with semantic vector search and zero hallucination.',
+    badge: { label: 'PARADIGM 2', variant: 'pillar' },
+    signatureOrPath: 'from modelkit.rag import Document, TextSplitter, MemoryVectorStore, VectorRetriever, RAGModel',
     breadcrumbs: ['Paradigms', 'RAG'],
     overview:
-      'The RAG paradigm turns enterprise knowledge into actionable intelligence. ModelKit provides first-class Document loaders, text chunkers, zero-dependency embeddings, vector stores, and RAGModel. Because RAGModel subclasses Model, it works out of the box with modelkit evaluate and modelkit serve.',
+      'The RAG paradigm turns enterprise knowledge into actionable intelligence without expensive retraining. ModelKit provides first-class Document loaders, sliding-window text chunkers, zero-dependency TF-IDF or dense embeddings, in-memory vector stores, and RAGModel. Required dependencies: modelkit install sentence-transformers numpy.',
     djangoAnalogy:
-      'In Django, you query the database using ORM QuerySets. In ModelKit RAG, you query your knowledge base using BaseRetriever and VectorStores to inject context passages into generation prompts.',
+      'In Django, you query the database using ORM QuerySets. In ModelKit RAG, you query your knowledge base using VectorRetriever to dynamically inject relevant context passages into generation prompts.',
+    whyCode: [
+      {
+        component: 'data.py (KnowledgeDocsDataset)',
+        reason:
+          'Ingests Markdown and text documents from data/ and chunks them with TextSplitter into overlapping passages, ensuring passages fit embedding model context limits without truncation.',
+      },
+      {
+        component: 'model.py (SupportDocRAG)',
+        reason:
+          'Subclasses RAGModel and binds MemoryVectorStore with VectorRetriever. Ranks documents using cosine similarity and synthesizes grounded answers with source citations.',
+      },
+      {
+        component: 'trainer.py (IndexBuilderTrainer)',
+        reason:
+          'Indexes document passages and calculates semantic embeddings as an offline background step, ensuring production queries execute with sub-10ms latency.',
+      },
+      {
+        component: 'inference.py (RAGInference)',
+        reason:
+          'Production HTTP endpoint executing queries over the vector index and returning answers alongside verifiable document citations and confidence scores.',
+      },
+    ],
+    conventions: [
+      {
+        title: 'Document Ingestion',
+        description:
+          'Place Markdown (.md) or Text (.txt) knowledge articles in data/. TextSplitter chunks them into sliding windows automatically.',
+      },
+      {
+        title: 'Required Dependencies',
+        description: 'Run `modelkit install sentence-transformers numpy` (or `pip install sentence-transformers numpy`).',
+      },
+      {
+        title: 'Built-in Vector Store',
+        description:
+          'MemoryVectorStore supports cosine similarity search and built-in save/load serialization to artifacts/rag_index.json.',
+      },
+    ],
     snippets: {
-      python: `from modelkit import Document, RAGModel, MemoryVectorStore, VectorRetriever, TfidfEmbedding
+      files: RAG_FILES,
+      cli: `# 1. Install dependencies into managed .venv
+modelkit install sentence-transformers numpy
 
-# 1. Index your knowledge base
-embedder = TfidfEmbedding()
-store = MemoryVectorStore(embedding_fn=embedder)
-docs = [
-    Document(content="Refunds are processed within 14 business days.", metadata={"topic": "billing"}),
-    Document(content="Remote work requires manager pre-approval.", metadata={"topic": "hr"})
-]
-store.add_documents(docs)
+# 2. Scaffold project
+modelkit init support_rag
+cd support_rag
 
-# 2. Bind Retriever to RAGModel
-retriever = VectorRetriever(vector_store=store, embedding_fn=embedder)
+# 3. Add knowledge documents to data/ (e.g. data/faq.md)
 
-class KnowledgeBot(RAGModel):
-    pass
+# 4. Build vector index
+modelkit train SupportDocRAG
 
-bot = KnowledgeBot("kb_bot", retriever=retriever)
-result = bot.predict("What is the refund timeline?")
-print(result["answer"])
-print(result["sources"])
-`,
+# 5. Serve knowledge API
+modelkit serve SupportDocRAG --port 8000`,
+      curl: `curl -X POST http://127.0.0.1:8000/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "How does zero-path execution work?", "top_k": 3}'`,
     },
-    defaultPayload: '{\n  "query": "What is the refund timeline?",\n  "top_k": 3\n}',
+    guideSteps: RAG_GUIDE_STEPS,
+    defaultPayload: '{\n  "query": "How does zero-path execution work?",\n  "top_k": 3\n}',
     defaultResponse: {
-      query: "What is the refund timeline?",
-      answer: "Based on billing: Refunds are processed within 14 business days...",
+      query: "How does zero-path execution work?",
+      answer: "Based on faq.md: ModelKit supports zero-path CLI execution by resolving conventions...",
       sources: [
         {
-          id: "doc-1",
-          content: "Refunds are processed within 14 business days.",
-          metadata: { topic: "billing" },
-          score: 0.9412
-        }
-      ]
+          source: "faq.md",
+          snippet: "ModelKit supports zero-path CLI execution...",
+          score: 0.9412,
+        },
+      ],
+      status: "success",
     },
   },
 
   'paradigm-adapters': {
     id: 'paradigm-adapters',
     category: 'The 3 AI Paradigms',
-    title: 'Paradigm 2: Fine-Tuning (LoRA & Adapters)',
-    subtitle: 'Parameter-efficient adaptation with lightweight delta checkpoints.',
-    badge: { label: 'PARADIGM 2', variant: 'pillar' },
+    title: 'Paradigm 3: Fine-Tuning (LoRA & PEFT Adapters)',
+    subtitle: 'Parameter-efficient adaptation with lightweight delta checkpoints (~50MB instead of 14GB).',
+    badge: { label: 'PARADIGM 3', variant: 'pillar' },
     signatureOrPath: 'from modelkit.adapters import AdapterConfig, AdapterModel, AdapterTrainer',
     breadcrumbs: ['Paradigms', 'Fine-Tuning'],
     overview:
-      'Fine-tuning adapts a base foundation model to your specific domain using low-rank adapters (LoRA/QLoRA). AdapterModel freezes the base model and saves only lightweight delta weights (~50MB instead of 14GB), saving gigabytes of storage and bandwidth.',
+      'Fine-tuning specializes base foundation models for custom instruction-following using low-rank adapters (LoRA/QLoRA). AdapterModel freezes the base model and saves exclusively lightweight delta weights (~50KB to 50MB instead of 14GB+), saving gigabytes of storage and compute. Required dependencies: modelkit install torch peft.',
     djangoAnalogy:
-      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the database table. In ModelKit, AdapterModel attaches trainable delta matrices to a frozen base model.',
+      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the underlying database table. In ModelKit, AdapterModel attaches trainable delta matrices to a frozen base model.',
+    whyCode: [
+      {
+        component: 'data.py (InstructionDataset)',
+        reason:
+          'Loads instruction-following prompt/response pairs from data/instructions.json and formats them into standard instruction templates (### Instruction: ... ### Response:).',
+      },
+      {
+        component: 'model.py (LoRAInstructionModel)',
+        reason:
+          'Subclasses AdapterModel and freezes base foundation weights via freeze_base_model(). Attaches low-rank trainable matrices based on AdapterConfig(r=8, alpha=16.0).',
+      },
+      {
+        component: 'trainer.py (AdapterInstructionTrainer)',
+        reason:
+          'Optimizes exclusively adapter matrices, drastically reducing GPU VRAM requirements and compute overhead.',
+      },
+      {
+        component: 'Lightweight Checkpointing',
+        reason:
+          'Saves only low-rank delta weights (~50KB to 50MB instead of duplicating 14GB base weights), enabling instant multi-tenant model switching.',
+      },
+      {
+        component: 'inference.py (AdapterInference)',
+        reason:
+          'Dynamically serves fine-tuned responses on top of the shared foundation model via POST /predict.',
+      },
+    ],
+    conventions: [
+      {
+        title: 'Instruction Data Convention',
+        description: 'Place instructions.json in data/ containing prompt/instruction/output records.',
+      },
+      {
+        title: 'Required Dependencies',
+        description: 'Run `modelkit install torch peft` (or `pip install torch peft`).',
+      },
+      {
+        title: 'Delta Persistence',
+        description:
+          'Calling model.save() writes adapter_config.json and adapter_model.json without duplicating the foundation model.',
+      },
+    ],
     snippets: {
-      python: `from modelkit.adapters import AdapterConfig, AdapterModel, AdapterTrainer
+      files: ADAPTER_FILES,
+      cli: `# 1. Install dependencies into managed .venv
+modelkit install torch peft
 
-# 1. Configure LoRA hyperparameters
-config = AdapterConfig(
-    r=16,
-    alpha=32.0,
-    target_modules=["q_proj", "v_proj"],
-    base_model_path="meta-llama/Llama-3-8B"
-)
+# 2. Initialize project
+modelkit init lora_instructions
+cd lora_instructions
 
-# 2. Attach adapter to base foundation model
-class DomainAdapter(AdapterModel):
-    pass
+# 3. Add instruction dataset to data/instructions.json
 
-model = DomainAdapter("customer_support_lora", adapter_config=config, base_model=base_llm)
+# 4. Fine-tune adapter weights
+modelkit train LoRAInstructionModel
 
-# 3. Train adapter weights (base model remains frozen)
-trainer = AdapterTrainer()
-trainer.fit(model, dataset, epochs=3)
-
-# 4. Saves ONLY the 50MB adapter weights!
-model.save("models/adapter_checkpoint")
-`,
+# 5. Serve fine-tuned API
+modelkit serve LoRAInstructionModel --port 8000`,
+      curl: `curl -X POST http://127.0.0.1:8000/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"instruction": "Classify support ticket", "input": "Cannot access billing portal"}'`,
     },
-    defaultPayload: '{\n  "adapter_type": "lora",\n  "rank": 16,\n  "alpha": 32.0\n}',
+    guideSteps: ADAPTER_GUIDE_STEPS,
+    defaultPayload: '{\n  "instruction": "Summarize customer feedback.",\n  "input": "Great support response time."\n}',
     defaultResponse: {
-      status: "trained",
-      adapter_size: "48.2 MB",
-      base_model_frozen: true,
-      checkpoint: "models/adapter_checkpoint/adapter_model.pkl"
-    },
-  },
-
-  'paradigm-scratch': {
-    id: 'paradigm-scratch',
-    category: 'The 3 AI Paradigms',
-    title: 'Paradigm 3: Training from Scratch',
-    subtitle: 'Bespoke neural architectures, full optimization loops, and custom weights.',
-    badge: { label: 'PARADIGM 3', variant: 'pillar' },
-    signatureOrPath: 'from modelkit import Model, Dataset, BaseTrainer',
-    breadcrumbs: ['Paradigms', 'From Scratch'],
-    overview:
-      'Training from scratch provides full control over custom architectures, optimizers, learning rate schedules, and loss functions. Ideal for custom tabular, vision, or specialized neural models.',
-    djangoAnalogy:
-      'Writing custom Django ORM models and custom managers from scratch when generic solutions do not fit.',
-    snippets: {
-      python: `from modelkit import Model, Dataset, BaseTrainer
-
-class CustomerDataset(Dataset):
-    filename = "customers.csv"
-
-class ChurnClassifier(Model):
-    dataset = CustomerDataset
-
-    def predict(self, inputs, **kwargs):
-        return [0.85]  # Probability of churn
-
-class ChurnTrainer(BaseTrainer):
-    def fit(self, model, dataset, **kwargs):
-        # Full training loop
-        return {"status": "completed", "final_loss": 0.042}
-`,
-    },
-    defaultPayload: '{\n  "epochs": 10,\n  "learning_rate": 0.001\n}',
-    defaultResponse: {
-      status: "completed",
-      loss: 0.042,
-      accuracy: 0.962
-    },
-  },
-
-  'arch-multiapp': {
-    id: 'arch-multiapp',
-    category: 'Multi-App Architecture',
-    title: 'Django-Style Multi-App Project Architecture',
-    subtitle: 'Organize enterprise AI projects into modular, decoupled applications.',
-    badge: { label: 'ARCHITECTURE', variant: 'util' },
-    signatureOrPath: 'my_ai/ [mlkit.json, knowledge/, classifier/]',
-    breadcrumbs: ['Architecture', 'Multi-App'],
-    overview:
-      'Just like a Django project consists of multiple apps (users/, blog/, billing/), an enterprise ModelKit project can contain multiple AI apps (knowledge/ for RAG, classifier/ for fine-tuning) sharing the same config and CLI lifecycle.',
-    djangoAnalogy:
-      'Direct equivalent of Django INSTALLED_APPS in settings.py: mlkit.json declares "apps": ["knowledge", "classifier"].',
-    snippets: {
-      cli: `# 1. Scaffold project
-modelkit init enterprise_ai
-cd enterprise_ai
-
-# 2. Add modular AI apps
-modelkit startapp knowledge      # RAG app
-modelkit startapp classifier     # Classifier / fine-tune app
-`,
-    },
-    defaultPayload: '{\n  "name": "enterprise_ai",\n  "apps": ["knowledge", "classifier"]\n}',
-    defaultResponse: {
-      project: "enterprise_ai",
-      apps: ["knowledge", "classifier"],
-      layout: "modular_multi_app"
-    },
-  },
-
-  'cli-startapp': {
-    id: 'cli-startapp',
-    category: 'Zero-Path CLI Commands',
-    title: 'modelkit startapp <app_name>',
-    subtitle: 'Scaffolds a new modular AI application directory within the project.',
-    badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'modelkit startapp <app_name>',
-    breadcrumbs: ['CLI', 'startapp'],
-    overview:
-      'Scaffolds a new modular AI application directory with standard contracts (data.py, model.py, trainer.py, evaluator.py, inference.py) and registers the app in mlkit.json.',
-    djangoAnalogy:
-      'Direct equivalent of python manage.py startapp <app_name> in Django.',
-    snippets: {
-      cli: 'modelkit startapp knowledge',
-    },
-    defaultPayload: '{\n  "command": "modelkit startapp",\n  "app_name": "knowledge"\n}',
-    defaultResponse: {
+      prompt: "### Instruction:\nSummarize customer feedback.\n\n### Response:",
+      response: "[LoRA-Adapted Llama-3-8B (r=8)]: Completed successfully.",
+      adapter_rank: 8,
       status: "success",
-      app_created: "knowledge",
-      files: ["data.py", "model.py", "trainer.py", "evaluator.py", "inference.py"]
     },
   },
 };

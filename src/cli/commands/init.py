@@ -48,11 +48,12 @@ def run_init(
     for d in convention_dirs:
         (dest_root / d).mkdir(parents=True, exist_ok=True)
 
-    # 2. Generate mlkit.json manifest (clean, no task_type or apps)
+    # 2. Generate modelkit.json manifest (clean, no task_type or apps)
     manifest_data = {
         "name": project_name,
         "version": "0.1.0",
         "entrypoint": project_name,
+        "dependencies": [],
         "config": {
             "device": "auto",
             "batch_size": 32,
@@ -66,7 +67,7 @@ def run_init(
         },
     }
 
-    manifest_path = dest_root / "mlkit.json"
+    manifest_path = dest_root / "modelkit.json"
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest_data, f, indent=2)
 
@@ -76,17 +77,90 @@ def run_init(
 
     _create_starter_files(package_dir, project_name)
 
+    # 4. Generate ModelKit project headers (py.typed, .modelkit/ workspace config)
+    _generate_project_headers(dest_root, package_dir, project_name)
+
     print(f"\n  {C.DIM}Scaffolding project in{C.RESET} {dest_root}...")
     steps = []
     if dest_root != Path.cwd():
         steps.append(f"cd {project_name}")
     steps.extend([
+        "modelkit install <pandas scikit-learn ...>",
         "modelkit doctor",
         "modelkit train",
     ])
     print(next_steps(steps))
 
     return 0
+
+
+def _generate_project_headers(dest_root: Path, package_dir: Path, project_name: str) -> None:
+    """Generates ModelKit project header files that improve IDE integration.
+
+    Creates:
+    - ``py.typed``: PEP 561 marker enabling mypy/pyright/pylance to find type annotations.
+    - ``.modelkit/workspace.json``: Workspace configuration used by the ModelKit language server,
+      VS Code extension, and IDE plugins to resolve module paths, entrypoint, and conventions.
+
+    These files are cosmetic/IDE-only — they don't affect CLI execution.
+    """
+    import json as _json
+
+    # 1. PEP 561 py.typed marker — enables IDE type checking on project package
+    py_typed = package_dir / "py.typed"
+    if not py_typed.exists():
+        py_typed.write_text("", encoding="utf-8")
+
+    # 2. .modelkit/ workspace config directory
+    mk_dir = dest_root / ".modelkit"
+    mk_dir.mkdir(parents=True, exist_ok=True)
+
+    workspace_config = {
+        "version": "1",
+        "project": project_name,
+        "entrypoint": project_name,
+        "python": {
+            "venv": ".venv",
+            "extraPaths": [".", project_name],
+        },
+        "conventions": {
+            "data": f"{project_name}/data.py",
+            "model": f"{project_name}/model.py",
+            "trainer": f"{project_name}/trainer.py",
+            "evaluator": f"{project_name}/evaluator.py",
+            "inference": f"{project_name}/inference.py",
+            "config": f"{project_name}/config.py",
+        },
+    }
+
+    workspace_file = mk_dir / "workspace.json"
+    if not workspace_file.exists():
+        workspace_file.write_text(_json.dumps(workspace_config, indent=2), encoding="utf-8")
+
+    # 3. .vscode/settings.json — configures Python extension to use the project's .venv
+    vscode_dir = dest_root / ".vscode"
+    vscode_dir.mkdir(parents=True, exist_ok=True)
+    vscode_settings = vscode_dir / "settings.json"
+    if not vscode_settings.exists():
+        settings = {
+            "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+            "python.analysis.extraPaths": [".", project_name],
+            "python.analysis.typeCheckingMode": "basic",
+        }
+        vscode_settings.write_text(_json.dumps(settings, indent=2), encoding="utf-8")
+
+    # 4. pyrightconfig.json — configures Pyright / Pylance for the project root
+    pyright_config = dest_root / "pyrightconfig.json"
+    if not pyright_config.exists():
+        pyright = {
+            "venvPath": ".",
+            "venv": ".venv",
+            "pythonPath": ".venv/bin/python",
+            "extraPaths": [".", project_name],
+            "include": [project_name],
+            "ignore": ["__pycache__"],
+        }
+        pyright_config.write_text(_json.dumps(pyright, indent=2), encoding="utf-8")
 
 
 def _create_starter_files(package_dir: Path, project_name: str) -> None:

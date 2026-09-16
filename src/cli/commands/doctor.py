@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from cli.discovery import find_project_root
+from cli.discovery import find_project_root, get_manifest_path
 from cli.ui import C, arrow, check, cross, vite_header
 from modelkit.config import BaseConfig
 
@@ -26,14 +26,14 @@ def run_doctor(project_root: Optional[Path] = None) -> int:
 
     # Hardware accelerator resolution
     root = project_root or find_project_root()
-    manifest_path = root / "mlkit.json" if root else None
+    manifest_path = get_manifest_path(root) if root else None
     config = BaseConfig(config_path=manifest_path)
     device = config.resolve_device()
 
     # Project manifest check
     if root and manifest_path and manifest_path.is_file():
         name = config.to_dict().get("name", "unnamed")
-        manifest_str = f"mlkit.json ({name})"
+        manifest_str = f"{manifest_path.name} ({name})"
     else:
         manifest_str = "Not in project root (cwd fallback)"
 

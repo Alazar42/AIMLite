@@ -1,12 +1,13 @@
 """Lifecycle Pillar Header: modelkit/lifecycle.py
 
-Coordinates the execution pipeline across training workflows,
-evaluation runs, checkpointing, and local serving.
+Defines BaseTrainer, BaseEvaluator, and BaseInference abstract base classes
+for training orchestration, evaluation benchmarking, and live model serving.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -15,6 +16,23 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 if TYPE_CHECKING:
     from modelkit.data import Dataset
     from modelkit.models import Model
+
+
+def _model_weights_filename(model: Any) -> str:
+    """Derives a per-model weights filename from the model class name.
+
+    Converts CamelCase class names to snake_case.pkl so each model class
+    gets a unique, predictable weights file:
+
+        ChurnClassifier     → churn_classifier.pkl
+        UserModel           → user_model.pkl
+        BertEncoder         → bert_encoder.pkl
+        AppModel            → app_model.pkl
+    """
+    cls_name = type(model).__name__
+    # Insert underscore before each uppercase letter that follows a lowercase letter or digit
+    snake = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", cls_name)
+    return f"{snake.lower()}.pkl"
 
 
 class BaseTrainer(ABC):
@@ -67,10 +85,25 @@ class BaseTrainer(ABC):
 
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. Trigger model weights persistence into models/ folder
-        model.save(checkpoint_dir)
+        # 1. Derive a per-model weights filename from the model class name.
+        # Each trained model class gets its own uniquely-named checkpoint file:
+        #   ChurnClassifier  → models/churn_classifier.pkl
+        #   UserModel        → models/user_model.pkl
+        weights_filename = _model_weights_filename(model)
+        weights_file = checkpoint_dir / weights_filename
 
-        # 2. Write experiment snapshot metadata into experiments/ folder
+        # 2. Trigger model weights persistence.
+        # First try passing the directory (allows save() to name files itself).
+        # If save() tries to open() the directory as a file (IsADirectoryError),
+        # gracefully retry with the explicit per-model .pkl file path.
+        try:
+            model.save(weights_file)
+        except IsADirectoryError:
+            # Custom save() opened the destination as a directory;
+            # retry with a parent dir so it can create its own files.
+            model.save(checkpoint_dir)
+
+        # 3. Write experiment snapshot metadata into experiments/ folder
         exp_target_dir = None
         if experiments_dir is not None:
             exp_target_dir = Path(experiments_dir)
@@ -83,11 +116,15 @@ class BaseTrainer(ABC):
 
         metadata = {
             "model_name": getattr(model, "name", "unknown"),
+            "model_class": type(model).__name__,
+            "weights_file": str(weights_file),
             "step": step,
             "timestamp": time.time(),
             "config": getattr(model, "config", {}),
         }
-        metadata_file = exp_target_dir / "experiment_snapshot.json"
+        # Name snapshot after the model class so multiple models don't clobber each other
+        snapshot_name = f"{type(model).__name__.lower()}_snapshot.json"
+        metadata_file = exp_target_dir / snapshot_name
         try:
             with open(metadata_file, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=2)

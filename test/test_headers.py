@@ -31,8 +31,11 @@ class DummyModel(Model):
 
     def save(self, destination, **kwargs):
         dest = Path(destination)
-        dest.mkdir(parents=True, exist_ok=True)
-        (dest / "weights.txt").write_text("1.0")
+        # If given a file path (e.g. dummy_model.pkl), write to the parent directory.
+        # If given a directory, write directly into it.
+        target_dir = dest.parent if dest.suffix else dest
+        target_dir.mkdir(parents=True, exist_ok=True)
+        (target_dir / "weights.txt").write_text("1.0")
 
     def load(self, source, **kwargs):
         self.weights = {"param": 1.0}
@@ -112,7 +115,8 @@ class TestModelKitHeaders(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             chk_path = trainer.checkpoint(m, tmpdir, step=1)
             self.assertTrue(chk_path.exists())
-            self.assertTrue((chk_path / "experiment_snapshot.json").exists())
+            # Snapshot is now named after the model class: DummyModel → dummymodel_snapshot.json
+            self.assertTrue((chk_path / "dummymodel_snapshot.json").exists())
             self.assertTrue((chk_path / "weights.txt").exists())
 
     def test_lifecycle_evaluator(self):
@@ -207,7 +211,8 @@ class TestModelKitHeaders(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             m.save(tmpdir)
-            self.assertTrue((Path(tmpdir) / "model.pkl").is_file())
+            # Model.save() uses snake_case class name: DefaultModel → default_model.pkl
+            self.assertTrue((Path(tmpdir) / "default_model.pkl").is_file())
 
             m2 = DefaultModel("default_m")
             m2.load(tmpdir)
@@ -290,7 +295,7 @@ class TestModelKitHeaders(unittest.TestCase):
         import json
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            manifest_path = Path(tmpdir) / "mlkit.json"
+            manifest_path = Path(tmpdir) / "modelkit.json"
             manifest_data = {
                 "name": "enterprise_ai",
                 "apps": ["knowledge", "classifier"],
