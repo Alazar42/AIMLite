@@ -1,16 +1,29 @@
 """Data Pillar: modelkit/data.py
 
 Standardizes dataset ingestion, schema validation, and partition contracts.
+Supports CSV, TSV, JSON, JSONL, Parquet, TXT, and custom data formats.
 """
 
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 if TYPE_CHECKING:
     from modelkit.config import BaseConfig
+
+SUPPORTED_EXTENSIONS = [
+    ".csv",
+    ".tsv",
+    ".tab",
+    ".json",
+    ".jsonl",
+    ".parquet",
+    ".pq",
+    ".txt",
+]
 
 
 class Dataset:
@@ -67,6 +80,18 @@ class Dataset:
         self._val_data: Optional[List[Dict[str, Any]]] = None
         self._test_data: Optional[List[Dict[str, Any]]] = None
 
+    def __len__(self) -> int:
+        """Returns the number of ingested records."""
+        return len(self._data)
+
+    def __iter__(self):
+        """Allows iteration over records."""
+        return iter(self._data)
+
+    def __getitem__(self, index: Any) -> Any:
+        """Enables indexing over dataset records."""
+        return self._data[index]
+
     def _get_data_dir(self) -> Path:
         """Resolves the data directory from config or fallback cwd/data."""
         if self.config is not None and hasattr(self.config, "data_dir"):
@@ -75,6 +100,7 @@ class Dataset:
 
     def _resolve_file_path(self, source: Optional[Union[str, Path]] = None) -> Optional[Path]:
         """Resolves the dataset file path using explicit source, filename attribute, or convention."""
+        # 1. Explicit source passed to load()
         if source is not None:
             s_path = Path(source)
             if s_path.is_file():
@@ -84,6 +110,7 @@ class Dataset:
                 return data_dir / s_path.name
             return s_path
 
+        # 2. Explicit self.source attribute on class or instance
         if self.source is not None:
             s_path = Path(self.source)
             if s_path.is_file():
@@ -99,80 +126,229 @@ class Dataset:
 
         data_dir = self._get_data_dir()
 
+        # 3. Explicit self.filename attribute on class or instance
         if self.filename is not None:
-            return data_dir / self.filename
+            target = data_dir / self.filename
+            if target.is_file():
+                return target
+            if Path(self.filename).is_file():
+                return Path(self.filename)
 
-        # Convention checks in data_dir
-        if data_dir.is_dir():
-            for name in ["dataset.csv", "train.csv", "data.csv"]:
-                candidate = data_dir / name
-                if candidate.is_file():
+        if not data_dir.is_dir():
+            return None
+
+        # 4. Convention: Check if file matches class name or dataset name
+        class_name = self.__class__.__name__.lower()
+        cleaned_class = class_name.replace("dataset", "").replace("_data", "").strip("_")
+        dataset_name = self.name.lower().replace("dataset", "").replace("_data", "").strip("_")
+
+        name_candidates = [
+            n for n in [cleaned_class, class_name, dataset_name, self.name.lower()]
+            if n and n != "dataset" and n != "app"
+        ]
+
+        for base in name_candidates:
+            for ext in SUPPORTED_EXTENSIONS:
+                cand = data_dir / f"{base}{ext}"
+                if cand.is_file() and cand.stat().st_size > 0:
+                    return cand
+
+        # 5. Standard conventions: dataset.*, train.*, data.*
+        for base in ["dataset", "train", "data"]:
+            for ext in SUPPORTED_EXTENSIONS:
+                candidate = data_dir / f"{base}{ext}"
+                if candidate.is_file() and candidate.stat().st_size > 0:
                     return candidate
 
-            csv_files = sorted(data_dir.glob("*.csv"))
-            if csv_files:
-                return csv_files[0]
+        # 6. Any non-empty supported data file in data/
+        non_empty_files = [
+            f for f in sorted(data_dir.iterdir())
+            if f.is_file()
+            and f.suffix.lower() in SUPPORTED_EXTENSIONS
+            and f.stat().st_size > 0
+            and not f.name.startswith(".")
+        ]
+        if non_empty_files:
+            return non_empty_files[0]
+
+        # 7. Fallback: Any file in data/ (even if 0 bytes, so load() can inspect and report cleanly)
+        all_files = [
+            f for f in sorted(data_dir.iterdir())
+            if f.is_file() and not f.name.startswith(".")
+        ]
+        if all_files:
+            return all_files[0]
 
         return None
 
     def _read_file(self, file_path: Path, **kwargs: Any) -> Tuple[List[str], List[Dict[str, Any]]]:
-        """Reads a tabular data file (CSV) and returns (columns, records)."""
+        """Reads a data file of any supported format (CSV, TSV, JSON, JSONL, Parquet, TXT) and returns (columns, records)."""
         if not file_path.is_file():
             return [], []
 
+        # Safe guard: empty file check
+        try:
+            if file_path.stat().st_size == 0:
+                return [], []
+        except OSError:
+            return [], []
+
+        ext = file_path.suffix.lower()
+
+        # 1. JSON (array of objects or key-value object)
+        if ext == ".json":
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = json.load(f)
+                if isinstance(content, list):
+                    if content and isinstance(content[0], dict):
+                        return list(content[0].keys()), content
+                    return ["value"], [{"value": item} for item in content]
+                elif isinstance(content, dict):
+                    return list(content.keys()), [content]
+            except Exception:
+                pass
+
+        # 2. JSONL (newline-delimited JSON)
+        elif ext == ".jsonl":
+            try:
+                records: List[Dict[str, Any]] = []
+                cols: List[str] = []
+                with open(file_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            obj = json.loads(line)
+                            if isinstance(obj, dict):
+                                if not cols:
+                                    cols = list(obj.keys())
+                                records.append(obj)
+                return cols, records
+            except Exception:
+                pass
+
+        # 3. Parquet
+        elif ext in [".parquet", ".pq"]:
+            try:
+                import pandas as pd
+
+                df = pd.read_parquet(file_path, **kwargs)
+                return list(df.columns), df.to_dict(orient="records")
+            except Exception:
+                pass
+
+        # 4. TSV / Tab-delimited
+        elif ext in [".tsv", ".tab"]:
+            try:
+                import pandas as pd
+
+                df = pd.read_csv(file_path, sep="\t", **kwargs)
+                if not df.empty:
+                    return list(df.columns), df.to_dict(orient="records")
+            except Exception:
+                pass
+
+            try:
+                with open(file_path, "r", encoding="utf-8", newline="") as f:
+                    reader = csv.DictReader(f, delimiter="\t")
+                    cols = list(reader.fieldnames or [])
+                    records = list(reader)
+                    return cols, records
+            except Exception:
+                pass
+
+        # 5. CSV
+        elif ext == ".csv":
+            try:
+                import pandas as pd
+
+                df = pd.read_csv(file_path, **kwargs)
+                if not df.empty or len(df.columns) > 0:
+                    return list(df.columns), df.to_dict(orient="records")
+            except Exception:
+                pass
+
+            try:
+                with open(file_path, "r", encoding="utf-8", newline="") as f:
+                    reader = csv.DictReader(f)
+                    cols = list(reader.fieldnames or [])
+                    records = list(reader)
+                    return cols, records
+            except Exception:
+                pass
+
+        # 6. TXT / Raw text
+        elif ext == ".txt":
+            try:
+                lines = file_path.read_text(encoding="utf-8").splitlines()
+                records = [{"text": line} for line in lines if line.strip()]
+                return ["text"], records
+            except Exception:
+                pass
+
+        # 7. Generic tabular fallback
         try:
             import pandas as pd
 
             df = pd.read_csv(file_path, **kwargs)
             return list(df.columns), df.to_dict(orient="records")
-        except ImportError:
+        except Exception:
             pass
 
-        with open(file_path, "r", encoding="utf-8", newline="") as f:
-            reader = csv.DictReader(f)
-            columns = reader.fieldnames or []
-            records = list(reader)
-        return columns, records
+        return [], []
 
     def load(self, source: Optional[Union[str, Path]] = None, **kwargs: Any) -> Any:
         """Ingests data into memory. Returns loaded records."""
         data_dir = self._get_data_dir()
 
-        # 1. Combine all CSV files in data_dir if combine_all is True
+        # 1. Combine all data files in data_dir if combine_all is True
         if self.combine_all and data_dir.is_dir():
-            csv_files = sorted(data_dir.glob("*.csv"))
+            data_files = sorted([
+                f for f in data_dir.iterdir()
+                if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS and not f.name.startswith(".")
+            ])
             all_records: List[Dict[str, Any]] = []
             cols: List[str] = []
-            for cf in csv_files:
+            for cf in data_files:
                 c, r = self._read_file(cf, **kwargs)
-                if not cols:
+                if not cols and c:
                     cols = c
                 all_records.extend(r)
             self.columns = cols
             self._data = all_records
             return self._data
 
-        # 2. Check for pre-split convention: train.csv and test.csv in data_dir
-        train_file = data_dir / "train.csv"
-        if train_file.is_file() and not self.filename and source is None and self.source is None:
-            cols, train_records = self._read_file(train_file, **kwargs)
-            self.columns = cols
-            self._train_data = train_records
-            self._data = list(train_records)
+        # 2. Check for pre-split convention: train.* and test.* in data_dir
+        if not self.filename and source is None and self.source is None and data_dir.is_dir():
+            train_file = None
+            for ext in SUPPORTED_EXTENSIONS:
+                cand = data_dir / f"train{ext}"
+                if cand.is_file() and cand.stat().st_size > 0:
+                    train_file = cand
+                    break
 
-            test_file = data_dir / "test.csv"
-            if test_file.is_file():
-                _, test_records = self._read_file(test_file, **kwargs)
-                self._test_data = test_records
+            if train_file is not None:
+                cols, train_records = self._read_file(train_file, **kwargs)
+                self.columns = cols
+                self._train_data = train_records
+                self._data = list(train_records)
 
-            val_file = data_dir / "val.csv"
-            if not val_file.is_file():
-                val_file = data_dir / "validation.csv"
-            if val_file.is_file():
-                _, val_records = self._read_file(val_file, **kwargs)
-                self._val_data = val_records
+                for ext in SUPPORTED_EXTENSIONS:
+                    test_file = data_dir / f"test{ext}"
+                    if test_file.is_file():
+                        _, test_records = self._read_file(test_file, **kwargs)
+                        self._test_data = test_records
+                        break
 
-            return self._data
+                for base in ["val", "validation"]:
+                    for ext in SUPPORTED_EXTENSIONS:
+                        val_file = data_dir / f"{base}{ext}"
+                        if val_file.is_file():
+                            _, val_records = self._read_file(val_file, **kwargs)
+                            self._val_data = val_records
+                            break
+
+                return self._data
 
         # 3. Standard file resolution
         resolved_path = self._resolve_file_path(source)
@@ -221,10 +397,7 @@ class Dataset:
         return train_data, val_data, test_data
 
     def validate(self) -> bool:
-        """Verifies that dataset exists and contains records or valid source."""
-        if self._data and len(self._data) > 0:
-            return True
-        if self.source is not None or self.filename is not None:
-            return True
-        self.load()
+        """Verifies that dataset exists and contains records."""
+        if not self._data:
+            self.load()
         return bool(self._data and len(self._data) > 0)

@@ -145,3 +145,33 @@ class BaseInference(ABC):
             Formatted prediction output dictionary or list.
         """
         ...
+
+    def get_routes(self) -> Dict[str, Any]:
+        """Returns a mapping of HTTP routes ('METHOD /path') to handler callables.
+
+        Developers can override this method to expose custom endpoints,
+        such as 'POST /api/v1/predict', 'GET /status', etc.
+
+        Returns:
+            Dictionary mapping route strings (e.g. 'POST /predict') to handler functions.
+        """
+        return {
+            "POST /predict": self.run,
+            "POST /": self.run,
+            "GET /health": self.health,
+            "GET /info": self.info,
+        }
+
+    def health(self, model: Optional[Model] = None, **kwargs: Any) -> Dict[str, Any]:
+        """Health check probe handler."""
+        return {
+            "status": "healthy",
+            "model": getattr(model, "name", "model") if model else "model",
+        }
+
+    def info(self, model: Optional[Model] = None, **kwargs: Any) -> Dict[str, Any]:
+        """Metadata info endpoint handler."""
+        return {
+            "model": getattr(model, "name", "model") if model else "model",
+            "version": "0.1.0",
+        }

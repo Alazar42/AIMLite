@@ -24,8 +24,10 @@ uv sync
 ### Essential Commands
 
 ```bash
-uv run cli        # Run CLI entrypoint (src/cli/main.py)
-uv run test       # Run core test suite (test/main.py)
+uv run cli --help             # Run CLI entrypoint via uv
+./build/modelkit --help       # Run standalone compiled CLI binary directly
+uv run test                   # Run core test suite (test/main.py)
+uv run pytest                 # Full pytest runner
 ```
 
 ---
@@ -33,8 +35,9 @@ uv run test       # Run core test suite (test/main.py)
 ## Project Status
 
 - [x] **Headers and core frameworks** (`src/modelkit/`)
-- [x] **API Docs** (`api_docs/`)
-- [ ] **CLI implementation** (`src/cli/` — in progress by @atocodes)
+- [x] **API Docs & Interactive Portal** (`api_docs/`)
+- [x] **Zero-Path CLI Implementation** (`src/cli/`)
+- [x] **Standalone Executable & Build System** (`build/modelkit`)
 
 ---
 
@@ -46,16 +49,35 @@ uv run test       # Run core test suite (test/main.py)
 - **`BaseTrainer`, `BaseEvaluator`, `BaseInference`**: Standardized ML lifecycle hooks.
 - **`BaseConfig`**: Automated hardware device detection (`cuda`, `mps`, `cpu`) and project path resolver.
 - **Registry**: Subclasses auto-register under the hood via `__init_subclass__` (zero decorator boilerplate).
+- **RAG & Adapters**: Native support for Document loaders, vector stores, retrievers, and LoRA/PEFT parameter adapters.
 
-### 2. CLI Implementation (`src/cli/`)
-The CLI entrypoint scaffold is ready at `src/cli/main.py`.
+### 2. Zero-Path CLI (`src/cli/` & `build/modelkit`)
 
-> **Guide for @atocodes**: Launch the interactive documentation portal to view the specifications, expected inputs/outputs, and command designs:
-> ```bash
-> cd api_docs
-> npm install && npm run dev
-> ```
-> Open **`http://localhost:5173/`** to follow the visual blueprint for `init`, `train`, `evaluate`, `serve`, `doctor`, `install`, and `data`.
+ModelKit CLI provides zero-path execution with Django-style conventions:
+
+| Command | Description |
+|---|---|
+| `modelkit init [project_name]` | Scaffolds a new project with convention layout (`data/`, `models/`, `artifacts/`, etc.) and starter files. |
+| `modelkit install <pkgs...>` | Safely installs packages into project `.venv` using `uv` (or `pip`). |
+| `modelkit data validate` | Validates dataset schema, record count, columns, and split readiness. |
+| `modelkit train [class_name]` | Executes training cycle for a specific model class or single project model. |
+| `modelkit evaluate [class_name]` | Automatically loads checkpoint and calculates benchmark metrics for target model. |
+| `modelkit serve [class_name] [--port 8000] [--frontend <dir>]` | Launches local HTTP inference API (`/predict`, `/health`, `/docs`, custom routes) and optional custom frontend hosting. |
+| `modelkit doctor` | Inspects environment health, hardware accelerators (`cuda`, `mps`, `cpu`), and directory permissions. |
+
+### 3. Standalone Executable & Build System (`build/`)
+
+The standalone binary is packaged using Python's native `zipapp` format:
+
+```bash
+# Compile/rebuild the standalone executable:
+python3 build/build_cli.py
+# or
+./build/build_cli.sh
+
+# Run directly:
+./build/modelkit doctor
+```
 
 ---
 
