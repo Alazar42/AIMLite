@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.1] - 2026-09-18
+
+### Changed
+- **Developer Freedom & Flexibility**:
+  - Clarified that developers have complete freedom to use any data file name and any format (CSV, Parquet, JSON, JSONL, text, TSV).
+  - Reframed paradigms as unconstrained reference templates, supporting any ML framework (scikit-learn, PyTorch, TensorFlow, Hugging Face, pure Python).
+  - Cleaned up CLI and API documentation.
+
+---
+
 ## [0.1.0] - 2026-09-18
 
 ### Changed
