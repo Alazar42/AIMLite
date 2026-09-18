@@ -128,20 +128,15 @@ AIMLite is completely unopinionated about your modeling choices and does not for
 - **Computer Vision & Multimodal** (torchvision, timm, albumentations)
 - **Reinforcement Learning & Custom Heuristics**
 
-To jumpstart your development, AIMLite provides 3 complete, copy-pasteable **reference templates** demonstrating how to organize different workflows:
+You can use **any file name** and **any data format** across all workflows. Simply declare `filename = "<your_filename>"` on your `Dataset` class or pass `source` directly.
 
-### Reference Template 1: Classical Tabular ML (Customer Churn Classifier)
+The following reference implementations in `docs/examples/` are simply starting templates to demonstrate project structure — you are free to adapt, replace, or build completely custom workflows:
 
-Bespoke tabular architectures, full optimization loops, and custom weights.
+### Reference Template 1: Tabular ML (e.g. Churn Classifier)
 
-- **Dataset**: Kaggle Telecom Churn Dataset ([Kaggle Source](https://www.kaggle.com/datasets/barun2104/telecom-churn))
-- **Required Dependencies**:
-  ```bash
-  aimlite install scikit-learn pandas
-  # or
-  pip install scikit-learn pandas
-  ```
-- **Example Files**: [`docs/examples/churn_scratch/`](docs/examples/churn_scratch/)
+Demonstrates a standard supervised learning workflow with feature preprocessing, scikit-learn models, and metric evaluation. You can use any tabular format (CSV, Parquet, TSV, etc.) with any filename you choose.
+
+- **Example Implementation**: [`docs/examples/churn_scratch/`](docs/examples/churn_scratch/)
   - `data.py`: `TelecomChurnDataset(Dataset)` declaring `filename = "telecom_churn.csv"` with automatic 80/10/10 train/val/test splits.
   - `model.py`: `ChurnClassifier(Model)` wrapping scikit-learn's `RandomForestClassifier`.
   - `trainer.py`: `ChurnTrainer(BaseTrainer)` fitting and saving weights to `models/churn_classifier.pkl`.
@@ -151,7 +146,7 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
   ```bash
   # Initialize (new directory or in-place with .)
   aimlite init churn_model && cd churn_model
-  # Place your CSV file in data/
+  # Place your data file in data/
   aimlite data validate
   aimlite train ChurnClassifier
   aimlite evaluate ChurnClassifier
@@ -160,19 +155,12 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
 
 ---
 
-### Reference Template 2: RAG (Knowledge Base Question Answering)
+### Reference Template 2: Knowledge Base & RAG
 
-Ground foundation models in enterprise documents with semantic vector search and zero hallucination.
+Demonstrates semantic vector retrieval and context augmentation. Ingest text, Markdown, CSV, JSON, or any document source with any filename you choose.
 
-- **Data Formats**: Markdown (`.md`) or text (`.txt`) documents placed in `data/`.
-- **Required Dependencies**:
-  ```bash
-  aimlite install sentence-transformers numpy
-  # or
-  pip install sentence-transformers numpy
-  ```
-- **Example Files**: [`docs/examples/knowledge_rag/`](docs/examples/knowledge_rag/)
-  - `data.py`: `KnowledgeDocsDataset(Dataset)` chunking documents with `TextSplitter`.
+- **Example Implementation**: [`docs/examples/knowledge_rag/`](docs/examples/knowledge_rag/)
+  - `data.py`: `KnowledgeDocsDataset(Dataset)` chunking text passages.
   - `model.py`: `SupportDocRAG(RAGModel)` binding `MemoryVectorStore` and `VectorRetriever`.
   - `trainer.py`: `IndexBuilderTrainer(BaseTrainer)` building and persisting the vector index to `models/rag_index.json`.
   - `inference.py`: `RAGInference(BaseInference)` querying the retriever and synthesizing grounded answers with citations.
@@ -186,26 +174,19 @@ Ground foundation models in enterprise documents with semantic vector search and
 
 ---
 
-### Reference Template 3: Fine-Tuning (LoRA & PEFT Adapters)
+### Reference Template 3: Fine-Tuning & Adapters (LoRA & PEFT)
 
-Parameter-efficient adaptation with lightweight delta checkpoints (~50KB to 50MB instead of 14GB+).
+Demonstrates parameter-efficient fine-tuning with lightweight delta checkpoints. Ingest any prompt format, CSV, Parquet, JSON, JSONL, or custom schema with any filename you choose.
 
-- **Data Formats**: Prompt-response instruction pairs in any JSON file (e.g. `data/instructions.json` or `data/my_prompts.jsonl`).
-- **Required Dependencies**:
-  ```bash
-  aimlite install torch peft
-  # or
-  pip install torch peft
-  ```
-- **Example Files**: [`docs/examples/instruction_adapter/`](docs/examples/instruction_adapter/)
-  - `data.py`: `InstructionDataset(Dataset)` formatting instruction prompt templates.
-  - `model.py`: `LoRAInstructionModel(AdapterModel)` configuring `AdapterConfig(r=8, alpha=16.0)` and freezing foundation weights.
+- **Example Implementation**: [`docs/examples/instruction_adapter/`](docs/examples/instruction_adapter/)
+  - `data.py`: `InstructionDataset(Dataset)` preparing fine-tuning data.
+  - `model.py`: `LoRAInstructionModel(AdapterModel)` configuring adapter rank and alpha.
   - `trainer.py`: `AdapterInstructionTrainer(BaseTrainer)` optimizing low-rank delta matrices.
   - `inference.py`: `AdapterInference(BaseInference)` executing fine-tuned generations via `POST /predict`.
 - **Workflow**:
   ```bash
   aimlite init lora_app && cd lora_app
-  # Place your instructions file in data/
+  # Place your dataset file in data/
   aimlite train LoRAInstructionModel
   aimlite serve LoRAInstructionModel --port 8000
   ```
