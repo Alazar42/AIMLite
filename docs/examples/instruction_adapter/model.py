@@ -2,7 +2,8 @@
 
 LoRA / PEFT AdapterModel subclass.
 Attaches lightweight low-rank adaptation layers onto foundation models,
-freezing base weights and persisting solely adapter weight deltas.
+freezing base weights, calculating trainable parameter savings, and
+persisting solely adapter weight deltas.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from aimlite.adapters import AdapterConfig, AdapterModel
+from aimlite.adapters import AdapterConfig, AdapterModel, LoRALayer
 
 
 class LoRAInstructionModel(AdapterModel):
@@ -37,15 +38,26 @@ class LoRAInstructionModel(AdapterModel):
             name=name,
             config=config,
             adapter_config=adapter_cfg,
+            base_model_name=base_model_name,
             **kwargs,
         )
         self.base_model_name = base_model_name
         self.freeze_base_model()
-        # In-memory mock adapter delta weights
-        self.adapter_weights = {
-            "q_proj.lora_A": [[0.01 * (i + j) for j in range(8)] for i in range(16)],
-            "q_proj.lora_B": [[0.02 * (i - j) for j in range(16)] for i in range(8)],
+
+        # Initialize real mathematical LoRA layers
+        self.lora_layers = {
+            "q_proj": LoRALayer(in_features=64, out_features=64, r=lora_rank, alpha=lora_alpha),
+            "v_proj": LoRALayer(in_features=64, out_features=64, r=lora_rank, alpha=lora_alpha),
         }
+
+        # Multi-adapter setup: register a specialized coding adapter
+        coding_cfg = AdapterConfig(
+            r=16,
+            alpha=32.0,
+            target_modules=["q_proj", "v_proj", "k_proj"],
+            base_model_path=base_model_name,
+        )
+        self.add_adapter("code_specialist", coding_cfg)
 
     def predict(self, inputs: Any, **kwargs: Any) -> Dict[str, Any]:
         """Generates fine-tuned response for input instruction/prompt."""
@@ -62,14 +74,26 @@ class LoRAInstructionModel(AdapterModel):
         else:
             prompt_header = f"### Instruction:\n{instruction}\n\n### Response:"
 
-        # Generate response using adapter-tuned weights
-        response = f"[LoRA-Adapted {self.base_model_name} (r={self.adapter_config.r})]: Processed instruction successfully."
+        active_adapter_info = self.adapter_manager.get_active_adapter()
+        active_name = active_adapter_info[0] if active_adapter_info else "base_frozen"
+        active_r = active_adapter_info[1].r if active_adapter_info else 0
+
+        # Simulate low-rank transformation representation
+        sample_vec = [float((i + len(instruction)) % 10) / 10.0 for i in range(64)]
+        q_out = self.lora_layers["q_proj"].forward(sample_vec)
+
+        response = (
+            f"[LoRA-Adapted {self.base_model_name} (adapter='{active_name}', r={active_r})]: "
+            f"Processed instruction successfully."
+        )
 
         return {
             "prompt": prompt_header,
             "response": response,
-            "adapter_rank": self.adapter_config.r,
+            "adapter_name": active_name,
+            "adapter_rank": active_r,
             "base_model": self.base_model_name,
+            "latent_sample": [round(v, 4) for v in q_out[:4]],
         }
 
     def save(self, destination: Union[str, Path], **kwargs: Any) -> None:
@@ -77,40 +101,23 @@ class LoRAInstructionModel(AdapterModel):
 
         Saves ~50KB instead of duplicating gigabytes of base model weights.
         """
+        super().save(destination, **kwargs)
+
         dest_dir = Path(destination)
-        dest_dir.mkdir(parents=True, exist_ok=True)
-
-        # 1. Save adapter config
-        config_path = dest_dir / "adapter_config.json"
-        if self.adapter_config:
-            self.adapter_config.save(config_path)
-
-        # 2. Save adapter weights delta
+        # Also maintain adapter_model.json for legacy backwards-compatibility in examples
         weights_path = dest_dir / "adapter_model.json"
         with open(weights_path, "w", encoding="utf-8") as f:
-            json.dump(self.adapter_weights, f, indent=2)
-
-        # 3. Save metadata
-        meta_path = dest_dir / "adapter_metadata.json"
-        with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump({
-                "name": self.name,
-                "base_model": self.base_model_name,
-                "type": "lora",
-                "delta_size_kb": round(weights_path.stat().st_size / 1024, 2) if weights_path.exists() else 0,
-            }, f, indent=2)
+            layer_repr = {
+                k: {
+                    "lora_A_shape": [len(v.lora_A), len(v.lora_A[0])],
+                    "lora_B_shape": [len(v.lora_B), len(v.lora_B[0])],
+                    "scaling": v.scaling,
+                    "merged": v.merged,
+                }
+                for k, v in self.lora_layers.items()
+            }
+            json.dump(layer_repr, f, indent=2)
 
     def load(self, source: Union[str, Path], **kwargs: Any) -> None:
         """Loads adapter configuration and weight deltas from disk."""
-        src_dir = Path(source)
-        if not src_dir.is_dir():
-            return
-
-        cfg_path = src_dir / "adapter_config.json"
-        if cfg_path.is_file():
-            self.adapter_config = AdapterConfig.load(cfg_path)
-
-        w_path = src_dir / "adapter_model.json"
-        if w_path.is_file():
-            with open(w_path, "r", encoding="utf-8") as f:
-                self.adapter_weights = json.load(f)
+        super().load(source, **kwargs)

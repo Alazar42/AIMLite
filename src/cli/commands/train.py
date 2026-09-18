@@ -321,13 +321,6 @@ def run_train(
     print(arrow("Dataset", f"{dataset_cls.__name__} ({len(records):,} records)"))
     print(arrow("Device", device.upper()))
 
-    if resumed_from:
-        try:
-            rel_resumed = resumed_from.relative_to(ctx.root_dir)
-        except ValueError:
-            rel_resumed = resumed_from
-        print(arrow("Resumed", f"Loaded past checkpoint ({rel_resumed})"))
-
     if hasattr(model, "get_trainable_parameters"):
         stats = model.get_trainable_parameters()
         if stats and stats.get("trainable_params"):
