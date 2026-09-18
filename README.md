@@ -55,7 +55,7 @@ uv sync
 
 ```bash
 uv run aimlite --help         # Run AIMLite CLI
-uv run test                   # Run core test suite (41 tests)
+uv run test                   # Run core test suite (42 tests)
 uv run pytest                 # Full pytest runner
 ```
 
@@ -63,31 +63,74 @@ uv run pytest                 # Full pytest runner
 
 ## Project Structure Conventions
 
-When you run `aimlite init <project_name>` (or `aimlite init .`), AIMLite scaffolds a standardized convention layout:
+When you run `aimlite init <project_name>` (or `aimlite init .`), AIMLite scaffolds a clean, convention-based layout:
 
 ```text
 my_project/
-├── .aimlite/
-│   └── workspace.json        # IDE workspace configuration
-├── .venv/                    # Project-isolated virtual environment
-├── data/                     # Raw datasets (.csv, .json, .txt, .md)
-├── models/                   # Model architectures and saved weights (*.pkl)
+├── .venv/                    # Project-isolated virtual environment with aimlite pre-installed
+├── data/                     # Raw datasets (.csv, .json, .parquet, .txt, etc.)
+├── models/                   # Serialized production models and saved weights (*.pkl)
 ├── experiments/              # Training run logs and metric snapshots (*.json)
-├── data.py                   # Dataset definitions extending Dataset
-├── model.py                  # Model classes extending Model / RAGModel / AdapterModel
-├── trainer.py                # Training lifecycle hooks extending BaseTrainer
-├── evaluator.py              # Metric benchmarks extending BaseEvaluator
-├── inference.py              # Inference pipeline extending BaseInference
-└── aimlite.json              # Project config, dependencies manifest, and paradigms
+├── artifacts/                # Generated artifacts, vector embeddings, and outputs
+├── checkpoints/              # Model weights and checkpoint deltas
+├── my_project/               # Python application package
+│   ├── __init__.py
+│   ├── config.py             # Project configuration
+│   ├── data.py               # Dataset definitions extending Dataset
+│   ├── model.py              # Model classes extending Model
+│   ├── trainer.py            # Training lifecycle hooks extending BaseTrainer
+│   ├── evaluator.py          # Metric benchmarks extending BaseEvaluator
+│   └── inference.py          # Inference pipeline extending BaseInference
+└── aimlite.json              # Project manifest and config
 ```
 
 ---
 
-## The 3 AI Paradigms
+## Flexible Dataset Naming (Any File, Any Format)
 
-AIMLite is architected around the 3 primary modern machine learning paradigms:
+AIMLite gives developers total freedom over data file names and formats. You are never forced to use specific filenames or conventions.
 
-### Paradigm 1: Training from Scratch (Customer Churn Classifier)
+Simply declare `filename = "<your_filename>"` on your `Dataset` subclass to match any file placed inside `data/`:
+
+```python
+from aimlite import Dataset
+
+class UserChurnDataset(Dataset):
+    filename = "telecom_churn.csv"  # Name it whatever you want!
+
+class MonthlySalesDataset(Dataset):
+    filename = "sales_q4_2026.parquet"
+
+class LogAuditDataset(Dataset):
+    filename = "system_logs.jsonl"
+```
+
+You can also pass `source` directly when instantiating or calling `load()`:
+
+```python
+dataset = UserChurnDataset(source="data/custom_export.csv")
+```
+
+### Supported Data Formats Out-of-the-Box
+- **Tabular**: CSV (`.csv`), TSV (`.tsv`, `.tab`)
+- **JSON**: Structured JSON arrays (`.json`), newline-delimited JSON (`.jsonl`)
+- **Columnar**: Apache Parquet (`.parquet`, `.pq`)
+- **Text & Docs**: Plain text (`.txt`), Markdown (`.md`)
+
+---
+
+## Unconstrained Modeling & Reference Templates
+
+AIMLite is completely unopinionated about your modeling choices and does not force you into fixed paradigms. You can build **any** AI or machine learning system you want:
+- **Classical & Tabular ML** (scikit-learn, XGBoost, LightGBM, CatBoost)
+- **Deep Neural Networks** (PyTorch, TensorFlow, JAX)
+- **LLMs & Prompt Pipelines** (LangChain, LlamaIndex, vLLM, Ollama, Hugging Face)
+- **Computer Vision & Multimodal** (torchvision, timm, albumentations)
+- **Reinforcement Learning & Custom Heuristics**
+
+To jumpstart your development, AIMLite provides 3 complete, copy-pasteable **reference templates** demonstrating how to organize different workflows:
+
+### Reference Template 1: Classical Tabular ML (Customer Churn Classifier)
 
 Bespoke tabular architectures, full optimization loops, and custom weights.
 
@@ -99,7 +142,7 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
   pip install scikit-learn pandas
   ```
 - **Example Files**: [`docs/examples/churn_scratch/`](docs/examples/churn_scratch/)
-  - `data.py`: `TelecomChurnDataset(Dataset)` ingesting `data/telecom_churn.csv` with automatic 80/10/10 train/val/test splits.
+  - `data.py`: `TelecomChurnDataset(Dataset)` declaring `filename = "telecom_churn.csv"` with automatic 80/10/10 train/val/test splits.
   - `model.py`: `ChurnClassifier(Model)` wrapping scikit-learn's `RandomForestClassifier`.
   - `trainer.py`: `ChurnTrainer(BaseTrainer)` fitting and saving weights to `models/churn_classifier.pkl`.
   - `evaluator.py`: `ChurnEvaluator(BaseEvaluator)` calculating accuracy, precision, recall, and F1 score.
@@ -108,7 +151,7 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
   ```bash
   # Initialize (new directory or in-place with .)
   aimlite init churn_model && cd churn_model
-  # Place telecom_churn.csv in data/
+  # Place your CSV file in data/
   aimlite data validate
   aimlite train ChurnClassifier
   aimlite evaluate ChurnClassifier
@@ -117,7 +160,7 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
 
 ---
 
-### Paradigm 2: RAG (Knowledge Base Question Answering)
+### Reference Template 2: RAG (Knowledge Base Question Answering)
 
 Ground foundation models in enterprise documents with semantic vector search and zero hallucination.
 
@@ -136,18 +179,18 @@ Ground foundation models in enterprise documents with semantic vector search and
 - **Workflow**:
   ```bash
   aimlite init support_rag && cd support_rag
-  # Place knowledge documents in data/
+  # Place your knowledge documents in data/
   aimlite train SupportDocRAG
   aimlite serve SupportDocRAG --port 8000
   ```
 
 ---
 
-### Paradigm 3: Fine-Tuning (LoRA & PEFT Adapters)
+### Reference Template 3: Fine-Tuning (LoRA & PEFT Adapters)
 
 Parameter-efficient adaptation with lightweight delta checkpoints (~50KB to 50MB instead of 14GB+).
 
-- **Data Formats**: Prompt-response instruction pairs in `data/instructions.json` or `data/instructions.jsonl`.
+- **Data Formats**: Prompt-response instruction pairs in any JSON file (e.g. `data/instructions.json` or `data/my_prompts.jsonl`).
 - **Required Dependencies**:
   ```bash
   aimlite install torch peft
@@ -162,7 +205,7 @@ Parameter-efficient adaptation with lightweight delta checkpoints (~50KB to 50MB
 - **Workflow**:
   ```bash
   aimlite init lora_app && cd lora_app
-  # Place instructions.json in data/
+  # Place your instructions file in data/
   aimlite train LoRAInstructionModel
   aimlite serve LoRAInstructionModel --port 8000
   ```
@@ -214,9 +257,9 @@ npm run build   # Build production bundle into api_docs/dist/
 
 ## Testing
 
-AIMLite includes a comprehensive 41-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, and end-to-end paradigm workflows:
+AIMLite includes a comprehensive 42-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, and end-to-end paradigm workflows:
 
 ```bash
 uv run test        # Core test runner
-uv run pytest      # Full pytest runner (41/41 passing)
+uv run pytest      # Full pytest runner (42/42 passing)
 ```

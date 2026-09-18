@@ -16,10 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CLI binary and commands renamed to `aimlite` (e.g. `aimlite init`, `aimlite train`, `aimlite serve`).
   - Documentation, examples, and API docs migrated to reference `aimlite`.
 
-- **Explicit Dataset Filename Requirement**:
-  - Removed implicit file auto-loading and convention guessing from `Dataset`.
-  - Developers explicitly declare `filename = "<filename>"` (or provide `source`) on `Dataset` subclasses.
-  - `aimlite data validate` now validates explicitly declared files and alerts if a dataset lacks a `filename`.
+- **Flexible Dataset Filenames**:
+  - Developers have complete freedom over dataset file naming and formats.
+  - Simply declare `filename = "<any_filename>"` (or provide `source`) on `Dataset` subclasses without any convention restrictions.
+  - Supports CSV, TSV, JSON, JSONL, Parquet, and text files out-of-the-box.
+  - `aimlite data validate` checks the declared file and reports partition readiness.
 
 - **Clean Project Scaffolding**:
   - `aimlite init` automatically creates `.venv` and installs `aimlite` directly into the environment.
@@ -27,10 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Native IDE autocompletion and type-checking powered by bundled PEP 561 `py.typed`.
 
 ### Added
-- Multi-app architecture with support for 3 modern AI paradigms:
-  - **Scratch Training** (Classical ML / Custom Architectures).
-  - **Adapters & Parameter-Efficient Fine-Tuning** (LoRA deltas).
-  - **Retrieval-Augmented Generation (RAG)** (Document chunking, embedding index, and context generation).
+- Flexible reference workflow templates without forcing developers into fixed paradigms:
+  - **Classical & Tabular ML** (e.g. Scikit-learn, XGBoost, Custom Architectures).
+  - **Adapters & Parameter-Efficient Fine-Tuning** (e.g. LoRA deltas).
+  - **Retrieval-Augmented Generation (RAG)** (Document chunking, vector embeddings, and retrieval).
+  - Support for any custom modeling framework (PyTorch, TensorFlow, JAX, Hugging Face, pure Python).
 - Fast standalone executable CLI generator (`build/build_cli.py`).
 - Automatic environment health checks (`aimlite doctor`).
 - Built-in local inference API server with Swagger documentation (`aimlite serve`).
