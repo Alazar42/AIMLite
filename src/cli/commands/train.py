@@ -162,6 +162,8 @@ def _resolve_target_model_and_dataset(
 
 def run_train(
     target: Optional[str] = None,
+    resume: Optional[Union[str, bool]] = None,
+    checkpoint_dir: Optional[Union[str, Path]] = None,
     project_root: Optional[Path] = None,
     **kwargs: Any,
 ) -> int:
@@ -169,6 +171,8 @@ def run_train(
 
     Args:
         target: Optional specific Model or Dataset class name to train.
+        resume: Optional past checkpoint path, or True to resume from latest checkpoint.
+        checkpoint_dir: Optional custom destination directory to save checkpoints.
         project_root: Optional project root path.
 
     Returns:
@@ -191,12 +195,41 @@ def run_train(
         print(f"{cross(err or 'Could not resolve model and dataset for training.')}\n")
         return 1
 
-    # 3. Instantiate model
+    # 3. Instantiate model and handle resuming from past checkpoint if requested
     try:
         model = model_cls(name=model_cls.__name__, config=ctx.config.to_dict())
     except Exception as e:
         print(f"{cross(f'Model instantiation error ({model_cls.__name__}): {e}')}\n")
         return 1
+
+    resumed_from = None
+    if resume:
+        from cli.commands.evaluate import _discover_checkpoint
+        if isinstance(resume, str) and resume.strip():
+            resume_path = Path(resume)
+            if not resume_path.is_absolute():
+                resume_path = ctx.root_dir / resume_path
+            if not resume_path.exists():
+                print(f"{cross(f'Specified resume checkpoint path does not exist: {resume}')}\n")
+                return 1
+            try:
+                model.load(resume_path)
+                resumed_from = resume_path
+            except Exception as e:
+                print(f"{cross(f'Failed to load resume checkpoint ({resume}): {e}')}\n")
+                return 1
+        else:
+            # Auto-discover latest checkpoint for this model class
+            latest_ckpt = _discover_checkpoint(ctx, model_cls=model_cls)
+            if latest_ckpt:
+                try:
+                    model.load(latest_ckpt)
+                    resumed_from = latest_ckpt
+                except Exception as e:
+                    print(f"{cross(f'Failed to load latest checkpoint ({latest_ckpt}): {e}')}\n")
+                    return 1
+            else:
+                print(f"  {C.YELLOW}Notice: No past checkpoint found for {model_cls.__name__}; starting from scratch.{C.RESET}")
 
     # 4. Ingest and validate dataset
     try:
@@ -263,16 +296,20 @@ def run_train(
     elapsed = round(time.time() - start_time, 2)
 
     # 7. Save model weights and experiment snapshot
+    dest_dir = Path(checkpoint_dir) if checkpoint_dir else ctx.models_dir
+    if not dest_dir.is_absolute():
+        dest_dir = ctx.root_dir / dest_dir
+
     ckpt_dir = trainer.checkpoint(
         model=model,
-        destination=ctx.models_dir,
+        destination=dest_dir,
         experiments_dir=ctx.experiments_dir,
     )
 
     # Derive the per-model filenames matching lifecycle.checkpoint() convention
     weights_filename = _model_weights_filename(model)
     snapshot_filename = f"{model_cls.__name__.lower()}_snapshot.json"
-    weights_file = ctx.models_dir / weights_filename
+    weights_file = dest_dir / weights_filename
     snapshot_file = ctx.experiments_dir / snapshot_filename
 
     # Fall back to the checkpoint dir path if the per-model file wasn't written
@@ -283,6 +320,13 @@ def run_train(
     print(arrow("Model", model_cls.__name__))
     print(arrow("Dataset", f"{dataset_cls.__name__} ({len(records):,} records)"))
     print(arrow("Device", device.upper()))
+
+    if resumed_from:
+        try:
+            rel_resumed = resumed_from.relative_to(ctx.root_dir)
+        except ValueError:
+            rel_resumed = resumed_from
+        print(arrow("Resumed", f"Loaded past checkpoint ({rel_resumed})"))
 
     if hasattr(model, "get_trainable_parameters"):
         stats = model.get_trainable_parameters()

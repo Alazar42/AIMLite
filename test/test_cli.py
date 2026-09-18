@@ -684,6 +684,111 @@ class TelecomChurnDataset(Dataset):
             venv_python = proj_dir / ".venv" / "Scripts" / "python.exe"
         self.assertTrue(venv_python.exists(), "Expected python executable inside .venv")
 
+    def test_data_validate_with_filename_targets(self):
+        """Tests aimlite data validate <filename> across class names, filenames, paths, and raw data files."""
+        proj_name = "target_val_proj"
+        os.chdir(self.test_root)
+        run_init(project_name=proj_name)
+        proj_dir = self.test_root / proj_name
+        os.chdir(proj_dir)
+
+        # 1. Create data files
+        (proj_dir / "data" / "telecom_churn.csv").write_text("Churn,Tenure\n0,12\n1,3\n", encoding="utf-8")
+        (proj_dir / "data" / "unbound_records.csv").write_text("id,val,label\n1,100,0\n2,200,1\n3,300,0\n", encoding="utf-8")
+
+        # 2. Bind telecom_churn.csv in data.py
+        data_py = proj_dir / proj_name / "data.py"
+        data_py.write_text('''from aimlite import Dataset
+
+class TelecomChurnDataset(Dataset):
+    filename = "telecom_churn.csv"
+''', encoding="utf-8")
+
+        # A: Validate by class name
+        code_cls = cli_main(["data", "validate", "TelecomChurnDataset"])
+        self.assertEqual(code_cls, 0)
+
+        # B: Validate by declared filename
+        code_fn = cli_main(["data", "validate", "telecom_churn.csv"])
+        self.assertEqual(code_fn, 0)
+
+        # C: Validate by path with 'data/' prefix
+        code_path = cli_main(["data", "validate", "data/telecom_churn.csv"])
+        self.assertEqual(code_path, 0)
+
+        # D: Validate unbound file in data/ directly (not bound to any class yet)
+        code_unbound = cli_main(["data", "validate", "unbound_records.csv"])
+        self.assertEqual(code_unbound, 0)
+
+        # E: Validate non-existent file returns 1
+        code_missing = cli_main(["data", "validate", "non_existent.csv"])
+        self.assertEqual(code_missing, 1)
+
+    def test_train_resume_and_checkpoint_controls(self):
+        """Tests aimlite train with --resume, --checkpoint-dir, and evaluate with --checkpoint."""
+        proj_name = "resume_train_proj"
+        os.chdir(self.test_root)
+        run_init(project_name=proj_name)
+        proj_dir = self.test_root / proj_name
+        os.chdir(proj_dir)
+
+        (proj_dir / "data" / "data.csv").write_text("feat,target\n1,0\n2,1\n", encoding="utf-8")
+        data_py = proj_dir / proj_name / "data.py"
+        data_py.write_text('''from aimlite import Dataset
+
+class ResumeDataset(Dataset):
+    filename = "data.csv"
+''', encoding="utf-8")
+
+        model_py = proj_dir / proj_name / "model.py"
+        model_py.write_text('''from aimlite import Model
+from .data import ResumeDataset
+
+class ResumeModel(Model):
+    dataset = ResumeDataset
+    def __init__(self, name="resume_model", config=None):
+        super().__init__(name, config)
+        self.step_count = 0
+    def predict(self, inputs, **kwargs):
+        return inputs
+    def save(self, destination, **kwargs):
+        from pathlib import Path
+        p = Path(destination)
+        if not p.suffix:
+            p = p / "resume_model.pkl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(f"step={self.step_count}")
+    def load(self, source, **kwargs):
+        from pathlib import Path
+        p = Path(source)
+        if p.is_dir():
+            p = p / "resume_model.pkl"
+        if p.is_file():
+            text = p.read_text()
+            if "step=" in text:
+                self.step_count = int(text.split("step=")[1].split()[0])
+''', encoding="utf-8")
+
+        # 1. Initial train
+        code_train = cli_main(["train", "ResumeModel"])
+        self.assertEqual(code_train, 0)
+        self.assertTrue((proj_dir / "models" / "resume_model.pkl").is_file())
+
+        # 2. Resume training with --resume
+        code_resume = cli_main(["train", "ResumeModel", "--resume"])
+        self.assertEqual(code_resume, 0)
+
+        # 3. Train with custom checkpoint dir
+        custom_ckpt_dir = proj_dir / "custom_checkpoints"
+        code_custom = cli_main(["train", "ResumeModel", "--checkpoint-dir", str(custom_ckpt_dir)])
+        self.assertEqual(code_custom, 0)
+        self.assertTrue((custom_ckpt_dir / "resume_model.pkl").is_file())
+
+        # 4. Evaluate with explicit --checkpoint
+        code_eval = cli_main(["evaluate", "ResumeModel", "--checkpoint", str(custom_ckpt_dir / "resume_model.pkl")])
+        self.assertEqual(code_eval, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
+

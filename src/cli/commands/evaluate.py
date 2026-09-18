@@ -14,13 +14,15 @@ from aimlite.models import Model
 
 def run_evaluate(
     target: Optional[str] = None,
+    checkpoint: Optional[str] = None,
     project_root: Optional[Path] = None,
     **kwargs: Any,
 ) -> int:
-    """Discovers latest checkpoint and runs model evaluation for target model class.
+    """Discovers latest checkpoint (or loads explicit checkpoint) and runs model evaluation.
 
     Args:
         target: Optional specific Model class name to evaluate.
+        checkpoint: Optional explicit path to past checkpoint to evaluate.
         project_root: Optional project root path.
 
     Returns:
@@ -34,17 +36,20 @@ def run_evaluate(
         print(f"{cross(str(e))}\n")
         return 1
 
-    # 1. Resolve specific model class
-    model_cls = None
+    # 1. Resolve specific model class to evaluate
     if target:
-        for m_name, m_c in ctx.model_classes.items():
-            if m_name.lower() == target.lower():
-                model_cls = m_c
+        target_lower = target.lower()
+        matched = None
+        for m_name, m_cls in ctx.model_classes.items():
+            if m_name.lower() == target_lower or m_name.lower().replace("model", "") == target_lower:
+                matched = m_cls
                 break
-        if model_cls is None:
-            print(f"{cross(f'Model class \'{target}\' not found in model.py.')}")
-            print(f"  Available models: {', '.join(ctx.model_classes.keys()) or 'None'}\n")
+        if matched is None:
+            print(f"{cross(f'No Model class matching \"{target}\" found in model.py.')}")
+            if ctx.model_classes:
+                print(f"  Available models: {', '.join(ctx.model_classes.keys())}\n")
             return 1
+        model_cls = matched
     else:
         custom_models = {k: v for k, v in ctx.model_classes.items() if k != "AppModel"}
         if len(custom_models) > 1:
@@ -61,7 +66,17 @@ def run_evaluate(
         return 1
 
     # 2. Locate checkpoint or serialized weights for this specific model class
-    checkpoint_file = _discover_checkpoint(ctx, model_cls=model_cls)
+    if checkpoint:
+        explicit_p = Path(checkpoint)
+        if not explicit_p.is_absolute():
+            explicit_p = ctx.root_dir / explicit_p
+        if not explicit_p.exists():
+            print(f"{cross(f'Specified checkpoint path does not exist: {checkpoint}')}\n")
+            return 1
+        checkpoint_file = explicit_p
+    else:
+        checkpoint_file = _discover_checkpoint(ctx, model_cls=model_cls)
+
     if checkpoint_file is None:
         print(f"{cross('No model checkpoint found in models/ or artifacts/.')}")
         print(f"  {C.YELLOW}Run 'aimlite train' first to generate model weights.{C.RESET}\n")

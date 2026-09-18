@@ -31,6 +31,7 @@ def run_serve(
     port: int = 8000,
     host: str = "127.0.0.1",
     frontend: Optional[str] = None,
+    checkpoint: Optional[str] = None,
     project_root: Optional[Path] = None,
     **kwargs,
 ) -> int:
@@ -41,6 +42,7 @@ def run_serve(
         port: Listening port (default 8000).
         host: Listening host (default 127.0.0.1).
         frontend: Optional custom frontend directory (e.g. dist/, frontend/).
+        checkpoint: Optional explicit path to past checkpoint to serve.
         project_root: Optional project root path.
 
     Returns:
@@ -75,7 +77,16 @@ def run_serve(
         custom_app = getattr(mod, "app", None) or getattr(mod, "serve", None)
 
     # 1. Require a trained model checkpoint (unless custom app is explicitly defined)
-    ckpt_file = _discover_checkpoint(ctx)
+    if checkpoint:
+        explicit_p = Path(checkpoint)
+        if not explicit_p.is_absolute():
+            explicit_p = ctx.root_dir / explicit_p
+        if not explicit_p.exists():
+            print(f"\n{cross(f'Specified checkpoint path does not exist: {checkpoint}')}\n")
+            return 1
+        ckpt_file = explicit_p
+    else:
+        ckpt_file = _discover_checkpoint(ctx, model_cls=model_cls)
     if ckpt_file is None and custom_app is None:
         # Inspect data directory to see if dataset exists
         has_data = False

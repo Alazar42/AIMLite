@@ -67,23 +67,57 @@ def run_data_validate(
     if target:
         # Filter by target class name or target filename
         target_lower = target.lower()
+        target_basename = Path(target).name.lower()
         matched = {}
         for name, cls in all_datasets.items():
             fn = getattr(cls, "filename", "") or ""
+            fn_base = Path(fn).name.lower() if fn else ""
             if (
                 name.lower() == target_lower
                 or target_lower in name.lower()
-                or fn.lower() == target_lower
-                or Path(fn).name.lower() == target_lower
+                or (fn and fn.lower() == target_lower)
+                or (fn_base and fn_base == target_lower)
+                or (fn_base and fn_base == target_basename)
+                or (fn and fn.lower() == target_basename)
             ):
                 matched[name] = cls
+
         if matched:
             datasets_to_validate = list(matched.values())
         else:
-            print(f"{cross(f'No registered dataset matching \"{target}\".')}")
-            if all_datasets:
-                print(f"  {C.DIM}Available datasets: {', '.join(all_datasets.keys())}{C.RESET}\n")
-            return 1
+            # Check if target matches a physical data file in data/ or by path
+            candidate_paths = [
+                ctx.data_dir / Path(target).name,
+                ctx.data_dir / target,
+                Path(target),
+                ctx.root_dir / target,
+            ]
+            found_file: Optional[Path] = None
+            for cp in candidate_paths:
+                if cp.is_file() and cp.suffix.lower() in SUPPORTED_DATA_EXTENSIONS:
+                    found_file = cp
+                    break
+
+            if found_file is not None:
+                # Dynamically construct an ad-hoc dataset to validate the file directly
+                file_stem = found_file.stem.replace("-", "_").replace(".", "_")
+
+                class AdHocDataset(Dataset):
+                    filename = found_file.name
+                    source = found_file
+
+                AdHocDataset.__name__ = f"{file_stem.title().replace('_', '')}Dataset"
+                datasets_to_validate = [AdHocDataset]
+                print(f"  {C.CYAN}Validating data file directly:{C.RESET} {found_file.name}\n")
+            else:
+                print(f"{cross(f'No registered dataset or data file matching \"{target}\".')}")
+                if all_datasets:
+                    print(f"  {C.DIM}Available datasets: {', '.join(all_datasets.keys())}{C.RESET}")
+                if data_files:
+                    avail_files = ', '.join(f.name for f in data_files)
+                    print(f"  {C.DIM}Available files in {ctx.data_dir.name}/: {avail_files}{C.RESET}")
+                print()
+                return 1
     else:
         # Prioritize custom user datasets over starter AppDataset
         custom_ds = {k: v for k, v in all_datasets.items() if k != "AppDataset"}

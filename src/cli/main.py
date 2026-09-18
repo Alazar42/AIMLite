@@ -81,14 +81,36 @@ def build_parser() -> argparse.ArgumentParser:
     # train
     train_parser = subparsers.add_parser("train")
     train_parser.add_argument("target", nargs="?", default=None, help="Model or Dataset class name to train (e.g. UserModel)")
+    train_parser.add_argument(
+        "--resume",
+        nargs="?",
+        const=True,
+        default=None,
+        help="Resume training from latest past checkpoint, or specify an explicit checkpoint path",
+    )
+    train_parser.add_argument(
+        "--checkpoint-dir",
+        default=None,
+        help="Custom destination directory to place checkpoints (defaults to models/)",
+    )
 
     # evaluate
     evaluate_parser = subparsers.add_parser("evaluate")
     evaluate_parser.add_argument("target", nargs="?", default=None, help="Model class name to evaluate (e.g. UserModel)")
+    evaluate_parser.add_argument(
+        "--checkpoint",
+        default=None,
+        help="Specific past checkpoint path to evaluate (defaults to discovering latest checkpoint)",
+    )
 
     # serve
     serve_parser = subparsers.add_parser("serve")
     serve_parser.add_argument("target", nargs="?", default=None, help="Model class name to serve (e.g. UserModel)")
+    serve_parser.add_argument(
+        "--checkpoint",
+        default=None,
+        help="Specific past checkpoint path to load and serve (defaults to discovering latest checkpoint)",
+    )
     serve_parser.add_argument("--port", type=int, default=8000, help="Port to listen on (default: 8000)")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     serve_parser.add_argument("--frontend", default=None, help="Custom frontend build directory (e.g. dist/, frontend/)")
@@ -131,13 +153,26 @@ def main(argv: Optional[List[str]] = None) -> int:
         return run_data_validate(target=target)
 
     if args.command == "train":
-        return run_train(target=args.target)
+        return run_train(
+            target=args.target,
+            resume=getattr(args, "resume", None),
+            checkpoint_dir=getattr(args, "checkpoint_dir", None),
+        )
 
     if args.command == "evaluate":
-        return run_evaluate(target=args.target)
+        return run_evaluate(
+            target=args.target,
+            checkpoint=getattr(args, "checkpoint", None),
+        )
 
     if args.command == "serve":
-        return run_serve(target=args.target, port=args.port, host=args.host, frontend=args.frontend)
+        return run_serve(
+            target=args.target,
+            port=args.port,
+            host=args.host,
+            frontend=args.frontend,
+            checkpoint=getattr(args, "checkpoint", None),
+        )
 
     if args.command == "doctor":
         return run_doctor()
