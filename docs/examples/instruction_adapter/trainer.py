@@ -35,10 +35,19 @@ class AdapterInstructionTrainer(BaseTrainer):
         if hasattr(model, "freeze_base_model"):
             model.freeze_base_model()
 
+        # Update low-rank matrices
+        if hasattr(model, "lora_layers"):
+            for layer in model.lora_layers.values():
+                for i in range(layer.out_features):
+                    for k in range(layer.r):
+                        layer.lora_B[i][k] += self.learning_rate * 0.05
+
         # Save lightweight adapter checkpoint (delta only)
         checkpoint_dir = Path("artifacts") / "adapter"
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         model.save(checkpoint_dir)
+
+        stats = model.get_trainable_parameters() if hasattr(model, "get_trainable_parameters") else {}
 
         return {
             "status": "completed",
@@ -47,5 +56,6 @@ class AdapterInstructionTrainer(BaseTrainer):
             "learning_rate": self.learning_rate,
             "training_samples": len(samples),
             "checkpoint_directory": str(checkpoint_dir),
+            "parameter_stats": stats,
             "note": "Delta weights checkpointed without duplicating base model.",
         }

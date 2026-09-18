@@ -11,6 +11,8 @@ from aimlite.adapters import (
     AdapterConfig,
     AdapterModel,
     AdapterTrainer,
+    LoRALayer,
+    MultiAdapterManager,
 )
 from aimlite.config import BaseConfig
 from aimlite.data import Dataset
@@ -57,6 +59,8 @@ __all__ = [
     "AdapterConfig",
     "AdapterModel",
     "AdapterTrainer",
+    "LoRALayer",
+    "MultiAdapterManager",
     "Document",
     "DocumentLoader",
     "TextSplitter",

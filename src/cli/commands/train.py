@@ -283,6 +283,17 @@ def run_train(
     print(arrow("Model", model_cls.__name__))
     print(arrow("Dataset", f"{dataset_cls.__name__} ({len(records):,} records)"))
     print(arrow("Device", device.upper()))
+
+    if hasattr(model, "get_trainable_parameters"):
+        stats = model.get_trainable_parameters()
+        if stats and stats.get("trainable_params"):
+            t_params = stats.get("trainable_params", 0)
+            all_p = stats.get("all_params", 0)
+            t_pct = stats.get("trainable_percent", 0.0)
+            mem_pct = stats.get("memory_reduction_percent", 0.0)
+            print(arrow("PEFT LoRA", f"{t_params:,} / {all_p:,} params trainable ({t_pct}%)"))
+            print(arrow("Efficiency", f"~{mem_pct}% reduction in trainable weights"))
+
     print(arrow("Weights", str(weights_display)))
     print(arrow("Snapshot", str(snapshot_file)))
     print(arrow("Metrics", metrics_str))
