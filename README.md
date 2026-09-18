@@ -79,8 +79,8 @@ uv sync
 
 ```bash
 uv run aimlite --help         # Run AIMLite CLI
-uv run test                   # Run core test suite (47 tests)
-uv run pytest                 # Full pytest runner (47/47 passing)
+uv run test                   # Run core test suite (49 tests)
+uv run pytest                 # Full pytest runner (49/49 passing)
 ```
 
 ---
@@ -203,10 +203,10 @@ AIMLite provides zero-path convention-over-configuration commands:
 |---|---|
 | `aimlite init [project_name \| .]` | Scaffolds a project in a new folder or directly in the current directory (`.`), setting up `.venv`, pre-installing `aimlite`, starter files, and conventions. |
 | `aimlite install [packages...]` | Without arguments, installs all dependencies listed in `aimlite.json`. With packages, installs them into `.venv` using `uv` (or `pip`) and adds them to `aimlite.json`. |
-| `aimlite data validate` | Validates dataset schema, record count, column names, and partition readiness across all datasets in `data/`. |
-| `aimlite train [ModelName]` | Automatically discovers registered models and executes training. Saves checkpoint to `models/<model_name>.pkl` and snapshots to `experiments/`. |
-| `aimlite evaluate [ModelName]` | Loads the model's checkpoint and calculates benchmark metrics on test partitions. |
-| `aimlite serve [ModelName] [--port 8000] [--frontend <dir>]` | Starts an HTTP inference server exposing `POST /predict`, `GET /health`, `GET /docs`, custom routes, and optional static frontend hosting. |
+| `aimlite data validate [target]` | Validates dataset schema, record count, column names, and partition readiness across all datasets in `data/`, or selectively validates by dataset class name, declared filename, path, or raw unbound data file. |
+| `aimlite train [ModelName] [--resume [path]] [--checkpoint-dir <dir>]` | Automatically discovers registered models and executes training. Supports resuming from latest or specific past checkpoints with `--resume`, and saving to custom directories with `--checkpoint-dir`. Saves weights to `models/<model_name>.pkl` and snapshots to `experiments/`. |
+| `aimlite evaluate [ModelName] [--checkpoint <path>]` | Loads the model's checkpoint and calculates benchmark metrics on test partitions. Discovers latest checkpoint automatically or loads an explicit past checkpoint with `--checkpoint`. |
+| `aimlite serve [ModelName] [--checkpoint <path>] [--port 8000] [--frontend <dir>]` | Starts an HTTP inference server exposing `POST /predict`, `GET /health`, `GET /docs`, custom routes, and optional static frontend hosting. Supports loading a specific past checkpoint with `--checkpoint`. |
 | `aimlite doctor` | Diagnoses runtime health, virtual environment, hardware accelerator availability (`cuda`, `mps`, `cpu`), and directory permissions. |
 
 ---
@@ -248,9 +248,9 @@ npm run build   # Produces optimized production bundle in api_docs/dist/
 
 ## Testing
 
-AIMLite includes a comprehensive 47-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, LoRA low-rank adaptation, and end-to-end paradigm workflows:
+AIMLite includes a comprehensive 49-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, LoRA low-rank adaptation, and end-to-end paradigm workflows:
 
 ```bash
 uv run test        # Core test runner
-uv run pytest      # Full pytest runner (47/47 passing)
+uv run pytest      # Full pytest runner (49/49 passing)
 ```
