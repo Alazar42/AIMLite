@@ -1,4 +1,4 @@
-from modelkit import (
+from aimlite import (
     adapters,
     config,
     data,
@@ -7,20 +7,20 @@ from modelkit import (
     rag,
     registry,
 )
-from modelkit.adapters import (
+from aimlite.adapters import (
     AdapterConfig,
     AdapterModel,
     AdapterTrainer,
 )
-from modelkit.config import BaseConfig
-from modelkit.data import Dataset
-from modelkit.lifecycle import (
+from aimlite.config import BaseConfig
+from aimlite.data import Dataset
+from aimlite.lifecycle import (
     BaseEvaluator,
     BaseInference,
     BaseTrainer,
 )
-from modelkit.models import Model
-from modelkit.rag import (
+from aimlite.models import Model
+from aimlite.rag import (
     BaseEmbedding,
     BaseRetriever,
     BaseVectorStore,
@@ -32,7 +32,7 @@ from modelkit.rag import (
     TfidfEmbedding,
     VectorRetriever,
 )
-from modelkit.registry import (
+from aimlite.registry import (
     clear_registry,
     get,
     get_all,

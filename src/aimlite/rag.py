@@ -1,4 +1,4 @@
-"""RAG Paradigm: modelkit/rag.py
+"""RAG Paradigm: aimlite/rag.py
 
 First-class Retrieval-Augmented Generation abstractions:
 Documents, Loaders, Text Splitters, Embeddings, Vector Stores, Retrievers,
@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
-from modelkit.models import Model
+from aimlite.models import Model
 
 
 @dataclass
@@ -322,7 +322,7 @@ class VectorRetriever(BaseRetriever):
 class RAGModel(Model):
     """Model specialization for Retrieval-Augmented Generation.
 
-    Subclasses Model so it inherits the standardized ModelKit lifecycle:
+    Subclasses Model so it inherits the standardized AIMLite lifecycle:
     predict(), save(), load(), get_dataset(), and auto-registration under 'model' and 'rag'.
     """
 
@@ -330,7 +330,7 @@ class RAGModel(Model):
 
     def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
         super().__init_subclass__(name=name, **kwargs)
-        from modelkit.registry import register_class
+        from aimlite.registry import register_class
 
         register_class("rag", cls, name=name)
 

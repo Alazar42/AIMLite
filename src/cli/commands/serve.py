@@ -88,13 +88,13 @@ def run_serve(
             print(f"  {C.DIM}No model weights exist in models/, and no dataset was found in data/.{C.RESET}")
             print(f"\n  {C.BOLD}To get started:{C.RESET}")
             print(f"    1. Place your dataset in {C.CYAN}{ctx.data_dir.name}/{C.RESET} (e.g. {ctx.data_dir.name}/dataset.csv)")
-            print(f"    2. Run {C.CYAN}modelkit train{C.RESET} to train your model")
-            print(f"    3. Run {C.CYAN}modelkit serve{C.RESET} to launch the inference server\n")
+            print(f"    2. Run {C.CYAN}aimlite train{C.RESET} to train your model")
+            print(f"    3. Run {C.CYAN}aimlite serve{C.RESET} to launch the inference server\n")
         else:
             print(f"\n{cross('Cannot serve: No trained model checkpoint found in models/.')}")
             print(f"  {C.YELLOW}Dataset exists in data/, but the model has not been trained yet.{C.RESET}")
             print(f"\n  {C.BOLD}Run training first:{C.RESET}")
-            print(f"    {C.CYAN}modelkit train{C.RESET}\n")
+            print(f"    {C.CYAN}aimlite train{C.RESET}\n")
 
         return 1
 

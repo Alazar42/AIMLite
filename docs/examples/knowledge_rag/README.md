@@ -1,6 +1,6 @@
 # Knowledge Base QA (RAG Model Example)
 
-This example demonstrates how to build and serve a Retrieval-Augmented Generation (RAG) knowledge base question-answering pipeline using ModelKit's first-class RAG abstractions.
+This example demonstrates how to build and serve a Retrieval-Augmented Generation (RAG) knowledge base question-answering pipeline using AIMLite's first-class RAG abstractions.
 
 ## Architecture
 - **Data Ingestion**: Chunks Markdown and text files into overlapping passages using `TextSplitter`.
@@ -9,9 +9,9 @@ This example demonstrates how to build and serve a Retrieval-Augmented Generatio
 - **Inference**: Returns grounded answers with source citations and confidence scores.
 
 ## Dependencies
-Install the required packages using ModelKit or pip:
+Install the required packages using AIMLite or pip:
 ```bash
-modelkit install sentence-transformers numpy
+aimlite install sentence-transformers numpy
 # or
 pip install sentence-transformers numpy
 ```
@@ -21,11 +21,11 @@ pip install sentence-transformers numpy
 ### 1. Initialize Project
 ```bash
 # Option A: In a new folder
-modelkit init support_rag
+aimlite init support_rag
 cd support_rag
 
 # Option B: In the current directory
-modelkit init .
+aimlite init .
 ```
 
 ### 2. Copy Knowledge Documents & Code
@@ -33,13 +33,13 @@ Place your `.txt` or `.md` files into the `data/` directory. Place `data.py`, `m
 
 ### 3. Build Vector Index
 ```bash
-modelkit train
+aimlite train
 ```
 This chunks your knowledge documents, calculates semantic embeddings, and saves the index to `artifacts/rag_index.json`.
 
 ### 4. Serve Knowledge API
 ```bash
-modelkit serve --port 8000
+aimlite serve --port 8000
 ```
 
 ### 5. Query the RAG Endpoint
@@ -52,11 +52,11 @@ Response:
 ```json
 {
   "query": "How do session tokens expire?",
-  "answer": "Based on auth_policy.md: Authentication and Security Policy: ModelKit supports API key and Bearer token authentication. Session tokens expire after 24 hours of inactivity...",
+  "answer": "Based on auth_policy.md: Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. Session tokens expire after 24 hours of inactivity...",
   "sources": [
     {
       "source": "auth_policy.md",
-      "snippet": "Authentication and Security Policy: ModelKit supports API key and Bearer token authentication. Session tokens expire after 24 hours...",
+      "snippet": "Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. Session tokens expire after 24 hours...",
       "score": 0.92
     }
   ],

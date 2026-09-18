@@ -1,10 +1,10 @@
-"""ModelKit App: inference.py
+"""AIMLite App: inference.py
 
 Custom inference, endpoints, and serving configuration.
 """
 
 from typing import Any, Dict
-from modelkit import BaseInference, Model
+from aimlite import BaseInference, Model
 
 
 class AppInference(BaseInference):
@@ -29,5 +29,5 @@ class AppInference(BaseInference):
         }
 
     # Optional: If you want to serve your own custom frontend (React, Vue, Vite, etc.),
-    # place build files in `dist/` or `frontend/dist/` (or run `modelkit serve --frontend <dir>`).
-    # ModelKit will automatically serve your custom index.html at http://127.0.0.1:8000/!
+    # place build files in `dist/` or `frontend/dist/` (or run `aimlite serve --frontend <dir>`).
+    # AIMLite will automatically serve your custom index.html at http://127.0.0.1:8000/!

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from modelkit import BaseEvaluator, Dataset, Model
+from aimlite import BaseEvaluator, Dataset, Model
 
 
 class ChurnEvaluator(BaseEvaluator):

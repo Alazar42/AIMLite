@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from modelkit.adapters import AdapterConfig, AdapterModel
+from aimlite.adapters import AdapterConfig, AdapterModel
 
 
 class LoRAInstructionModel(AdapterModel):

@@ -9,7 +9,7 @@ import {
   Server,
   Settings,
 } from 'lucide-react';
-import { NAVIGATION_CATEGORIES, type NavCategory } from '../data/modelkitDocs';
+import { NAVIGATION_CATEGORIES, type NavCategory } from '../data/aimliteDocs';
 
 interface SidebarProps {
   activeSectionId: string;
@@ -38,7 +38,7 @@ export default function Sidebar({
 
   const getCategoryIcon = (name: string) => {
     switch (name) {
-      case 'The 3 Pillars of ModelKit':
+      case 'The 3 Pillars of AIMLite':
         return <Database size={12} className="text-sky-400" />;
       case 'Supporting Foundations':
         return <Settings size={12} className="text-purple-400" />;

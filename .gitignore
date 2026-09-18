@@ -4,6 +4,7 @@ __pycache__/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
 
 # Virtual environments
 .venv
@@ -11,3 +12,9 @@ node_modules/
 
 # Build and training artifacts
 artifacts/
+checkpoints/
+experiments/
+models/
+data/
+*.pkl
+.aimlite/

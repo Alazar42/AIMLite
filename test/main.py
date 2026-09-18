@@ -3,7 +3,7 @@ import sys
 
 
 def main():
-    print("Testing ModelKit...\n")
+    print("Testing AIMLite...\n")
     loader = unittest.TestLoader()
     suite = loader.discover("test", pattern="test_*.py")
     runner = unittest.TextTestRunner(verbosity=2)

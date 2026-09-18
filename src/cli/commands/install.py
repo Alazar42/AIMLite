@@ -1,4 +1,4 @@
-"""Installs dependencies into the project virtual environment and tracks them in modelkit.json."""
+"""Installs dependencies into the project virtual environment and tracks them in aimlite.json."""
 
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ def run_install(
     upgrade: bool = False,
     project_root: Optional[Path] = None,
 ) -> int:
-    """Safely installs packages into the project .venv and updates modelkit.json.
+    """Safely installs packages into the project .venv and updates aimlite.json.
 
     Args:
-        packages: List of package names/specs to install. If empty, installs from modelkit.json.
+        packages: List of package names/specs to install. If empty, installs from aimlite.json.
         upgrade: Whether to upgrade packages.
         project_root: Optional project root path override.
 
@@ -46,7 +46,7 @@ def run_install(
                 pass
 
         if not packages:
-            print(f"\n  {C.YELLOW}Usage:{C.RESET} modelkit install <package_name ...> [--upgrade]\n")
+            print(f"\n  {C.YELLOW}Usage:{C.RESET} aimlite install <package_name ...> [--upgrade]\n")
             print(f"  {C.DIM}No dependencies found in {manifest_path.name}. Specify packages to install.{C.RESET}\n")
             return 1
 
@@ -114,8 +114,8 @@ def run_install(
         print(f"\n{cross('Package installation encountered errors.')}\n")
         return 1
 
-    # 4. Update manifest (modelkit.json) dependencies
-    manifest_file = root / "modelkit.json"
+    # 4. Update manifest (aimlite.json) dependencies
+    manifest_file = get_manifest_path(root)
     if not manifest_file.is_file():
         default_data = {
             "name": root.name,

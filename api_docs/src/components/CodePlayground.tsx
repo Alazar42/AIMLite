@@ -4,7 +4,7 @@ import Prism from 'prismjs';
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-json';
-import { type DocSection } from '../data/modelkitDocs';
+import { type DocSection } from '../data/aimliteDocs';
 
 interface CodePlaygroundProps {
   section: DocSection;
@@ -69,7 +69,7 @@ export default function CodePlayground({ section }: CodePlaygroundProps) {
       return section.snippets.files[activeTab];
     }
     if (activeTab === 'terminal.sh') {
-      return section.snippets.cli || `modelkit ${section.signatureOrPath}`;
+      return section.snippets.cli || `aimlite ${section.signatureOrPath}`;
     }
     if (activeTab === 'request.sh') {
       return (
@@ -178,7 +178,7 @@ export default function CodePlayground({ section }: CodePlaygroundProps) {
       {/* VS Code Status Footer */}
       <div className="h-6 bg-[#007acc] text-white px-3 flex items-center justify-between text-[10px] font-mono select-none shrink-0">
         <div className="flex items-center gap-2">
-          <span>ModelKit</span>
+          <span>AIMLite</span>
           <span>{activeTab}</span>
           <span>UTF-8</span>
         </div>

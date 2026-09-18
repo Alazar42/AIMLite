@@ -1,6 +1,6 @@
-"""Automated Build Script for ModelKit CLI Executable.
+"""Automated Build Script for AIMLite CLI Executable.
 
-Bundles the ModelKit library and CLI into a single, standalone executable binary
+Bundles the AIMLite library and CLI into a single, standalone executable binary
 using Python's native zipapp packaging with compressed bytecode and shebang.
 """
 
@@ -15,7 +15,7 @@ import zipapp
 from pathlib import Path
 
 
-def build_executable(output_name: str = "modelkit") -> Path:
+def build_executable(output_name: str = "aimlite") -> Path:
     """Compiles src/ into a standalone executable file in build/ directory."""
     project_root = Path(__file__).resolve().parent.parent
     src_dir = project_root / "src"
@@ -24,7 +24,7 @@ def build_executable(output_name: str = "modelkit") -> Path:
 
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"[*] Building ModelKit CLI standalone executable...")
+    print(f"[*] Building AIMLite CLI standalone executable...")
     print(f"    Source directory: {src_dir}")
     print(f"    Target output:    {output_bin}")
 
@@ -32,8 +32,8 @@ def build_executable(output_name: str = "modelkit") -> Path:
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
 
-        # Copy src/cli and src/modelkit into staging directory
-        for pkg in ["cli", "modelkit"]:
+        # Copy src/cli and src/aimlite into staging directory
+        for pkg in ["cli", "aimlite"]:
             src_pkg = src_dir / pkg
             dst_pkg = tmp_path / pkg
             if src_pkg.is_dir():

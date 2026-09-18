@@ -1,4 +1,4 @@
-"""Fine-Tuning & Adapters Paradigm: modelkit/adapters.py
+"""Fine-Tuning & Adapters Paradigm: aimlite/adapters.py
 
 Standardized PEFT (Parameter-Efficient Fine-Tuning), LoRA, and adapter contracts:
 AdapterConfig, AdapterModel, and AdapterTrainer.
@@ -13,11 +13,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from modelkit.lifecycle import BaseTrainer
-from modelkit.models import Model
+from aimlite.lifecycle import BaseTrainer
+from aimlite.models import Model
 
 if TYPE_CHECKING:
-    from modelkit.data import Dataset
+    from aimlite.data import Dataset
 
 
 @dataclass
@@ -62,7 +62,7 @@ class AdapterConfig:
 class AdapterModel(Model):
     """Model specialization for LoRA, QLoRA, and modular adapter fine-tuning.
 
-    Subclasses Model so it inherits the standardized ModelKit lifecycle:
+    Subclasses Model so it inherits the standardized AIMLite lifecycle:
     predict(), evaluate(), dataset binding, and auto-registration under 'model' and 'adapter'.
     Saves only lightweight adapter weights instead of duplicating the base foundation model.
     """
@@ -71,7 +71,7 @@ class AdapterModel(Model):
 
     def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
         super().__init_subclass__(name=name, **kwargs)
-        from modelkit.registry import register_class
+        from aimlite.registry import register_class
 
         register_class("adapter", cls, name=name)
 
@@ -167,7 +167,7 @@ class AdapterTrainer(BaseTrainer):
 
     def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
         super().__init_subclass__(name=name, **kwargs)
-        from modelkit.registry import register_class
+        from aimlite.registry import register_class
 
         register_class("trainer", cls, name=name)
 

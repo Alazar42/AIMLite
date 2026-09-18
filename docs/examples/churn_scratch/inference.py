@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseInference, Model
+from aimlite import BaseInference, Model
 
 
 class ChurnInference(BaseInference):
@@ -45,7 +45,7 @@ class ChurnInference(BaseInference):
         }
 
     def get_routes(self) -> Dict[str, Any]:
-        """Declares HTTP route mappings for ModelKit server."""
+        """Declares HTTP route mappings for AIMLite server."""
         return {
             "POST /predict": self.run,
             "GET /health": self.health,

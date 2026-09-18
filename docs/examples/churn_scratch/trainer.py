@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseTrainer, Dataset, Model
+from aimlite import BaseTrainer, Dataset, Model
 
 
 class ChurnTrainer(BaseTrainer):

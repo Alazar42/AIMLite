@@ -1,6 +1,6 @@
 # Customer Churn Prediction (Scratch Model Example)
 
-This example demonstrates how to build and deploy a real-world tabular ML model from scratch using ModelKit and scikit-learn.
+This example demonstrates how to build and deploy a real-world tabular ML model from scratch using AIMLite and scikit-learn.
 
 ## Dataset
 Download the Telecom Churn CSV dataset from Kaggle:
@@ -8,9 +8,9 @@ Download the Telecom Churn CSV dataset from Kaggle:
 - Save the downloaded file as `data/telecom_churn.csv`.
 
 ## Dependencies
-Install the required packages using ModelKit or pip:
+Install the required packages using AIMLite or pip:
 ```bash
-modelkit install scikit-learn pandas
+aimlite install scikit-learn pandas
 # or
 pip install scikit-learn pandas
 ```
@@ -20,11 +20,11 @@ pip install scikit-learn pandas
 ### 1. Initialize Project
 ```bash
 # Option A: In a new folder
-modelkit init churn_model
+aimlite init churn_model
 cd churn_model
 
 # Option B: In the current directory
-modelkit init .
+aimlite init .
 ```
 
 ### 2. Copy Code & Data
@@ -32,22 +32,22 @@ Place `data.py`, `model.py`, `trainer.py`, `evaluator.py`, and `inference.py` in
 
 ### 3. Validate Dataset
 ```bash
-modelkit data validate
+aimlite data validate
 ```
 
 ### 4. Train Model
 ```bash
-modelkit train
+aimlite train
 ```
 
 ### 5. Evaluate Performance
 ```bash
-modelkit evaluate
+aimlite evaluate
 ```
 
 ### 6. Serve API
 ```bash
-modelkit serve --port 8000
+aimlite serve --port 8000
 ```
 
 ### 7. Test Inference

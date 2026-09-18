@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar';
 import EndpointDoc from './components/EndpointDoc';
 import CodePlayground from './components/CodePlayground';
 import SearchModal from './components/SearchModal';
-import { DOC_SECTIONS } from './data/modelkitDocs';
+import { DOC_SECTIONS } from './data/aimliteDocs';
 import { X } from 'lucide-react';
 
 export default function App() {
@@ -88,7 +88,7 @@ export default function App() {
           <div className="relative w-80 max-w-full bg-[#090a0f] h-full shadow-2xl z-10 flex flex-col">
             <div className="flex items-center justify-between p-3 border-b border-zinc-800">
               <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                ModelKit Navigation
+                AIMLite Navigation
               </span>
               <button
                 onClick={() => setIsMobileNavOpen(false)}

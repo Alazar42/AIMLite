@@ -1,1 +1,0 @@
-"""ModelKit App Package."""

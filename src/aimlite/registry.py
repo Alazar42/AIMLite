@@ -1,6 +1,6 @@
-"""Dynamic Discovery & Registry: modelkit/registry.py
+"""Dynamic Discovery & Registry: aimlite/registry.py
 
-Binds string identifiers declared in modelkit.json to user subclasses dynamically.
+Binds string identifiers declared in aimlite.json to user subclasses dynamically.
 Automatically tracks subclasses of Model, Dataset, BaseTrainer, BaseEvaluator,
 BaseInference, and BaseConfig under the hood without requiring explicit decorators.
 """
@@ -30,7 +30,7 @@ def register_class(category: str, cls: Type[Any], name: Optional[str] = None) ->
 def register(category: str, name: Optional[str] = None) -> Callable[[Type[Any]], Type[Any]]:
     """Optional decorator that registers a class under a functional domain or custom alias.
 
-    Note: Subclassing ModelKit base classes (Model, Dataset, BaseTrainer, etc.)
+    Note: Subclassing AIMLite base classes (Model, Dataset, BaseTrainer, etc.)
     already registers the subclass automatically under the hood. This decorator
     is only needed if you wish to define an explicit custom alias.
 

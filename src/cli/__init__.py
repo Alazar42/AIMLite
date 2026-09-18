@@ -1,1 +1,1 @@
-"""ModelKit CLI Package."""
+"""AIMLite CLI Package."""

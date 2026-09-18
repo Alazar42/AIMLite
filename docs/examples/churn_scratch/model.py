@@ -11,7 +11,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from modelkit import Model
+from aimlite import Model
 
 
 class ChurnClassifier(Model):

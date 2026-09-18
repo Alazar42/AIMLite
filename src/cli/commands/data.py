@@ -7,7 +7,7 @@ from typing import Any, List, Optional
 
 from cli.discovery import resolve_project_context
 from cli.ui import C, arrow, check, cross, vite_header
-from modelkit.data import Dataset
+from aimlite.data import Dataset
 
 SUPPORTED_DATA_EXTENSIONS = {
     ".csv",
@@ -136,11 +136,15 @@ def run_data_validate(
 
         if not is_valid or not records:
             has_files = bool(data_files)
-            print(f"{cross(f'{cls_name}: No valid records found in {rel_source}.')}")
-            if not has_files:
-                print(f"  {C.DIM}No supported data files found in {ctx.data_dir}.{C.RESET}")
+            if not getattr(dataset, "filename", None) and not getattr(dataset, "source", None):
+                print(f"{cross(f'{cls_name}: No filename declared.')}")
+                print(f"  {C.YELLOW}Please set filename = \"<filename>\" on {cls_name} (e.g. filename = \"dataset.csv\").{C.RESET}")
             else:
-                print(f"  {C.YELLOW}Ensure your data file contains valid rows and headers (CSV, JSON, Parquet, etc.).{C.RESET}")
+                print(f"{cross(f'{cls_name}: No valid records found in {rel_source}.')}")
+                if not has_files:
+                    print(f"  {C.DIM}No supported data files found in {ctx.data_dir}.{C.RESET}")
+                else:
+                    print(f"  {C.YELLOW}Ensure your data file contains valid rows and headers (CSV, JSON, Parquet, etc.).{C.RESET}")
             all_passed = False
             continue
 
@@ -173,7 +177,7 @@ def run_data_validate(
     if unmapped_files and not target:
         unmapped_names = ", ".join(f.name for f in unmapped_files)
         print(f"  {C.DIM}Note: Other data files in data/: {unmapped_names}")
-        print(f"  To validate or bind them, set `filename = \"<filename>\"` on a Dataset class in data.py.{C.RESET}\n")
+        print(f"  To bind a file, set filename = \"<filename>\" on a Dataset class.{C.RESET}\n")
 
     if all_passed and validated_any:
         print(f"{check('Dataset validation passed.')}\n")

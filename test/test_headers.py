@@ -1,15 +1,15 @@
-"""Tests for ModelKit Core Headers and Contract Specifications."""
+"""Tests for AIMLite Core Headers and Contract Specifications."""
 
 import tempfile
 import unittest
 from pathlib import Path
 
-import modelkit
-from modelkit.config import BaseConfig
-from modelkit.data import Dataset
-from modelkit.lifecycle import BaseEvaluator, BaseInference, BaseTrainer
-from modelkit.models import Model
-from modelkit.registry import clear_registry, get, register
+import aimlite
+from aimlite.config import BaseConfig
+from aimlite.data import Dataset
+from aimlite.lifecycle import BaseEvaluator, BaseInference, BaseTrainer
+from aimlite.models import Model
+from aimlite.registry import clear_registry, get, register
 
 
 class DummyDataset(Dataset):
@@ -56,19 +56,19 @@ class DummyInference(BaseInference):
         return {"prediction": model.predict(raw_input)}
 
 
-class TestModelKitHeaders(unittest.TestCase):
+class TestAIMLiteHeaders(unittest.TestCase):
     def setUp(self):
         clear_registry()
 
     def test_top_level_exports(self):
-        self.assertTrue(hasattr(modelkit, "BaseConfig"))
-        self.assertTrue(hasattr(modelkit, "Dataset"))
-        self.assertTrue(hasattr(modelkit, "Model"))
-        self.assertTrue(hasattr(modelkit, "BaseTrainer"))
-        self.assertTrue(hasattr(modelkit, "BaseEvaluator"))
-        self.assertTrue(hasattr(modelkit, "BaseInference"))
-        self.assertTrue(hasattr(modelkit, "register"))
-        self.assertTrue(hasattr(modelkit, "get"))
+        self.assertTrue(hasattr(aimlite, "BaseConfig"))
+        self.assertTrue(hasattr(aimlite, "Dataset"))
+        self.assertTrue(hasattr(aimlite, "Model"))
+        self.assertTrue(hasattr(aimlite, "BaseTrainer"))
+        self.assertTrue(hasattr(aimlite, "BaseEvaluator"))
+        self.assertTrue(hasattr(aimlite, "BaseInference"))
+        self.assertTrue(hasattr(aimlite, "register"))
+        self.assertTrue(hasattr(aimlite, "get"))
 
     def test_base_config(self):
         cfg = BaseConfig()
@@ -144,7 +144,7 @@ class TestModelKitHeaders(unittest.TestCase):
             csv_path = Path(tmpdir) / "test.csv"
             csv_path.write_text("col1,col2,target\n1,2,0\n3,4,1\n5,6,0\n7,8,1\n", encoding="utf-8")
 
-            ds = modelkit.Dataset(name="my_csv", source=csv_path)
+            ds = aimlite.Dataset(name="my_csv", source=csv_path)
             self.assertTrue(ds.validate())
             data = ds.load()
             self.assertEqual(len(data), 4)
@@ -164,10 +164,10 @@ class TestModelKitHeaders(unittest.TestCase):
             (data_dir / "customers.csv").write_text("age,income\n25,50\n40,90\n", encoding="utf-8")
 
             # 1. Target specific file via class attribute
-            class HousingDataset(modelkit.Dataset):
+            class HousingDataset(aimlite.Dataset):
                 filename = "housing.csv"
 
-            ds_housing = HousingDataset("housing", config=modelkit.BaseConfig(tmpdir))
+            ds_housing = HousingDataset("housing", config=aimlite.BaseConfig(tmpdir))
             data_h = ds_housing.load()
             self.assertEqual(len(data_h), 2)
             self.assertEqual(ds_housing.columns, ["price", "rooms"])
@@ -176,7 +176,7 @@ class TestModelKitHeaders(unittest.TestCase):
             (data_dir / "shard1.csv").write_text("feat,val\n1,10\n", encoding="utf-8")
             (data_dir / "shard2.csv").write_text("feat,val\n2,20\n", encoding="utf-8")
 
-            class ShardedDataset(modelkit.Dataset):
+            class ShardedDataset(aimlite.Dataset):
                 combine_all = True
 
             with tempfile.TemporaryDirectory() as shard_dir:
@@ -184,7 +184,7 @@ class TestModelKitHeaders(unittest.TestCase):
                 s_data.mkdir()
                 (s_data / "a.csv").write_text("v\n1\n2\n", encoding="utf-8")
                 (s_data / "b.csv").write_text("v\n3\n4\n", encoding="utf-8")
-                ds_shard = ShardedDataset("shards", config=modelkit.BaseConfig(shard_dir))
+                ds_shard = ShardedDataset("shards", config=aimlite.BaseConfig(shard_dir))
                 data_s = ds_shard.load()
                 self.assertEqual(len(data_s), 4)
 
@@ -195,7 +195,10 @@ class TestModelKitHeaders(unittest.TestCase):
                 (ps_data / "train.csv").write_text("x,y\n1,1\n2,2\n3,3\n4,4\n", encoding="utf-8")
                 (ps_data / "test.csv").write_text("x,y\n5,5\n6,6\n", encoding="utf-8")
 
-                ds_presplit = modelkit.Dataset("presplit", config=modelkit.BaseConfig(presplit_dir))
+                class PreSplitDataset(aimlite.Dataset):
+                    filename = "train.csv"
+
+                ds_presplit = PreSplitDataset("presplit", config=aimlite.BaseConfig(presplit_dir))
                 ds_presplit.load()
                 train_p, val_p, test_p = ds_presplit.split(validation=0.25)
                 self.assertEqual(len(test_p), 2)  # from test.csv
@@ -247,7 +250,7 @@ class TestModelKitHeaders(unittest.TestCase):
 
     def test_automatic_subclass_registration_under_the_hood(self):
         """Validates that subclasses are automatically registered into the registry without @register."""
-        from modelkit import get_all
+        from aimlite import get_all
 
         class AutoRegisteredDataset(Dataset):
             pass
@@ -295,7 +298,7 @@ class TestModelKitHeaders(unittest.TestCase):
         import json
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            manifest_path = Path(tmpdir) / "modelkit.json"
+            manifest_path = Path(tmpdir) / "aimlite.json"
             manifest_data = {
                 "name": "enterprise_ai",
                 "apps": ["knowledge", "classifier"],
@@ -320,7 +323,7 @@ class TestModelKitHeaders(unittest.TestCase):
 
     def test_rag_pipeline(self):
         """Validates first-class RAG components: Document, TextSplitter, Embedding, VectorStore, Retriever, RAGModel."""
-        from modelkit.rag import (
+        from aimlite.rag import (
             Document,
             DocumentLoader,
             MemoryVectorStore,
@@ -331,7 +334,7 @@ class TestModelKitHeaders(unittest.TestCase):
         )
 
         # 1. Document & TextSplitter
-        doc = Document(content="ModelKit is the Django for AI. It unifies RAG, fine-tuning, and training.", metadata={"author": "team"})
+        doc = Document(content="AIMLite is the Django for AI. It unifies RAG, fine-tuning, and training.", metadata={"author": "team"})
         splitter = TextSplitter(chunk_size=35, chunk_overlap=10)
         chunks = splitter.split_documents([doc])
         self.assertGreater(len(chunks), 1)
@@ -372,7 +375,7 @@ class TestModelKitHeaders(unittest.TestCase):
 
     def test_adapter_fine_tuning_pipeline(self):
         """Validates adapter fine-tuning: AdapterConfig, AdapterModel, delta persistence, AdapterTrainer."""
-        from modelkit.adapters import (
+        from aimlite.adapters import (
             AdapterConfig,
             AdapterModel,
             AdapterTrainer,

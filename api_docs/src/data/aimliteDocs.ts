@@ -72,7 +72,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     ],
   },
   {
-    name: 'The 3 Pillars of ModelKit',
+    name: 'The 3 Pillars of AIMLite',
     items: [
       { id: 'pillar-data', label: '1. Data Pillar', badge: 'PILLAR', badgeVariant: 'pillar' },
       { id: 'pillar-model', label: '2. Model Pillar', badge: 'PILLAR', badgeVariant: 'pillar' },
@@ -89,13 +89,13 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'Zero-Path CLI Commands',
     items: [
-      { id: 'cli-init', label: 'modelkit init', badge: 'CLI', badgeVariant: 'cli' },
-      { id: 'cli-install', label: 'modelkit install', badge: 'CLI', badgeVariant: 'cli' },
-      { id: 'cli-data', label: 'modelkit data validate', badge: 'CLI', badgeVariant: 'cli' },
-      { id: 'cli-train', label: 'modelkit train', badge: 'CLI', badgeVariant: 'cli' },
-      { id: 'cli-evaluate', label: 'modelkit evaluate', badge: 'CLI', badgeVariant: 'cli' },
-      { id: 'cli-serve', label: 'modelkit serve', badge: 'CLI', badgeVariant: 'cli' },
-      { id: 'cli-doctor', label: 'modelkit doctor', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-init', label: 'aimlite init', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-install', label: 'aimlite install', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-data', label: 'aimlite data validate', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-train', label: 'aimlite train', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-evaluate', label: 'aimlite evaluate', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-serve', label: 'aimlite serve', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-doctor', label: 'aimlite doctor', badge: 'CLI', badgeVariant: 'cli' },
     ],
   },
   {
@@ -112,16 +112,16 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
 export const DOC_SECTIONS: Record<string, DocSection> = {
   'pillar-data': {
     id: 'pillar-data',
-    category: 'The 3 Pillars of ModelKit',
+    category: 'The 3 Pillars of AIMLite',
     title: 'Pillar 1: Data (Dataset)',
     subtitle: 'Standardized dataset ingestion, schema validation, and partition contracts.',
     badge: { label: 'PILLAR 1', variant: 'pillar' },
-    signatureOrPath: 'from modelkit import Dataset',
+    signatureOrPath: 'from aimlite import Dataset',
     breadcrumbs: ['3 Pillars', 'Data Pillar'],
     overview:
       'The Data pillar standardizes how raw data enters the machine learning lifecycle. Just like Django models.Model, defining an empty class does nothing at import time. When data or source is configured, Dataset provides automatic validation and partition contracts.',
     djangoAnalogy:
-      'In Django, you subclass models.Model in models.py. An empty class does not load or touch the database. In ModelKit, you subclass Dataset in data.py. Zero side effects occur on import; when loaded, it validates and partitions your data.',
+      'In Django, you subclass models.Model in models.py. An empty class does not load or touch the database. In AIMLite, you subclass Dataset in data.py. Zero side effects occur on import; when loaded, it validates and partitions your data.',
     conventions: [
       {
         title: 'Zero-Code Data Discovery',
@@ -137,7 +137,7 @@ export const DOC_SECTIONS: Record<string, DocSection> = {
       },
       {
         title: 'Strict Execution Rule',
-        description: 'If the class is empty and data/ has no files, `modelkit train` strictly halts with exit code 1.',
+        description: 'If the class is empty and data/ has no files, `aimlite train` strictly halts with exit code 1.',
       },
     ],
     parametersTitle: 'Dataset Class Attributes & Contracts',
@@ -185,7 +185,7 @@ export const DOC_SECTIONS: Record<string, DocSection> = {
     ],
     snippets: {
       files: {
-        'data.py': `from modelkit import Dataset
+        'data.py': `from aimlite import Dataset
 
 # Option 1: Standard dataset with file source
 class AIDataset(Dataset):
@@ -199,7 +199,7 @@ class CustomerDataset(Dataset):
 class ShardedDataset(Dataset):
     combine_all = True`,
       },
-      cli: `modelkit data validate`,
+      cli: `aimlite data validate`,
     },
     defaultPayload: '{\n  "source": "data/housing_prices.csv",\n  "test_split": 0.2\n}',
     defaultResponse: {
@@ -217,16 +217,16 @@ class ShardedDataset(Dataset):
 
   'pillar-model': {
     id: 'pillar-model',
-    category: 'The 3 Pillars of ModelKit',
+    category: 'The 3 Pillars of AIMLite',
     title: 'Pillar 2: Model (Model)',
     subtitle: 'Framework-agnostic model wrapper with built-in pickle persistence.',
     badge: { label: 'PILLAR 2', variant: 'pillar' },
-    signatureOrPath: 'from modelkit import Model',
+    signatureOrPath: 'from aimlite import Model',
     breadcrumbs: ['3 Pillars', 'Model Pillar'],
     overview:
       'The Model pillar standardizes execution and serialization across any machine learning framework (PyTorch, TensorFlow, Scikit-learn, XGBoost, or pure Python). It includes built-in pickle persistence (save/load) that directs model weights directly to the models/ folder.',
     djangoAnalogy:
-      'In Django, Model instances have built-in .save() and .delete() database persistence. In ModelKit, Model instances have built-in .save() and .load() weight serialization into models/model.pkl.',
+      'In Django, Model instances have built-in .save() and .delete() database persistence. In AIMLite, Model instances have built-in .save() and .load() weight serialization into models/model.pkl.',
     conventions: [
       {
         title: 'Built-in Persistence (save & load)',
@@ -238,7 +238,7 @@ class ShardedDataset(Dataset):
       },
       {
         title: 'Config Binding',
-        description: 'Hyperparameters in modelkit.json are automatically bound to self.config during zero-path discovery.',
+        description: 'Hyperparameters in aimlite.json are automatically bound to self.config during zero-path discovery.',
       },
     ],
     parametersTitle: 'Model Class Methods & Contracts',
@@ -272,7 +272,7 @@ class ShardedDataset(Dataset):
     ],
     snippets: {
       files: {
-        'model.py': `from modelkit import Model, Dataset
+        'model.py': `from aimlite import Model, Dataset
 
 # Option 1: Automatic convention (auto-discovers default Dataset in data.py)
 class AIModel(Model):
@@ -286,7 +286,7 @@ class ChurnModel(Model):
     def predict(self, inputs, **kwargs):
         return [1 if sum(x) > 0.5 else 0 for x in inputs]`,
       },
-      cli: `modelkit train AIModel`,
+      cli: `aimlite train AIModel`,
     },
     defaultPayload: '{\n  "inputs": [1.0, 2.0, 3.0, 4.0]\n}',
     defaultResponse: {
@@ -299,16 +299,16 @@ class ChurnModel(Model):
 
   'pillar-lifecycle': {
     id: 'pillar-lifecycle',
-    category: 'The 3 Pillars of ModelKit',
+    category: 'The 3 Pillars of AIMLite',
     title: 'Pillar 3: Lifecycle (Trainer, Evaluator, Inference)',
     subtitle: 'Execution cycles with strict separation of weights and metadata.',
     badge: { label: 'PILLAR 3', variant: 'pillar' },
-    signatureOrPath: 'from modelkit import BaseTrainer, BaseEvaluator, BaseInference',
+    signatureOrPath: 'from aimlite import BaseTrainer, BaseEvaluator, BaseInference',
     breadcrumbs: ['3 Pillars', 'Lifecycle Pillar'],
     overview:
       'The Lifecycle pillar governs training, evaluation, and live inference. It guarantees strict architectural hygiene: serialized model weights live strictly in models/, and experiment metadata snapshots live strictly in experiments/.',
     djangoAnalogy:
-      'In Django, manage.py test and views handle the request-response lifecycle. In ModelKit, BaseTrainer, BaseEvaluator, and BaseInference handle the machine learning lifecycle.',
+      'In Django, manage.py test and views handle the request-response lifecycle. In AIMLite, BaseTrainer, BaseEvaluator, and BaseInference handle the machine learning lifecycle.',
     conventions: [
       {
         title: 'Strict Directory Separation',
@@ -348,25 +348,25 @@ class ChurnModel(Model):
     ],
     snippets: {
       files: {
-        'trainer.py': `from modelkit import BaseTrainer
+        'trainer.py': `from aimlite import BaseTrainer
 
 class AITrainer(BaseTrainer):
     def fit(self, model, dataset, **kwargs):
         # Optimization loop here
         return {"status": "success", "loss": 0.035, "step": 100}`,
-        'evaluator.py': `from modelkit import BaseEvaluator
+        'evaluator.py': `from aimlite import BaseEvaluator
 
 class AIEvaluator(BaseEvaluator):
     def evaluate(self, model, dataset, **kwargs):
         return {"accuracy": 0.965}`,
-        'inference.py': `from modelkit import BaseInference
+        'inference.py': `from aimlite import BaseInference
 
 class AIInference(BaseInference):
     def run(self, model, raw_input, **kwargs):
         features = raw_input.get("features", [])
         return model.predict(features)`,
       },
-      cli: `modelkit train AIModel && modelkit evaluate AIModel && modelkit serve AIModel`,
+      cli: `aimlite train AIModel && aimlite evaluate AIModel && aimlite serve AIModel`,
     },
     defaultPayload: '{\n  "features": [0.45, 1.28, 3.14]\n}',
     defaultResponse: {
@@ -387,10 +387,10 @@ class AIInference(BaseInference):
     title: 'BaseConfig & Hardware Auto-Probe',
     subtitle: 'Hardware accelerator discovery (CUDA / MPS / CPU) and manifest resolution.',
     badge: { label: 'FOUNDATION', variant: 'util' },
-    signatureOrPath: 'from modelkit import BaseConfig',
+    signatureOrPath: 'from aimlite import BaseConfig',
     breadcrumbs: ['Foundations', 'BaseConfig'],
     overview:
-      'BaseConfig parses modelkit.json and provides automatic hardware device resolution. It probes for NVIDIA CUDA GPUs, Apple Silicon MPS (Metal Performance Shaders), or gracefully falls back to CPU.',
+      'BaseConfig parses aimlite.json and provides automatic hardware device resolution. It probes for NVIDIA CUDA GPUs, Apple Silicon MPS (Metal Performance Shaders), or gracefully falls back to CPU.',
     djangoAnalogy:
       'Equivalent to Django settings.py. Automatically resolves paths and hardware accelerators.',
     parametersTitle: 'BaseConfig Properties & Methods',
@@ -405,7 +405,7 @@ class AIInference(BaseInference):
         name: 'data_dir, models_dir, experiments_dir',
         type: 'property (Path)',
         required: false,
-        description: 'Resolved absolute paths to project directories defined in modelkit.json.',
+        description: 'Resolved absolute paths to project directories defined in aimlite.json.',
       },
       {
         name: 'to_dict()',
@@ -415,7 +415,7 @@ class AIInference(BaseInference):
       },
     ],
     snippets: {
-      python: `from modelkit import BaseConfig
+      python: `from aimlite import BaseConfig
 
 config = BaseConfig()
 device = config.resolve_device()  # 'cuda', 'mps', or 'cpu'
@@ -436,14 +436,14 @@ data_path = config.data_dir       # /project/data`,
     title: 'Component Registry',
     subtitle: 'Automatic under-the-hood component discovery and zero-decorator registration.',
     badge: { label: 'FOUNDATION', variant: 'util' },
-    signatureOrPath: 'from modelkit import get, get_all, register',
+    signatureOrPath: 'from aimlite import get, get_all, register',
     breadcrumbs: ['Foundations', 'Registry'],
     overview:
       'The Registry automatically tracks every Model, Dataset, BaseTrainer, BaseEvaluator, BaseInference, and BaseConfig subclass under the hood via class extension hooks (__init_subclass__). Developers never need to write explicit @register decorators.',
     djangoAnalogy:
-      "Just like Django's AppRegistry automatically discovers and registers every models.Model subclass on definition without decorators, ModelKit auto-registers your ML classes under the hood.",
+      "Just like Django's AppRegistry automatically discovers and registers every models.Model subclass on definition without decorators, AIMLite auto-registers your ML classes under the hood.",
     snippets: {
-      python: `from modelkit import Model, Dataset, get, get_all
+      python: `from aimlite import Model, Dataset, get, get_all
 
 # 1. Automatic registration under the hood on class extension!
 # No @register decorator needed!
@@ -474,28 +474,28 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
   'cli-init': {
     id: 'cli-init',
     category: 'Zero-Path CLI Commands',
-    title: 'modelkit init',
+    title: 'aimlite init',
     subtitle: 'Scaffolds a new project directory or initializes inside the current folder.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'modelkit init [project_name | .]',
+    signatureOrPath: 'aimlite init [project_name | .]',
     breadcrumbs: ['CLI', 'init'],
     overview:
-      'Scaffolds a new project directory with convention layout: data/ (strictly empty), models/, experiments/, artifacts/, checkpoints/, and starter package files. Supports both new directory creation (modelkit init my_ai) and in-place current folder initialization (modelkit init .).',
+      'Scaffolds a new project directory with convention layout: data/ (strictly empty), models/, experiments/, artifacts/, checkpoints/, and starter package files. Supports both new directory creation (aimlite init my_ai) and in-place current folder initialization (aimlite init .).',
     djangoAnalogy:
       'Direct equivalent of django-admin startproject <name> or npm init. Generates clean boilerplate with instructional contracts.',
     snippets: {
       cli: `# Option 1: Create a new project directory
-modelkit init my_ai
+aimlite init my_ai
 cd my_ai
 
 # Option 2: Initialize directly inside current folder with parent folder name
-modelkit init .`,
+aimlite init .`,
     },
-    defaultPayload: '{\n  "command": "modelkit init",\n  "project": "."\n}',
+    defaultPayload: '{\n  "command": "aimlite init",\n  "project": "."\n}',
     defaultResponse: {
       status: 'success',
       output: [
-        "[OK] Successfully initialized ModelKit project 'my_ai'",
+        "[OK] Successfully initialized AIMLite project 'my_ai'",
         'Package files: data.py, model.py, trainer.py, evaluator.py, inference.py, config.py',
         'Directory data/ created empty (ready for your dataset files)',
       ],
@@ -505,10 +505,10 @@ modelkit init .`,
   'cli-install': {
     id: 'cli-install',
     category: 'Zero-Path CLI Commands',
-    title: 'modelkit install',
+    title: 'aimlite install',
     subtitle: 'Installs libraries safely into project .venv using uv (preferred) or pip.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'modelkit install <package_name ...> [--upgrade]',
+    signatureOrPath: 'aimlite install <package_name ...> [--upgrade]',
     breadcrumbs: ['CLI', 'install'],
     overview:
       'Manages your project virtual environment (.venv). If .venv does not exist, automatically creates it. Uses uv pip install --python <venv> for lightning fast, conflict-free dependency installation.',
@@ -516,13 +516,13 @@ modelkit init .`,
       'Eliminates environment mismatches and global package collisions automatically.',
     snippets: {
       cli: `# Paradigm 1 (Scratch):
-modelkit install scikit-learn pandas
+aimlite install scikit-learn pandas
 
 # Paradigm 2 (RAG):
-modelkit install sentence-transformers numpy
+aimlite install sentence-transformers numpy
 
 # Paradigm 3 (Adapters):
-modelkit install torch peft`,
+aimlite install torch peft`,
     },
     defaultPayload: '{\n  "packages": ["scikit-learn", "pandas"],\n  "upgrade": false\n}',
     defaultResponse: {
@@ -536,21 +536,21 @@ modelkit install torch peft`,
   'cli-train': {
     id: 'cli-train',
     category: 'Zero-Path CLI Commands',
-    title: 'modelkit train',
+    title: 'aimlite train',
     subtitle: 'Runs model training cycle through zero-path discovery or targeted model class.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'modelkit train [ModelName]',
+    signatureOrPath: 'aimlite train [ModelName]',
     breadcrumbs: ['CLI', 'train'],
     overview:
-      'Discovers and executes your training cycle. Supports targeted training by passing the model class name (e.g. modelkit train ChurnClassifier). Strictly validates that classes are implemented and that data files exist in data/. If multiple models exist in model.py, prompts you to select one.',
+      'Discovers and executes your training cycle. Supports targeted training by passing the model class name (e.g. aimlite train ChurnClassifier). Strictly validates that classes are implemented and that data files exist in data/. If multiple models exist in model.py, prompts you to select one.',
     djangoAnalogy:
       'Equivalent to running database migrations or test runner. Halts cleanly if models or data are missing.',
     snippets: {
       cli: `# Train single or default model
-modelkit train
+aimlite train
 
 # Targeted training by model class name
-modelkit train ChurnClassifier`,
+aimlite train ChurnClassifier`,
     },
     defaultPayload: '{\n  "target_model": "ChurnClassifier"\n}',
     defaultResponse: {
@@ -569,10 +569,10 @@ modelkit train ChurnClassifier`,
   'cli-serve': {
     id: 'cli-serve',
     category: 'Zero-Path CLI Commands',
-    title: 'modelkit serve',
+    title: 'aimlite serve',
     subtitle: 'Headless JSON inference API server with optional custom frontend hosting.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'modelkit serve [ModelName] [--port 8000] [--frontend <dir>]',
+    signatureOrPath: 'aimlite serve [ModelName] [--port 8000] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
       'Starts a high-performance, headless JSON inference server on port 8000. Serves API root metadata at GET /, prediction endpoint at POST /predict, server health at GET /health, Swagger UI at GET /docs, and OpenAPI specification at GET /openapi.json. When you build a custom frontend (e.g. React/Vite in frontend/dist/), pass --frontend frontend/dist to host it directly alongside the API.',
@@ -580,19 +580,19 @@ modelkit train ChurnClassifier`,
       'Direct equivalent of python manage.py runserver 8000, with Swagger UI and developer-customizable endpoints.',
     snippets: {
       cli: `# Run pure headless JSON API server
-modelkit serve --port 8000
+aimlite serve --port 8000
 
 # Serve targeted model class
-modelkit serve ChurnClassifier --port 8000
+aimlite serve ChurnClassifier --port 8000
 
 # Serve custom frontend bundle alongside API
-modelkit serve --frontend ./frontend/dist`,
+aimlite serve --frontend ./frontend/dist`,
     },
     defaultPayload: '{\n  "port": 8000,\n  "target_model": "ChurnClassifier"\n}',
     defaultResponse: {
       status: 'server_active',
       endpoints: {
-        'GET /': 'ModelKit API Root & Metadata',
+        'GET /': 'AIMLite API Root & Metadata',
         'GET /docs': 'Swagger UI Documentation',
         'GET /openapi.json': 'OpenAPI 3.0 Schema',
         'POST /predict': 'Inference API',
@@ -604,17 +604,17 @@ modelkit serve --frontend ./frontend/dist`,
   'cli-data': {
     id: 'cli-data',
     category: 'Zero-Path CLI Commands',
-    title: 'modelkit data validate',
+    title: 'aimlite data validate',
     subtitle: 'Verifies dataset schema, integrity, and partition readiness.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'uv run modelkit data validate',
+    signatureOrPath: 'uv run aimlite data validate',
     breadcrumbs: ['CLI', 'data validate'],
     overview:
       'Executes Dataset.load() followed by Dataset.validate() and partition analysis. Outputs a clean schema verification report with zero emojis.',
     djangoAnalogy:
       'Equivalent to python manage.py check.',
     snippets: {
-      cli: 'uv run modelkit data validate',
+      cli: 'uv run aimlite data validate',
     },
     defaultPayload: '{}',
     defaultResponse: {
@@ -627,17 +627,17 @@ modelkit serve --frontend ./frontend/dist`,
   'cli-evaluate': {
     id: 'cli-evaluate',
     category: 'Zero-Path CLI Commands',
-    title: 'modelkit evaluate',
+    title: 'aimlite evaluate',
     subtitle: 'Assesses model performance against held-out validation or test partitions.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'uv run modelkit evaluate',
+    signatureOrPath: 'uv run aimlite evaluate',
     breadcrumbs: ['CLI', 'evaluate'],
     overview:
       'Automatically discovers the latest checkpoint in models/ and executes BaseEvaluator.evaluate(model, dataset).',
     djangoAnalogy:
       'Equivalent to running python manage.py test.',
     snippets: {
-      cli: 'uv run modelkit evaluate',
+      cli: 'uv run aimlite evaluate',
     },
     defaultPayload: '{}',
     defaultResponse: {
@@ -650,17 +650,17 @@ modelkit serve --frontend ./frontend/dist`,
   'cli-doctor': {
     id: 'cli-doctor',
     category: 'Zero-Path CLI Commands',
-    title: 'modelkit doctor',
+    title: 'aimlite doctor',
     subtitle: 'Inspects runtime environment health, hardware accelerators, and directory permissions.',
     badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'uv run modelkit doctor',
+    signatureOrPath: 'uv run aimlite doctor',
     breadcrumbs: ['CLI', 'doctor'],
     overview:
       'Diagnoses Python runtime version, hardware accelerators (CUDA/MPS/CPU), and directory read/write permissions for data/, models/, experiments/, and checkpoints/.',
     djangoAnalogy:
       'Comprehensive environment diagnostic check.',
     snippets: {
-      cli: 'uv run modelkit doctor',
+      cli: 'uv run aimlite doctor',
     },
     defaultPayload: '{}',
     defaultResponse: {
@@ -681,7 +681,7 @@ modelkit serve --frontend ./frontend/dist`,
     overview:
       'Executes zero-path inference against the trained model loaded from models/model.pkl. Input JSON is routed through BaseInference.run(model, raw_input) to model.predict().',
     djangoAnalogy:
-      'The primary inference view in ModelKit.',
+      'The primary inference view in AIMLite.',
     parametersTitle: 'Request Payload Parameters',
     parameters: [
       {
@@ -769,7 +769,7 @@ console.log(data);`,
     defaultResponse: {
       openapi: '3.0.0',
       info: {
-        title: 'ModelKit API - my_ai',
+        title: 'AIMLite API - my_ai',
         version: '0.1.0',
       },
       paths: {
@@ -788,7 +788,7 @@ console.log(data);`,
     signatureOrPath: 'GET http://127.0.0.1:8000/docs',
     breadcrumbs: ['HTTP Server', 'GET /docs'],
     overview:
-      'Renders the embedded Swagger UI from modelkit/templates/swagger.html, backed by the live /openapi.json schema.',
+      'Renders the embedded Swagger UI from aimlite/templates/swagger.html, backed by the live /openapi.json schema.',
     djangoAnalogy:
       'Interactive Swagger UI like Django REST Framework Swagger.',
     snippets: {
@@ -797,7 +797,7 @@ console.log(data);`,
     defaultPayload: '{}',
     defaultResponse: {
       status: 'rendered_html',
-      template: 'modelkit/templates/swagger.html',
+      template: 'aimlite/templates/swagger.html',
     },
   },
 
@@ -807,10 +807,10 @@ console.log(data);`,
     title: 'Paradigm 1: Training from Scratch (Customer Churn)',
     subtitle: 'End-to-end tabular classification pipeline using scikit-learn on the Kaggle Telecom Churn dataset.',
     badge: { label: 'PARADIGM 1', variant: 'pillar' },
-    signatureOrPath: 'from modelkit import Dataset, Model, BaseTrainer, BaseEvaluator, BaseInference',
+    signatureOrPath: 'from aimlite import Dataset, Model, BaseTrainer, BaseEvaluator, BaseInference',
     breadcrumbs: ['Paradigms', 'From Scratch'],
     overview:
-      'Training from scratch provides total algorithmic freedom over feature transformations, loss functions, and optimization schedules. In this real-world guide, we build a production customer churn classifier using the Kaggle Telecom Churn dataset (https://www.kaggle.com/datasets/barun2104/telecom-churn). Required dependencies: modelkit install scikit-learn pandas.',
+      'Training from scratch provides total algorithmic freedom over feature transformations, loss functions, and optimization schedules. In this real-world guide, we build a production customer churn classifier using the Kaggle Telecom Churn dataset (https://www.kaggle.com/datasets/barun2104/telecom-churn). Required dependencies: aimlite install scikit-learn pandas.',
     djangoAnalogy:
       'Like building custom Django models, managers, and service layers with full database index and query control, Training from Scratch gives you total ownership over weights, hyperparameters, and persistence.',
     whyCode: [
@@ -822,7 +822,7 @@ console.log(data);`,
       {
         component: 'model.py (ChurnClassifier)',
         reason:
-          'Subclasses Model, inheriting standard predict(), predict_proba(), and save()/load() contracts. Wrapping scikit-learn RandomForest ensures automatic compatibility with ModelKit CLI discovery and REST serving.',
+          'Subclasses Model, inheriting standard predict(), predict_proba(), and save()/load() contracts. Wrapping scikit-learn RandomForest ensures automatic compatibility with AIMLite CLI discovery and REST serving.',
       },
       {
         component: 'trainer.py (ChurnTrainer)',
@@ -848,35 +848,35 @@ console.log(data);`,
       },
       {
         title: 'Required Dependencies',
-        description: 'Run `modelkit install scikit-learn pandas` (or `pip install scikit-learn pandas`).',
+        description: 'Run `aimlite install scikit-learn pandas` (or `pip install scikit-learn pandas`).',
       },
       {
         title: 'Zero-Path Execution',
         description:
-          '`modelkit train ChurnClassifier` fits the classifier and writes weights to artifacts/. `modelkit serve` exposes the prediction API.',
+          '`aimlite train ChurnClassifier` fits the classifier and writes weights to artifacts/. `aimlite serve` exposes the prediction API.',
       },
     ],
     snippets: {
       files: SCRATCH_FILES,
       cli: `# 1. Install dependencies & auto-manage .venv
-modelkit install scikit-learn pandas
+aimlite install scikit-learn pandas
 
 # 2. Initialize project (or in current folder with .)
-modelkit init telecom_churn
+aimlite init telecom_churn
 cd telecom_churn
 
 # 3. Download Kaggle dataset to data/telecom_churn.csv:
 # https://www.kaggle.com/datasets/barun2104/telecom-churn
 
 # 4. Validate and train
-modelkit data validate
-modelkit train ChurnClassifier
+aimlite data validate
+aimlite train ChurnClassifier
 
 # 5. Evaluate benchmark metrics
-modelkit evaluate ChurnClassifier
+aimlite evaluate ChurnClassifier
 
 # 6. Serve inference API
-modelkit serve ChurnClassifier --port 8000`,
+aimlite serve ChurnClassifier --port 8000`,
       curl: `curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -908,12 +908,12 @@ modelkit serve ChurnClassifier --port 8000`,
     title: 'Paradigm 2: RAG (Retrieval-Augmented Generation)',
     subtitle: 'Ground foundation models in private documents with semantic vector search and zero hallucination.',
     badge: { label: 'PARADIGM 2', variant: 'pillar' },
-    signatureOrPath: 'from modelkit.rag import Document, TextSplitter, MemoryVectorStore, VectorRetriever, RAGModel',
+    signatureOrPath: 'from aimlite.rag import Document, TextSplitter, MemoryVectorStore, VectorRetriever, RAGModel',
     breadcrumbs: ['Paradigms', 'RAG'],
     overview:
-      'The RAG paradigm turns enterprise knowledge into actionable intelligence without expensive retraining. ModelKit provides first-class Document loaders, sliding-window text chunkers, zero-dependency TF-IDF or dense embeddings, in-memory vector stores, and RAGModel. Required dependencies: modelkit install sentence-transformers numpy.',
+      'The RAG paradigm turns enterprise knowledge into actionable intelligence without expensive retraining. AIMLite provides first-class Document loaders, sliding-window text chunkers, zero-dependency TF-IDF or dense embeddings, in-memory vector stores, and RAGModel. Required dependencies: aimlite install sentence-transformers numpy.',
     djangoAnalogy:
-      'In Django, you query the database using ORM QuerySets. In ModelKit RAG, you query your knowledge base using VectorRetriever to dynamically inject relevant context passages into generation prompts.',
+      'In Django, you query the database using ORM QuerySets. In AIMLite RAG, you query your knowledge base using VectorRetriever to dynamically inject relevant context passages into generation prompts.',
     whyCode: [
       {
         component: 'data.py (KnowledgeDocsDataset)',
@@ -944,7 +944,7 @@ modelkit serve ChurnClassifier --port 8000`,
       },
       {
         title: 'Required Dependencies',
-        description: 'Run `modelkit install sentence-transformers numpy` (or `pip install sentence-transformers numpy`).',
+        description: 'Run `aimlite install sentence-transformers numpy` (or `pip install sentence-transformers numpy`).',
       },
       {
         title: 'Built-in Vector Store',
@@ -955,19 +955,19 @@ modelkit serve ChurnClassifier --port 8000`,
     snippets: {
       files: RAG_FILES,
       cli: `# 1. Install dependencies into managed .venv
-modelkit install sentence-transformers numpy
+aimlite install sentence-transformers numpy
 
 # 2. Scaffold project
-modelkit init support_rag
+aimlite init support_rag
 cd support_rag
 
 # 3. Add knowledge documents to data/ (e.g. data/faq.md)
 
 # 4. Build vector index
-modelkit train SupportDocRAG
+aimlite train SupportDocRAG
 
 # 5. Serve knowledge API
-modelkit serve SupportDocRAG --port 8000`,
+aimlite serve SupportDocRAG --port 8000`,
       curl: `curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
   -d '{"query": "How does zero-path execution work?", "top_k": 3}'`,
@@ -976,11 +976,11 @@ modelkit serve SupportDocRAG --port 8000`,
     defaultPayload: '{\n  "query": "How does zero-path execution work?",\n  "top_k": 3\n}',
     defaultResponse: {
       query: "How does zero-path execution work?",
-      answer: "Based on faq.md: ModelKit supports zero-path CLI execution by resolving conventions...",
+      answer: "Based on faq.md: AIMLite supports zero-path CLI execution by resolving conventions...",
       sources: [
         {
           source: "faq.md",
-          snippet: "ModelKit supports zero-path CLI execution...",
+          snippet: "AIMLite supports zero-path CLI execution...",
           score: 0.9412,
         },
       ],
@@ -994,12 +994,12 @@ modelkit serve SupportDocRAG --port 8000`,
     title: 'Paradigm 3: Fine-Tuning (LoRA & PEFT Adapters)',
     subtitle: 'Parameter-efficient adaptation with lightweight delta checkpoints (~50MB instead of 14GB).',
     badge: { label: 'PARADIGM 3', variant: 'pillar' },
-    signatureOrPath: 'from modelkit.adapters import AdapterConfig, AdapterModel, AdapterTrainer',
+    signatureOrPath: 'from aimlite.adapters import AdapterConfig, AdapterModel, AdapterTrainer',
     breadcrumbs: ['Paradigms', 'Fine-Tuning'],
     overview:
-      'Fine-tuning specializes base foundation models for custom instruction-following using low-rank adapters (LoRA/QLoRA). AdapterModel freezes the base model and saves exclusively lightweight delta weights (~50KB to 50MB instead of 14GB+), saving gigabytes of storage and compute. Required dependencies: modelkit install torch peft.',
+      'Fine-tuning specializes base foundation models for custom instruction-following using low-rank adapters (LoRA/QLoRA). AdapterModel freezes the base model and saves exclusively lightweight delta weights (~50KB to 50MB instead of 14GB+), saving gigabytes of storage and compute. Required dependencies: aimlite install torch peft.',
     djangoAnalogy:
-      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the underlying database table. In ModelKit, AdapterModel attaches trainable delta matrices to a frozen base model.',
+      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the underlying database table. In AIMLite, AdapterModel attaches trainable delta matrices to a frozen base model.',
     whyCode: [
       {
         component: 'data.py (InstructionDataset)',
@@ -1034,7 +1034,7 @@ modelkit serve SupportDocRAG --port 8000`,
       },
       {
         title: 'Required Dependencies',
-        description: 'Run `modelkit install torch peft` (or `pip install torch peft`).',
+        description: 'Run `aimlite install torch peft` (or `pip install torch peft`).',
       },
       {
         title: 'Delta Persistence',
@@ -1045,19 +1045,19 @@ modelkit serve SupportDocRAG --port 8000`,
     snippets: {
       files: ADAPTER_FILES,
       cli: `# 1. Install dependencies into managed .venv
-modelkit install torch peft
+aimlite install torch peft
 
 # 2. Initialize project
-modelkit init lora_instructions
+aimlite init lora_instructions
 cd lora_instructions
 
 # 3. Add instruction dataset to data/instructions.json
 
 # 4. Fine-tune adapter weights
-modelkit train LoRAInstructionModel
+aimlite train LoRAInstructionModel
 
 # 5. Serve fine-tuned API
-modelkit serve LoRAInstructionModel --port 8000`,
+aimlite serve LoRAInstructionModel --port 8000`,
       curl: `curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
   -d '{"instruction": "Classify support ticket", "input": "Cannot access billing portal"}'`,

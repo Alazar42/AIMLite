@@ -1,4 +1,4 @@
-"""Runs the ModelKit zero-path model training cycle."""
+"""Runs the AIMLite zero-path model training cycle."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from typing import Any, Optional, Tuple, Type
 
 from cli.discovery import ProjectContext, resolve_project_context
 from cli.ui import C, arrow, check, cross, vite_header
-from modelkit.data import Dataset
-from modelkit.lifecycle import BaseTrainer, _model_weights_filename
-from modelkit.models import Model
+from aimlite.data import Dataset
+from aimlite.lifecycle import BaseTrainer, _model_weights_filename
+from aimlite.models import Model
 
 
 def _resolve_target_model_and_dataset(
@@ -29,7 +29,7 @@ def _resolve_target_model_and_dataset(
     custom_models = {k: v for k, v in models.items() if k != "AppModel"}
     custom_datasets = {k: v for k, v in datasets.items() if k != "AppDataset"}
 
-    # Case 1: Specific class target provided via CLI argument (e.g. modelkit train UserModel)
+    # Case 1: Specific class target provided via CLI argument (e.g. aimlite train UserModel)
     if target:
         target_lower = target.lower()
 
@@ -67,7 +67,7 @@ def _resolve_target_model_and_dataset(
             )
             return None, None, err
 
-        # Check if target matches a Dataset class name (e.g. modelkit train UserDataset)
+        # Check if target matches a Dataset class name (e.g. aimlite train UserDataset)
         matched_ds: Optional[Type[Dataset]] = None
         for d_name, d_cls in datasets.items():
             if d_name.lower() == target_lower or d_name.lower().replace("dataset", "") == target_lower:
@@ -102,7 +102,7 @@ def _resolve_target_model_and_dataset(
         )
         return None, None, err
 
-    # Case 2: No specific target provided (modelkit train)
+    # Case 2: No specific target provided (aimlite train)
     # Check if developer defined custom datasets, but has not created a custom model class
     if custom_datasets and not custom_models:
         # User defined a dataset in data.py but left model.py with AppModel or empty
@@ -113,7 +113,7 @@ def _resolve_target_model_and_dataset(
             f"  Please define your model in model.py before training:\n"
             f"    class {suggested_model}(Model):\n"
             f"        dataset = {ds_name}\n\n"
-            f"  Or specify which model to train: modelkit train <ModelName>"
+            f"  Or specify which model to train: aimlite train <ModelName>"
         )
         return None, None, err
 
@@ -124,7 +124,7 @@ def _resolve_target_model_and_dataset(
             f"Multiple models found in model.py:\n"
             f"{models_list}\n\n"
             f"  Please specify which model to train:\n"
-            f"    modelkit train <ModelName>"
+            f"    aimlite train <ModelName>"
         )
         return None, None, err
 

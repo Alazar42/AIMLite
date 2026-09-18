@@ -1,4 +1,4 @@
-"""Lifecycle Pillar Header: modelkit/lifecycle.py
+"""Lifecycle Pillar Header: aimlite/lifecycle.py
 
 Defines BaseTrainer, BaseEvaluator, and BaseInference abstract base classes
 for training orchestration, evaluation benchmarking, and live model serving.
@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 if TYPE_CHECKING:
-    from modelkit.data import Dataset
-    from modelkit.models import Model
+    from aimlite.data import Dataset
+    from aimlite.models import Model
 
 
 def _model_weights_filename(model: Any) -> str:
@@ -39,9 +39,9 @@ class BaseTrainer(ABC):
     """Coordinates optimization steps, data consumption, convergence tracking, and checkpointing."""
 
     def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
-        """Automatically registers BaseTrainer subclasses into the ModelKit registry."""
+        """Automatically registers BaseTrainer subclasses into the AIMLite registry."""
         super().__init_subclass__(**kwargs)
-        from modelkit.registry import register_class
+        from aimlite.registry import register_class
 
         register_class("trainer", cls, name=name)
 
@@ -138,9 +138,9 @@ class BaseEvaluator(ABC):
     """Evaluates model quality against held-out splits (validation or test)."""
 
     def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
-        """Automatically registers BaseEvaluator subclasses into the ModelKit registry."""
+        """Automatically registers BaseEvaluator subclasses into the AIMLite registry."""
         super().__init_subclass__(**kwargs)
-        from modelkit.registry import register_class
+        from aimlite.registry import register_class
 
         register_class("evaluator", cls, name=name)
 
@@ -163,9 +163,9 @@ class BaseInference(ABC):
     """Normalizes raw payloads, triggers model inference, and packages structured responses."""
 
     def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
-        """Automatically registers BaseInference subclasses into the ModelKit registry."""
+        """Automatically registers BaseInference subclasses into the AIMLite registry."""
         super().__init_subclass__(**kwargs)
-        from modelkit.registry import register_class
+        from aimlite.registry import register_class
 
         register_class("inference", cls, name=name)
 

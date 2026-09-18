@@ -14,7 +14,7 @@ import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from modelkit import Dataset
+from aimlite import Dataset
 
 FEATURE_COLUMNS = [
     "AccountWeeks",
@@ -57,7 +57,7 @@ class TelecomChurnDataset(Dataset):
         """Parses the CSV and returns clean structured records.
 
         Supports pandas if installed, with a zero-dependency csv fallback.
-        Populates self._data and self.columns for ModelKit validation and training.
+        Populates self._data and self.columns for AIMLite validation and training.
         """
         target = source or self.source or self.filename
         resolved = self._resolve_file_path(target)

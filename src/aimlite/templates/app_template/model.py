@@ -1,4 +1,4 @@
-"""ModelKit App: model.py
+"""AIMLite App: model.py
 
 Define your model architecture or pipeline here.
 Subclasses automatically register under the hood without decorators.
@@ -9,7 +9,7 @@ You can inherit from:
 """
 
 from typing import Any
-from modelkit import Model
+from aimlite import Model
 
 
 class AppModel(Model):

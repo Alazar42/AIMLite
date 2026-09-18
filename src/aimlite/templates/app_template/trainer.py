@@ -1,4 +1,4 @@
-"""ModelKit App: trainer.py
+"""AIMLite App: trainer.py
 
 Define your model training or fine-tuning workflow here.
 Inherit from:
@@ -7,7 +7,7 @@ Inherit from:
 """
 
 from typing import Any, Dict
-from modelkit import BaseTrainer, Dataset, Model
+from aimlite import BaseTrainer, Dataset, Model
 
 
 class AppTrainer(BaseTrainer):

@@ -34,7 +34,7 @@ export default function Navbar({
           <div className="w-5 h-5 rounded bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center text-zinc-950 shadow-sm">
             <Zap size={12} />
           </div>
-          <span className="font-bold text-zinc-100 tracking-tight">ModelKit</span>
+          <span className="font-bold text-zinc-100 tracking-tight">AIMLite</span>
           <span className="text-[10px] text-zinc-500 font-mono hidden sm:inline ml-1 px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">
             Django for AI
           </span>

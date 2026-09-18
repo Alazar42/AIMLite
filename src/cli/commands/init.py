@@ -1,31 +1,35 @@
-"""Scaffolds a new ModelKit project with Vite-style zero-code convention layout."""
+"""Scaffolds a new AIMLite project with Vite-style zero-code convention layout."""
 
 from __future__ import annotations
 
 import json
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
-from cli.ui import C, next_steps
+from cli.ui import C, check, cross, next_steps
 
 
 def run_init(
     project_name: Optional[str] = None,
     target_dir: Optional[str] = None,
+    create_venv: bool = True,
 ) -> int:
-    """Initializes a new ModelKit project directory structure and manifest.
+    """Initializes a new AIMLite project directory structure and manifest.
 
     Args:
         project_name: Project name. If None, prompts interactively.
         target_dir: Optional custom parent target directory.
+        create_venv: Whether to automatically create .venv and install aimlite.
 
     Returns:
         Process exit code (0 for success).
     """
     if not project_name:
         try:
-            print(f"\n  {C.BOLD}{C.BRIGHT_CYAN}ModelKit{C.RESET} {C.DIM}create project{C.RESET}")
+            print(f"\n  {C.BOLD}{C.BRIGHT_CYAN}AIMLite{C.RESET} {C.DIM}create project{C.RESET}")
             prompt_str = f"  {C.GREEN}?{C.RESET} {C.BOLD}Project name:{C.RESET} {C.DIM}»{C.RESET} "
             prompted = input(prompt_str).strip()
             project_name = prompted or "my_ai"
@@ -48,7 +52,7 @@ def run_init(
     for d in convention_dirs:
         (dest_root / d).mkdir(parents=True, exist_ok=True)
 
-    # 2. Generate modelkit.json manifest (clean, no task_type or apps)
+    # 2. Generate aimlite.json manifest (clean, no task_type or apps)
     manifest_data = {
         "name": project_name,
         "version": "0.1.0",
@@ -67,7 +71,7 @@ def run_init(
         },
     }
 
-    manifest_path = dest_root / "modelkit.json"
+    manifest_path = dest_root / "aimlite.json"
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest_data, f, indent=2)
 
@@ -77,100 +81,104 @@ def run_init(
 
     _create_starter_files(package_dir, project_name)
 
-    # 4. Generate ModelKit project headers (py.typed, .modelkit/ workspace config)
-    _generate_project_headers(dest_root, package_dir, project_name)
-
     print(f"\n  {C.DIM}Scaffolding project in{C.RESET} {dest_root}...")
+
+    # 4. Create .venv and install aimlite into it
+    if create_venv:
+        _setup_project_venv(dest_root)
+
     steps = []
     if dest_root != Path.cwd():
         steps.append(f"cd {project_name}")
     steps.extend([
-        "modelkit install <pandas scikit-learn ...>",
-        "modelkit doctor",
-        "modelkit train",
+        "aimlite install <pandas scikit-learn ...>",
+        "aimlite doctor",
+        "aimlite train",
     ])
     print(next_steps(steps))
 
     return 0
 
 
-def _generate_project_headers(dest_root: Path, package_dir: Path, project_name: str) -> None:
-    """Generates ModelKit project header files that improve IDE integration.
+def _setup_project_venv(dest_root: Path) -> bool:
+    """Creates an isolated virtual environment (.venv) and installs aimlite into it."""
+    venv_dir = dest_root / ".venv"
+    uv_bin = shutil.which("uv")
 
-    Creates:
-    - ``py.typed``: PEP 561 marker enabling mypy/pyright/pylance to find type annotations.
-    - ``.modelkit/workspace.json``: Workspace configuration used by the ModelKit language server,
-      VS Code extension, and IDE plugins to resolve module paths, entrypoint, and conventions.
+    # 1. Create .venv if not already present
+    if not venv_dir.is_dir():
+        created = False
+        if uv_bin:
+            res = subprocess.run([uv_bin, "venv", str(venv_dir)], cwd=str(dest_root), capture_output=True)
+            if res.returncode == 0:
+                created = True
+        if not created:
+            try:
+                import venv
+                venv.create(str(venv_dir), with_pip=True)
+                created = True
+            except Exception:
+                res = subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], cwd=str(dest_root), capture_output=True)
+                created = res.returncode == 0
+        if not created:
+            print(f"  {cross('Could not create virtual environment (.venv) automatically.')}")
+            return False
+        print(f"  {check('Created virtual environment (.venv).')}")
 
-    These files are cosmetic/IDE-only — they don't affect CLI execution.
-    """
-    import json as _json
+    # 2. Resolve venv python
+    venv_python = venv_dir / "bin" / "python"
+    if not venv_python.exists():
+        venv_python = venv_dir / "Scripts" / "python.exe"
 
-    # 1. PEP 561 py.typed marker — enables IDE type checking on project package
-    py_typed = package_dir / "py.typed"
-    if not py_typed.exists():
-        py_typed.write_text("", encoding="utf-8")
+    if not venv_python.exists():
+        return False
 
-    # 2. .modelkit/ workspace config directory
-    mk_dir = dest_root / ".modelkit"
-    mk_dir.mkdir(parents=True, exist_ok=True)
+    # 3. Install aimlite into .venv
+    installed = False
 
-    workspace_config = {
-        "version": "1",
-        "project": project_name,
-        "entrypoint": project_name,
-        "python": {
-            "venv": ".venv",
-            "extraPaths": [".", project_name],
-        },
-        "conventions": {
-            "data": f"{project_name}/data.py",
-            "model": f"{project_name}/model.py",
-            "trainer": f"{project_name}/trainer.py",
-            "evaluator": f"{project_name}/evaluator.py",
-            "inference": f"{project_name}/inference.py",
-            "config": f"{project_name}/config.py",
-        },
-    }
+    # Try uv pip install aimlite
+    if uv_bin:
+        res = subprocess.run([uv_bin, "pip", "install", "--python", str(venv_python), "aimlite"], cwd=str(dest_root), capture_output=True)
+        if res.returncode == 0:
+            installed = True
 
-    workspace_file = mk_dir / "workspace.json"
-    if not workspace_file.exists():
-        workspace_file.write_text(_json.dumps(workspace_config, indent=2), encoding="utf-8")
+    # Fallback to pip install aimlite
+    if not installed:
+        res = subprocess.run([str(venv_python), "-m", "pip", "install", "aimlite"], cwd=str(dest_root), capture_output=True)
+        if res.returncode == 0:
+            installed = True
 
-    # 3. .vscode/settings.json — configures Python extension to use the project's .venv
-    vscode_dir = dest_root / ".vscode"
-    vscode_dir.mkdir(parents=True, exist_ok=True)
-    vscode_settings = vscode_dir / "settings.json"
-    if not vscode_settings.exists():
-        settings = {
-            "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-            "python.analysis.extraPaths": [".", project_name],
-            "python.analysis.typeCheckingMode": "basic",
-        }
-        vscode_settings.write_text(_json.dumps(settings, indent=2), encoding="utf-8")
+    # Fallback for local development or prior to PyPI indexing: check if local wheel or package exists
+    if not installed:
+        dist_dir = Path(__file__).resolve().parents[3] / "dist"
+        wheels = list(dist_dir.glob("aimlite-*.whl")) if dist_dir.is_dir() else []
+        if wheels:
+            latest_wheel = sorted(wheels)[-1]
+            if uv_bin:
+                res = subprocess.run([uv_bin, "pip", "install", "--python", str(venv_python), str(latest_wheel)], cwd=str(dest_root), capture_output=True)
+                if res.returncode == 0:
+                    installed = True
+            if not installed:
+                res = subprocess.run([str(venv_python), "-m", "pip", "install", str(latest_wheel)], cwd=str(dest_root), capture_output=True)
+                if res.returncode == 0:
+                    installed = True
 
-    # 4. pyrightconfig.json — configures Pyright / Pylance for the project root
-    pyright_config = dest_root / "pyrightconfig.json"
-    if not pyright_config.exists():
-        pyright = {
-            "venvPath": ".",
-            "venv": ".venv",
-            "pythonPath": ".venv/bin/python",
-            "extraPaths": [".", project_name],
-            "include": [project_name],
-            "ignore": ["__pycache__"],
-        }
-        pyright_config.write_text(_json.dumps(pyright, indent=2), encoding="utf-8")
+    if installed:
+        print(f"  {check('Installed aimlite into .venv.')}")
+    else:
+        print(f"  {C.DIM}Note: aimlite will be installed into .venv once connected to PyPI.{C.RESET}")
+
+    return True
 
 
 def _create_starter_files(package_dir: Path, project_name: str) -> None:
-    """Generates starter files from modelkit templates with clean boilerplate."""
+    """Generates starter files from aimlite templates with clean boilerplate."""
     try:
-        from modelkit import templates
+        from aimlite import templates
 
         template_dir = Path(templates.__file__).parent / "app_template"
     except Exception:
-        template_dir = Path(__file__).resolve().parent.parent.parent / "modelkit" / "templates" / "app_template"
+        template_dir = Path(__file__).resolve().parent.parent.parent / "aimlite" / "templates" / "app_template"
 
     if template_dir.is_dir():
         for filename in ["__init__.py", "data.py", "model.py", "trainer.py", "evaluator.py", "inference.py"]:
@@ -183,10 +191,10 @@ def _create_starter_files(package_dir: Path, project_name: str) -> None:
 
     config_file = package_dir / "config.py"
     if not config_file.exists():
-        config_content = f'''"""ModelKit App Configuration: config.py"""
+        config_content = f'''"""AIMLite App Configuration: config.py"""
 
 from pathlib import Path
-from modelkit import BaseConfig
+from aimlite import BaseConfig
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -210,18 +218,18 @@ class Config(BaseConfig):
 def _write_fallback_files(package_dir: Path) -> None:
     """Fallback generator for starter files."""
     files = {
-        "__init__.py": '"""ModelKit Package."""\n',
-        "data.py": '''"""ModelKit App: data.py"""
-from modelkit import Dataset
+        "__init__.py": '"""AIMLite Package."""\n',
+        "data.py": '''"""AIMLite App: data.py"""
+from aimlite import Dataset
 
 
 class AppDataset(Dataset):
     """Application dataset definition."""
-    pass
+    filename = "dataset.csv"
 ''',
-        "model.py": '''"""ModelKit App: model.py"""
+        "model.py": '''"""AIMLite App: model.py"""
 from typing import Any
-from modelkit import Model
+from aimlite import Model
 
 
 class AppModel(Model):
@@ -230,9 +238,9 @@ class AppModel(Model):
     def predict(self, inputs: Any, **kwargs: Any) -> Any:
         return inputs
 ''',
-        "trainer.py": '''"""ModelKit App: trainer.py"""
+        "trainer.py": '''"""AIMLite App: trainer.py"""
 from typing import Any, Dict
-from modelkit import BaseTrainer, Dataset, Model
+from aimlite import BaseTrainer, Dataset, Model
 
 
 class AppTrainer(BaseTrainer):
@@ -241,9 +249,9 @@ class AppTrainer(BaseTrainer):
     def fit(self, model: Model, dataset: Dataset, **kwargs: Any) -> Dict[str, Any]:
         return {"status": "completed"}
 ''',
-        "evaluator.py": '''"""ModelKit App: evaluator.py"""
+        "evaluator.py": '''"""AIMLite App: evaluator.py"""
 from typing import Any, Dict
-from modelkit import BaseEvaluator, Dataset, Model
+from aimlite import BaseEvaluator, Dataset, Model
 
 
 class AppEvaluator(BaseEvaluator):
@@ -252,9 +260,9 @@ class AppEvaluator(BaseEvaluator):
     def evaluate(self, model: Model, dataset: Dataset, **kwargs: Any) -> Dict[str, float]:
         return {"accuracy": 1.0}
 ''',
-        "inference.py": '''"""ModelKit App: inference.py"""
+        "inference.py": '''"""AIMLite App: inference.py"""
 from typing import Any
-from modelkit import BaseInference, Model
+from aimlite import BaseInference, Model
 
 
 class AppInference(BaseInference):

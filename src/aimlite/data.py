@@ -1,4 +1,4 @@
-"""Data Pillar: modelkit/data.py
+"""Data Pillar: aimlite/data.py
 
 Standardizes dataset ingestion, schema validation, and partition contracts.
 Supports CSV, TSV, JSON, JSONL, Parquet, TXT, and custom data formats.
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 if TYPE_CHECKING:
-    from modelkit.config import BaseConfig
+    from aimlite.config import BaseConfig
 
 SUPPORTED_EXTENSIONS = [
     ".csv",
@@ -40,9 +40,9 @@ class Dataset:
     combine_all: bool = False
 
     def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
-        """Automatically registers Dataset subclasses into the ModelKit registry."""
+        """Automatically registers Dataset subclasses into the AIMLite registry."""
         super().__init_subclass__(**kwargs)
-        from modelkit.registry import register_class
+        from aimlite.registry import register_class
 
         register_class("dataset", cls, name=name)
 
@@ -149,75 +149,7 @@ class Dataset:
                 self.resolved_path = Path(fn)
                 return self.resolved_path
 
-        if not data_dir.is_dir():
-            return None
-
-        # 4. Convention: Check if file matches class name (CamelCase, snake_case) or dataset name
-        raw_cls = self.__class__.__name__
-        snake_cls = re.sub(r'(?<!^)(?=[A-Z])', '_', raw_cls).lower()
-        cleaned_snake = snake_cls.replace("_dataset", "").replace("_data", "").strip("_")
-        cleaned_class = raw_cls.lower().replace("dataset", "").replace("_data", "").strip("_")
-
-        raw_name = getattr(self, "name", "")
-        snake_name = re.sub(r'(?<!^)(?=[A-Z])', '_', raw_name).lower() if raw_name else ""
-        cleaned_name = snake_name.replace("_dataset", "").replace("_data", "").strip("_") if snake_name else ""
-
-        name_candidates: List[str] = []
-        for n in [cleaned_snake, snake_cls, cleaned_class, raw_cls.lower(), cleaned_name, snake_name, raw_name.lower()]:
-            if n and n not in ["dataset", "app", "app_dataset"] and n not in name_candidates:
-                name_candidates.append(n)
-
-        for base in name_candidates:
-            for ext in SUPPORTED_EXTENSIONS:
-                cand = data_dir / f"{base}{ext}"
-                if cand.is_file() and cand.stat().st_size > 0:
-                    self.resolved_path = cand
-                    return cand
-
-        # 5. Word-based matching: e.g. TelecomChurnDataset matches telecom_churn.csv
-        words = [w for w in cleaned_snake.split("_") if len(w) > 2]
-        if words:
-            for f in sorted(data_dir.iterdir()):
-                if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS and f.stat().st_size > 0:
-                    f_stem = f.stem.lower().replace("-", "_")
-                    if all(w in f_stem for w in words):
-                        self.resolved_path = f
-                        return f
-
-        # 6. Standard conventions: dataset.*, train.*, data.*
-        for base in ["dataset", "train", "data"]:
-            for ext in SUPPORTED_EXTENSIONS:
-                candidate = data_dir / f"{base}{ext}"
-                if candidate.is_file() and candidate.stat().st_size > 0:
-                    self.resolved_path = candidate
-                    return candidate
-
-        # 7. Single non-empty supported data file in data/
-        data_files = [
-            f for f in sorted(data_dir.iterdir())
-            if f.is_file()
-            and f.suffix.lower() in SUPPORTED_EXTENSIONS
-            and f.stat().st_size > 0
-            and not f.name.startswith(".")
-        ]
-        if len(data_files) == 1:
-            self.resolved_path = data_files[0]
-            return data_files[0]
-
-        # 8. Any non-empty supported data file
-        if data_files:
-            self.resolved_path = data_files[0]
-            return data_files[0]
-
-        # 9. Fallback: Any file in data/ (even if 0 bytes, so load() can inspect and report cleanly)
-        all_files = [
-            f for f in sorted(data_dir.iterdir())
-            if f.is_file() and not f.name.startswith(".")
-        ]
-        if all_files:
-            self.resolved_path = all_files[0]
-            return all_files[0]
-
+        # Developer must specify filename or source; do not auto-load unmapped files
         return None
 
     def _read_file(self, file_path: Path, **kwargs: Any) -> Tuple[List[str], List[Dict[str, Any]]]:
@@ -357,17 +289,12 @@ class Dataset:
             self._data = all_records
             return self._data
 
-        # 2. Check for pre-split convention: train.* and test.* in data_dir
-        if not self.filename and source is None and self.source is None and data_dir.is_dir():
-            train_file = None
-            for ext in SUPPORTED_EXTENSIONS:
-                cand = data_dir / f"train{ext}"
-                if cand.is_file() and cand.stat().st_size > 0:
-                    train_file = cand
-                    break
-
-            if train_file is not None:
-                cols, train_records = self._read_file(train_file, **kwargs)
+        # 2. Check for pre-split companion files if filename is train.*
+        fn = self.filename or (Path(self.source).name if self.source else None)
+        if fn and Path(fn).stem == "train" and data_dir.is_dir():
+            target = data_dir / fn if not Path(fn).is_file() else Path(fn)
+            if target.is_file() and target.stat().st_size > 0:
+                cols, train_records = self._read_file(target, **kwargs)
                 self.columns = cols
                 self._train_data = train_records
                 self._data = list(train_records)
@@ -437,6 +364,8 @@ class Dataset:
 
     def validate(self) -> bool:
         """Verifies that dataset exists and contains records."""
+        if not self.filename and self.source is None and self.resolved_path is None:
+            return False
         if not self._data:
             records = self.load()
             if records and not self._data:

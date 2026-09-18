@@ -7,9 +7,9 @@ from typing import Any, Optional
 
 from cli.discovery import resolve_project_context
 from cli.ui import C, arrow, check, cross, vite_header
-from modelkit.data import Dataset
-from modelkit.lifecycle import BaseEvaluator, _model_weights_filename
-from modelkit.models import Model
+from aimlite.data import Dataset
+from aimlite.lifecycle import BaseEvaluator, _model_weights_filename
+from aimlite.models import Model
 
 
 def run_evaluate(
@@ -49,7 +49,7 @@ def run_evaluate(
         custom_models = {k: v for k, v in ctx.model_classes.items() if k != "AppModel"}
         if len(custom_models) > 1:
             print(f"{cross('Multiple models found in model.py.')}")
-            print(f"  Please specify which model to evaluate: modelkit evaluate <ModelName>\n")
+            print(f"  Please specify which model to evaluate: aimlite evaluate <ModelName>\n")
             return 1
         elif len(custom_models) == 1:
             model_cls = list(custom_models.values())[0]
@@ -64,7 +64,7 @@ def run_evaluate(
     checkpoint_file = _discover_checkpoint(ctx, model_cls=model_cls)
     if checkpoint_file is None:
         print(f"{cross('No model checkpoint found in models/ or artifacts/.')}")
-        print(f"  {C.YELLOW}Run 'modelkit train' first to generate model weights.{C.RESET}\n")
+        print(f"  {C.YELLOW}Run 'aimlite train' first to generate model weights.{C.RESET}\n")
         return 1
 
     evaluator_cls = ctx.evaluator_cls

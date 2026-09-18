@@ -1,4 +1,4 @@
-"""Developer-Customizable HTTP Inference & Frontend Server for ModelKit."""
+"""Developer-Customizable HTTP Inference & Frontend Server for AIMLite."""
 
 from __future__ import annotations
 
@@ -11,24 +11,24 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Union
 
 from cli.ui import C, arrow, cross, vite_header
-from modelkit.lifecycle import BaseInference
-from modelkit.models import Model
+from aimlite.lifecycle import BaseInference
+from aimlite.models import Model
 
 
 def _load_template(filename: str) -> str:
-    """Loads HTML template from modelkit package or fallback directory."""
+    """Loads HTML template from aimlite package or fallback directory."""
     try:
         from importlib import resources
 
-        return resources.files("modelkit.templates").joinpath(filename).read_text(encoding="utf-8")
+        return resources.files("aimlite.templates").joinpath(filename).read_text(encoding="utf-8")
     except Exception:
         pass
 
-    fallback_path = Path(__file__).resolve().parent.parent / "modelkit" / "templates" / filename
+    fallback_path = Path(__file__).resolve().parent.parent / "aimlite" / "templates" / filename
     if fallback_path.is_file():
         return fallback_path.read_text(encoding="utf-8")
 
-    return f"<html><body><h1>ModelKit Server</h1><p>Template {filename} not found.</p></body></html>"
+    return f"<html><body><h1>AIMLite Server</h1><p>Template {filename} not found.</p></body></html>"
 
 
 def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -77,7 +77,7 @@ def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None)
     return {
         "openapi": "3.0.0",
         "info": {
-            "title": f"ModelKit API - {model_name}",
+            "title": f"AIMLite API - {model_name}",
             "version": "0.1.0",
             "description": "Developer-customizable inference server and frontend host.",
         },
@@ -116,7 +116,7 @@ def create_handler_class(
         except Exception:
             custom_routes = {}
 
-    class ModelKitHTTPHandler(BaseHTTPRequestHandler):
+    class AIMLiteHTTPHandler(BaseHTTPRequestHandler):
         def log_message(self, format: str, *args: Any) -> None:
             code = args[1] if len(args) > 1 else "200"
             code_color = C.GREEN if str(code).startswith("2") else (C.RED if str(code).startswith("4") or str(code).startswith("5") else C.YELLOW)
@@ -366,7 +366,7 @@ def create_handler_class(
             self.end_headers()
             self.wfile.write(msg)
 
-    return ModelKitHTTPHandler
+    return AIMLiteHTTPHandler
 
 
 def run_inference_server(
@@ -416,7 +416,7 @@ def run_inference_server(
                 wsgi_server.serve_forever()
                 return 0
             except Exception as e:
-                print(f"  {C.YELLOW}! Could not launch custom WSGI app ({e}); falling back to ModelKit server.{C.RESET}")
+                print(f"  {C.YELLOW}! Could not launch custom WSGI app ({e}); falling back to AIMLite server.{C.RESET}")
 
     handler_cls = create_handler_class(
         model=model,
@@ -430,7 +430,7 @@ def run_inference_server(
     except OSError as e:
         if "Address already in use" in str(e) or e.errno == 98:
             print(f"\n{cross(f'Port {port} is already in use.')}")
-            print(f"  {C.CYAN}Try a different port:{C.RESET} modelkit serve --port {port + 1}\n")
+            print(f"  {C.CYAN}Try a different port:{C.RESET} aimlite serve --port {port + 1}\n")
             return 1
         print(f"\n{cross(f'Failed to bind server to http://{host}:{port}: {e}')}\n")
         return 1

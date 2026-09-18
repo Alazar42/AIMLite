@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from modelkit.rag import (
+from aimlite.rag import (
     BaseEmbedding,
     Document,
     MemoryVectorStore,

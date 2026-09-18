@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Search, ArrowRight, CornerDownLeft, X, Zap, Terminal, Server, Settings, Database } from 'lucide-react';
-import { NAVIGATION_CATEGORIES, DOC_SECTIONS, type NavItem } from '../data/modelkitDocs';
+import { NAVIGATION_CATEGORIES, DOC_SECTIONS, type NavItem } from '../data/aimliteDocs';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -97,7 +97,7 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
               setQuery(e.target.value);
               setSelectedIndex(0);
             }}
-            placeholder="Search ModelKit (e.g. Data, Model, CSV, Django analogy, CLI)..."
+            placeholder="Search AIMLite (e.g. Data, Model, CSV, Django analogy, CLI)..."
             className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none font-sans"
           />
           {query && (
@@ -117,7 +117,7 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
         <div className="max-h-84 overflow-y-auto p-2 space-y-1">
           {filtered.length === 0 ? (
             <div className="py-8 text-center text-xs text-zinc-500 font-mono">
-              No matching ModelKit documentation found for "{query}".
+              No matching AIMLite documentation found for "{query}".
             </div>
           ) : (
             filtered.map(({ item, category, subtitle }, idx) => {
@@ -183,7 +183,7 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
             </span>
           </div>
 
-          <span className="font-mono text-[10px] text-zinc-500">ModelKit Quick Index</span>
+          <span className="font-mono text-[10px] text-zinc-500">AIMLite Quick Index</span>
         </div>
       </div>
     </div>

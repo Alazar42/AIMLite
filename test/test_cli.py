@@ -1,4 +1,4 @@
-"""Comprehensive test suite for ModelKit CLI commands and HTTP server."""
+"""Comprehensive test suite for AIMLite CLI commands and HTTP server."""
 
 from __future__ import annotations
 
@@ -29,8 +29,8 @@ from cli.commands import (
 from cli.discovery import find_project_root, load_project_manifest
 from cli.main import main as cli_main
 from cli.server import HTTPServer, create_handler_class
-from modelkit.lifecycle import BaseInference
-from modelkit.models import Model
+from aimlite.lifecycle import BaseInference
+from aimlite.models import Model
 
 
 class DummyModel(Model):
@@ -59,11 +59,11 @@ class CustomInference(BaseInference):
         }
 
 
-class TestModelKitCLI(unittest.TestCase):
+class TestAIMLiteCLI(unittest.TestCase):
     """Tests for zero-path CLI execution, custom frontend, and custom routes."""
 
     def setUp(self):
-        self.temp_dir = tempfile.mkdtemp(prefix="modelkit_cli_test_")
+        self.temp_dir = tempfile.mkdtemp(prefix="aimlite_cli_test_")
         self.test_root = Path(self.temp_dir)
         self.orig_cwd = os.getcwd()
 
@@ -81,7 +81,7 @@ class TestModelKitCLI(unittest.TestCase):
         self.assertEqual(run_doctor(project_root=self.test_root), 0)
 
     def test_init_scaffolds_project(self):
-        """CLI init creates convention folders, starter code, and modelkit.json without task_type."""
+        """CLI init creates convention folders, starter code, and aimlite.json without task_type."""
         proj_name = "test_ai"
         os.chdir(self.test_root)
 
@@ -89,7 +89,7 @@ class TestModelKitCLI(unittest.TestCase):
         self.assertEqual(code, 0)
 
         proj_dir = self.test_root / proj_name
-        self.assertTrue((proj_dir / "modelkit.json").is_file())
+        self.assertTrue((proj_dir / "aimlite.json").is_file())
 
         manifest = load_project_manifest(proj_dir)
         self.assertEqual(manifest["name"], proj_name)
@@ -116,7 +116,7 @@ class TestModelKitCLI(unittest.TestCase):
         self.assertEqual(code, 0)
 
         # Manifest must be directly in target_folder
-        self.assertTrue((target_folder / "modelkit.json").is_file())
+        self.assertTrue((target_folder / "aimlite.json").is_file())
         manifest = load_project_manifest(target_folder)
         self.assertEqual(manifest["name"], "my_custom_workspace")
         self.assertEqual(manifest["entrypoint"], "my_custom_workspace")
@@ -146,7 +146,7 @@ class TestModelKitCLI(unittest.TestCase):
             f.write("# No model defined here\n")
 
         # Import RAGModel and AdapterModel into Python runtime to simulate them being loaded
-        from modelkit import AdapterModel, RAGModel  # noqa: F401
+        from aimlite import AdapterModel, RAGModel  # noqa: F401
 
         # Run train: it must fail with exit code 1 because no project model is found,
         # and NOT fail with 'Multiple models found in model.py: AdapterModel, RAGModel'
@@ -251,7 +251,7 @@ class TestModelKitCLI(unittest.TestCase):
             server.server_close()
 
     def test_custom_frontend_serving(self):
-        """Tests that modelkit serve can host a developer's custom frontend."""
+        """Tests that aimlite serve can host a developer's custom frontend."""
         # Create mock frontend directory with index.html and style.css
         frontend_dir = self.test_root / "custom_frontend"
         frontend_dir.mkdir(parents=True, exist_ok=True)
@@ -380,7 +380,7 @@ class TestModelKitCLI(unittest.TestCase):
 
         # Update data.py to define multiple dataset classes
         data_py = proj_dir / proj_name / "data.py"
-        data_py.write_text('''from modelkit import Dataset
+        data_py.write_text('''from aimlite import Dataset
 
 class UsersDataset(Dataset):
     filename = "users.csv"
@@ -392,7 +392,7 @@ class MetricsDataset(Dataset):
         # Update model.py to bind UsersDataset
         model_py = proj_dir / proj_name / "model.py"
         model_py.write_text(f'''from typing import Any
-from modelkit import Model
+from aimlite import Model
 from {proj_name}.data import UsersDataset
 
 class MultiModel(Model):
@@ -426,7 +426,7 @@ class MultiModel(Model):
 
         # 2. Define custom dataset in data.py
         data_py = proj_dir / proj_name / "data.py"
-        data_py.write_text('''from modelkit import Dataset
+        data_py.write_text('''from aimlite import Dataset
 
 class UiRegressionDataset(Dataset):
     filename = "regression.csv"
@@ -442,7 +442,7 @@ class UiRegressionDataset(Dataset):
         self.assertEqual(non_existent_code, 1)
 
     def test_targeted_train_by_class_name(self):
-        """Tests training a specific model class by passing class name to modelkit train."""
+        """Tests training a specific model class by passing class name to aimlite train."""
         proj_name = "targeted_train_proj"
         os.chdir(self.test_root)
         run_init(project_name=proj_name)
@@ -454,7 +454,7 @@ class UiRegressionDataset(Dataset):
 
         # 2. Define dataset
         data_py = proj_dir / proj_name / "data.py"
-        data_py.write_text('''from modelkit import Dataset
+        data_py.write_text('''from aimlite import Dataset
 
 class UserDataset(Dataset):
     filename = "users.csv"
@@ -463,7 +463,7 @@ class UserDataset(Dataset):
         # 3. Define specific model
         model_py = proj_dir / proj_name / "model.py"
         model_py.write_text(f'''from typing import Any
-from modelkit import Model
+from aimlite import Model
 from {proj_name}.data import UserDataset
 
 class UserModel(Model):
@@ -479,7 +479,7 @@ class UserModel(Model):
         self.assertTrue((proj_dir / "models" / "user_model.pkl").is_file())
 
     def test_train_fails_when_multiple_models_without_target(self):
-        """When multiple custom models exist in model.py, modelkit train without args halts and asks for class name."""
+        """When multiple custom models exist in model.py, aimlite train without args halts and asks for class name."""
         proj_name = "multi_model_proj"
         os.chdir(self.test_root)
         run_init(project_name=proj_name)
@@ -490,7 +490,7 @@ class UserModel(Model):
 
         model_py = proj_dir / proj_name / "model.py"
         model_py.write_text('''from typing import Any
-from modelkit import Model
+from aimlite import Model
 
 class ModelA(Model):
     def predict(self, inputs: Any, **kwargs: Any) -> Any:
@@ -510,25 +510,25 @@ class ModelB(Model):
         self.assertEqual(code_a, 0)
 
     def test_standalone_executable(self):
-        """Tests that build/modelkit runs and executes CLI commands."""
+        """Tests that build/aimlite runs and executes CLI commands."""
         project_root = Path(__file__).resolve().parent.parent
-        executable = project_root / "build" / "modelkit"
-        self.assertTrue(executable.is_file(), "Executable build/modelkit does not exist")
-        self.assertTrue(os.access(executable, os.X_OK), "build/modelkit is not executable")
+        executable = project_root / "build" / "aimlite"
+        self.assertTrue(executable.is_file(), "Executable build/aimlite does not exist")
+        self.assertTrue(os.access(executable, os.X_OK), "build/aimlite is not executable")
 
         # Test --version
         res = subprocess.run([str(executable), "--version"], capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
-        self.assertIn("modelkit 0.1.0", res.stdout)
+        self.assertIn("aimlite 0.1.0", res.stdout)
 
         # Test doctor
         res = subprocess.run([str(executable), "doctor"], capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
-        self.assertIn("ModelKit Doctor", res.stdout)
+        self.assertIn("AIMLite Doctor", res.stdout)
 
     @patch("subprocess.run")
     def test_install_command_updates_manifest_and_manages_venv(self, mock_run):
-        """Tests that modelkit install manages .venv and writes dependencies into modelkit.json."""
+        """Tests that aimlite install manages .venv and writes dependencies into aimlite.json."""
         mock_res = MagicMock()
         mock_res.returncode = 0
         mock_run.return_value = mock_res
@@ -537,7 +537,7 @@ class ModelB(Model):
         run_init("test_install_app", target_dir=str(self.test_root))
 
         # Check initial manifest state
-        manifest_data = json.loads((proj_dir / "modelkit.json").read_text(encoding="utf-8"))
+        manifest_data = json.loads((proj_dir / "aimlite.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest_data.get("dependencies"), [])
 
         # Create dummy .venv/bin/python
@@ -549,9 +549,9 @@ class ModelB(Model):
         code = run_install(["scikit-learn", "pandas"], project_root=proj_dir)
         self.assertEqual(code, 0)
 
-        # Verify modelkit.json was updated with dependencies
-        updated_modelkit = json.loads((proj_dir / "modelkit.json").read_text(encoding="utf-8"))
-        self.assertEqual(updated_modelkit["dependencies"], ["pandas", "scikit-learn"])
+        # Verify aimlite.json was updated with dependencies
+        updated_manifest = json.loads((proj_dir / "aimlite.json").read_text(encoding="utf-8"))
+        self.assertEqual(updated_manifest["dependencies"], ["pandas", "scikit-learn"])
 
         # Run install without packages (should read dependencies from manifest)
         code_empty = run_install([], project_root=proj_dir)
@@ -568,8 +568,8 @@ class ModelB(Model):
         run_init("test_install_cli", target_dir=str(self.test_root))
         os.chdir(proj_dir)
 
-        # Write sample dependency to modelkit.json
-        manifest_file = proj_dir / "modelkit.json"
+        # Write sample dependency to aimlite.json
+        manifest_file = proj_dir / "aimlite.json"
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
         manifest["dependencies"] = ["pandas"]
         manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
@@ -606,7 +606,7 @@ class ModelB(Model):
         # 2. Write TelecomChurnDataset in data.py
         data_py = proj_dir / proj_name / "data.py"
         data_py.write_text('''import csv
-from modelkit import Dataset
+from aimlite import Dataset
 
 class TelecomChurnDataset(Dataset):
     filename = "telecom_churn.csv"
@@ -633,28 +633,55 @@ class TelecomChurnDataset(Dataset):
         val_target = run_data_validate(target="TelecomChurnDataset", project_root=proj_dir)
         self.assertEqual(val_target, 0)
 
-    def test_convention_snake_case_matches_telecom_churn(self):
-        """Tests that TelecomChurnDataset automatically resolves telecom_churn.csv even without filename attribute."""
-        proj_name = "churn_auto_proj"
+    def test_dataset_requires_filename(self):
+        """Tests that Dataset requires explicit filename or source and does not auto-load unmapped files."""
+        # 1. Dataset without filename fails validation (no auto-loading)
+        proj_no_fn = "churn_no_fn_proj"
         os.chdir(self.test_root)
-        run_init(project_name=proj_name)
-        proj_dir = self.test_root / proj_name
-        os.chdir(proj_dir)
+        run_init(project_name=proj_no_fn)
+        dir_no_fn = self.test_root / proj_no_fn
+        os.chdir(dir_no_fn)
 
-        # Add telecom_churn.csv
-        churn_csv = proj_dir / "data" / "telecom_churn.csv"
-        churn_csv.write_text("Churn,AccountWeeks\n0,100\n1,50\n", encoding="utf-8")
-
-        # Define dataset without explicit filename
-        data_py = proj_dir / proj_name / "data.py"
-        data_py.write_text('''from modelkit import Dataset
+        (dir_no_fn / "data" / "telecom_churn.csv").write_text("Churn,AccountWeeks\n0,100\n1,50\n", encoding="utf-8")
+        data_py_no_fn = dir_no_fn / proj_no_fn / "data.py"
+        data_py_no_fn.write_text('''from aimlite import Dataset
 
 class TelecomChurnDataset(Dataset):
     pass
 ''', encoding="utf-8")
 
-        val_code = run_data_validate(project_root=proj_dir)
-        self.assertEqual(val_code, 0)
+        val_code_fail = run_data_validate(project_root=dir_no_fn)
+        self.assertEqual(val_code_fail, 1)
+
+        # 2. When filename is explicitly declared, validation succeeds
+        proj_with_fn = "churn_with_fn_proj"
+        os.chdir(self.test_root)
+        run_init(project_name=proj_with_fn)
+        dir_with_fn = self.test_root / proj_with_fn
+        os.chdir(dir_with_fn)
+
+        (dir_with_fn / "data" / "telecom_churn.csv").write_text("Churn,AccountWeeks\n0,100\n1,50\n", encoding="utf-8")
+        data_py_with_fn = dir_with_fn / proj_with_fn / "data.py"
+        data_py_with_fn.write_text('''from aimlite import Dataset
+
+class TelecomChurnDataset(Dataset):
+    filename = "telecom_churn.csv"
+''', encoding="utf-8")
+
+        val_code_pass = run_data_validate(project_root=dir_with_fn)
+        self.assertEqual(val_code_pass, 0)
+
+    def test_init_creates_venv_and_installs_aimlite(self):
+        """Tests that aimlite init creates .venv and installs aimlite into it."""
+        proj_name = "venv_init_proj"
+        os.chdir(self.test_root)
+        run_init(project_name=proj_name)
+        proj_dir = self.test_root / proj_name
+        self.assertTrue((proj_dir / ".venv").is_dir(), "Expected .venv directory to be created on init")
+        venv_python = proj_dir / ".venv" / "bin" / "python"
+        if not venv_python.exists():
+            venv_python = proj_dir / ".venv" / "Scripts" / "python.exe"
+        self.assertTrue(venv_python.exists(), "Expected python executable inside .venv")
 
 
 if __name__ == "__main__":

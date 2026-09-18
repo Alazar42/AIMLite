@@ -9,16 +9,16 @@ from typing import Optional
 
 from cli.discovery import find_project_root, get_manifest_path
 from cli.ui import C, arrow, check, cross, vite_header
-from modelkit.config import BaseConfig
+from aimlite.config import BaseConfig
 
 
 def run_doctor(project_root: Optional[Path] = None) -> int:
-    """Executes ModelKit environment and hardware diagnostics.
+    """Executes AIMLite environment and hardware diagnostics.
 
     Returns:
         Exit code: 0 if healthy, 1 if critical issues found.
     """
-    print(vite_header("doctor", extra="(ModelKit Doctor)"))
+    print(vite_header("doctor", extra="(AIMLite Doctor)"))
 
     py_ver = sys.version.split()[0]
     py_major, py_minor = sys.version_info.major, sys.version_info.minor

@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from modelkit import Dataset
+from aimlite import Dataset
 
 SAMPLE_INSTRUCTIONS = [
     {

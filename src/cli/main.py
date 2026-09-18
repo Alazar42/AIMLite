@@ -1,4 +1,4 @@
-"""ModelKit CLI Entrypoint: Zero-Path ML Execution Engine."""
+"""AIMLite CLI Entrypoint: Zero-Path AI & ML Execution Engine."""
 
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ from cli.commands import (
     run_data_validate,
     run_doctor,
     run_evaluate,
-    run_headers,
     run_init,
     run_install,
     run_serve,
@@ -25,7 +24,7 @@ def print_custom_help() -> None:
     """Renders a Vite-style minimalist CLI help dashboard."""
     print(vite_header())
     print(f"  {C.BOLD}Usage:{C.RESET}")
-    print(f"    $ {C.CYAN}modelkit{C.RESET} <command> [options]\n")
+    print(f"    $ {C.CYAN}aimlite{C.RESET} <command> [options]\n")
 
     print(f"  {C.BOLD}Commands:{C.RESET}")
     print(f"    {C.GREEN}init{C.RESET} [name]                 {C.DIM}Scaffold a new project layout & conventions{C.RESET}")
@@ -34,7 +33,6 @@ def print_custom_help() -> None:
     print(f"    {C.GREEN}train{C.RESET} [class]               {C.DIM}Execute zero-path model training for specified class{C.RESET}")
     print(f"    {C.GREEN}evaluate{C.RESET} [class]            {C.DIM}Assess model performance against held-out splits{C.RESET}")
     print(f"    {C.GREEN}serve{C.RESET} [class] [options]     {C.DIM}Launch inference server & custom frontend{C.RESET}")
-    print(f"    {C.GREEN}headers{C.RESET}                   {C.DIM}Generate IDE headers (py.typed, pyrightconfig, .vscode){C.RESET}")
     print(f"    {C.GREEN}doctor{C.RESET}                    {C.DIM}Inspect runtime, accelerators & directory permissions{C.RESET}\n")
 
     print(f"  {C.BOLD}Options:{C.RESET}")
@@ -45,8 +43,8 @@ def print_custom_help() -> None:
 def build_parser() -> argparse.ArgumentParser:
     """Constructs the command-line argument parser."""
     parser = argparse.ArgumentParser(
-        prog="modelkit",
-        description="ModelKit CLI — The Django for Machine Learning & AI (Zero-Path Execution)",
+        prog="aimlite",
+        description="AIMLite CLI — The Django for AI & Machine Learning (Zero-Path Execution)",
         add_help=False,
     )
     parser.add_argument(
@@ -67,6 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
     # init
     init_parser = subparsers.add_parser("init")
     init_parser.add_argument("name", nargs="?", default=None)
+    init_parser.add_argument("--no-venv", action="store_true", help="Skip creating .venv and installing aimlite")
 
     # install
     install_parser = subparsers.add_parser("install")
@@ -93,9 +92,6 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--port", type=int, default=8000, help="Port to listen on (default: 8000)")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     serve_parser.add_argument("--frontend", default=None, help="Custom frontend build directory (e.g. dist/, frontend/)")
-
-    # headers
-    subparsers.add_parser("headers")
 
     # doctor
     subparsers.add_parser("doctor")
@@ -125,7 +121,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     if args.command == "init":
-        return run_init(project_name=args.name)
+        return run_init(project_name=args.name, create_venv=not getattr(args, "no_venv", False))
 
     if args.command == "install":
         return run_install(packages=args.packages, upgrade=args.upgrade)
@@ -145,9 +141,6 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "doctor":
         return run_doctor()
-
-    if args.command == "headers":
-        return run_headers()
 
     print_custom_help()
     return 1

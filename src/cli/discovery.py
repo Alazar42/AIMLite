@@ -1,7 +1,7 @@
-"""Zero-Path Discovery & Execution Engine for ModelKit.
+"""Zero-Path Discovery & Execution Engine for AIMLite.
 
-Discovers modelkit.json, resolves project conventions, imports component modules,
-and extracts registered classes from modelkit.registry.
+Discovers aimlite.json, resolves project conventions,
+imports component modules, and extracts registered classes from aimlite.registry.
 """
 
 from __future__ import annotations
@@ -14,16 +14,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type
 
-from modelkit.config import BaseConfig
-from modelkit.data import Dataset
-from modelkit.lifecycle import BaseEvaluator, BaseInference, BaseTrainer
-from modelkit.models import Model
-from modelkit.registry import get_all
+from aimlite.config import BaseConfig
+from aimlite.data import Dataset
+from aimlite.lifecycle import BaseEvaluator, BaseInference, BaseTrainer
+from aimlite.models import Model
+from aimlite.registry import get_all
 
 
 @dataclass
 class ProjectContext:
-    """Encapsulates the discovered ModelKit project environment."""
+    """Encapsulates the discovered AIMLite project environment."""
 
     root_dir: Path
     manifest: Dict[str, Any]
@@ -45,7 +45,7 @@ class ProjectContext:
     inference_cls: Optional[Type[BaseInference]] = None
 
 
-FRAMEWORK_MODULES = ("modelkit.", "modelkit")
+FRAMEWORK_MODULES = ("aimlite.", "aimlite")
 FRAMEWORK_CLASS_NAMES = {
     "Model",
     "AdapterModel",
@@ -59,7 +59,7 @@ FRAMEWORK_CLASS_NAMES = {
 
 
 def _is_framework_class(cls: Type[Any]) -> bool:
-    """Returns True if cls is an internal ModelKit framework base class."""
+    """Returns True if cls is an internal AIMLite framework base class."""
     mod = getattr(cls, "__module__", "")
     if any(mod == m or mod.startswith(m) for m in FRAMEWORK_MODULES):
         return True
@@ -69,24 +69,24 @@ def _is_framework_class(cls: Type[Any]) -> bool:
 
 
 def find_project_root(start_dir: Optional[Path] = None) -> Optional[Path]:
-    """Traverses up from start_dir to find the directory containing modelkit.json."""
+    """Traverses up from start_dir to find the directory containing aimlite.json."""
     current = (start_dir or Path.cwd()).resolve()
     for parent in [current, *current.parents]:
-        if (parent / "modelkit.json").is_file():
+        if (parent / "aimlite.json").is_file():
             return parent
     return None
 
 
 def get_manifest_path(project_root: Path) -> Path:
-    """Returns the manifest path (modelkit.json)."""
-    return project_root / "modelkit.json"
+    """Returns the manifest path (aimlite.json)."""
+    return project_root / "aimlite.json"
 
 
 def inject_venv_site_packages(project_root: Path) -> None:
     """Injects the project .venv site-packages into sys.path so installed libraries are available.
 
-    This enables the standalone modelkit CLI to use libraries (pandas, scikit-learn, torch, etc.)
-    installed via `modelkit install` in the project's virtual environment without needing
+    This enables the standalone aimlite CLI to use libraries (pandas, scikit-learn, torch, etc.)
+    installed via `aimlite install` in the project's virtual environment without needing
     to activate the venv manually.
 
     Works on Linux/macOS (.venv/lib/pythonX.Y/site-packages) and Windows (.venv/Lib/site-packages).
@@ -119,7 +119,7 @@ def inject_venv_site_packages(project_root: Path) -> None:
 
 
 def load_project_manifest(project_root: Path) -> Dict[str, Any]:
-    """Loads and parses modelkit.json from the project root."""
+    """Loads and parses aimlite.json from the project root."""
     manifest_path = get_manifest_path(project_root)
     if not manifest_path.is_file():
         raise FileNotFoundError(f"Missing project manifest at: {manifest_path}")
@@ -139,7 +139,7 @@ def resolve_project_context(
 
     Args:
         start_dir: Optional starting directory for discovery.
-        require_manifest: If True, raises RuntimeError if modelkit.json is not found.
+        require_manifest: If True, raises RuntimeError if aimlite.json is not found.
 
     Returns:
         ProjectContext with loaded classes and convention paths.
@@ -148,9 +148,9 @@ def resolve_project_context(
     if root_dir is None:
         if require_manifest:
             raise RuntimeError(
-                "Zero-Path error: 'modelkit.json' not found in current or parent directories.\n"
-                "Please run this command from within an initialized ModelKit project, "
-                "or run 'modelkit init <project_name>' to create one."
+                "Zero-Path error: 'aimlite.json' not found in current or parent directories.\n"
+                "Please run this command from within an initialized AIMLite project, "
+                "or run 'aimlite init <project_name>' to create one."
             )
         root_dir = (start_dir or Path.cwd()).resolve()
         manifest: Dict[str, Any] = {}
@@ -342,7 +342,7 @@ def _import_file_directly(
             # Keep module registered so partial imports don't error on re-import,
             # but surface the error so it can be debugged if needed.
             import os
-            if os.environ.get("MODELKIT_DEBUG"):
+            if os.environ.get("AIMLITE_DEBUG"):
                 import traceback
                 traceback.print_exc()
 

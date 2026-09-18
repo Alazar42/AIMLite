@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseTrainer, Dataset, Model
+from aimlite import BaseTrainer, Dataset, Model
 
 
 class IndexBuilderTrainer(BaseTrainer):
@@ -21,7 +21,7 @@ class IndexBuilderTrainer(BaseTrainer):
             documents = dataset.load_documents()
         else:
             records = dataset.load()
-            from modelkit.rag import Document
+            from aimlite.rag import Document
 
             documents = [
                 Document(content=r.get("content", str(r)), metadata=r.get("metadata", {}))

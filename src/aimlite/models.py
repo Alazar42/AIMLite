@@ -1,4 +1,4 @@
-"""Model Pillar Header: modelkit/models.py
+"""Model Pillar Header: aimlite/models.py
 
 Defines model initialization, checkpoint persistence, forward inference,
 and standalone evaluation hooks.
@@ -18,9 +18,9 @@ class Model(ABC):
     dataset: Optional[Any] = None
 
     def __init_subclass__(cls, name: Optional[str] = None, **kwargs: Any) -> None:
-        """Automatically registers Model subclasses into the ModelKit registry."""
+        """Automatically registers Model subclasses into the AIMLite registry."""
         super().__init_subclass__(**kwargs)
-        from modelkit.registry import register_class
+        from aimlite.registry import register_class
 
         register_class("model", cls, name=name)
 
@@ -53,7 +53,7 @@ class Model(ABC):
         if isinstance(self.dataset, type):
             return self.dataset(name=f"{self.name}_data", config=config)
         if isinstance(self.dataset, str):
-            from modelkit.registry import get as registry_get
+            from aimlite.registry import get as registry_get
 
             ds_cls = registry_get("dataset", self.dataset)
             return ds_cls(name=f"{self.name}_data", config=config)

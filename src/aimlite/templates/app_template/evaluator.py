@@ -1,10 +1,10 @@
-"""ModelKit App: evaluator.py
+"""AIMLite App: evaluator.py
 
 Define held-out performance metrics (accuracy, F1, loss, retrieval precision) here.
 """
 
 from typing import Any, Dict
-from modelkit import BaseEvaluator, Dataset, Model
+from aimlite import BaseEvaluator, Dataset, Model
 
 
 class AppEvaluator(BaseEvaluator):

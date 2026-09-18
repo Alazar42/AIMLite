@@ -35,7 +35,7 @@ import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from modelkit import Dataset
+from aimlite import Dataset
 
 FEATURE_COLUMNS = [
     "AccountWeeks",
@@ -78,7 +78,7 @@ class TelecomChurnDataset(Dataset):
         """Parses the CSV and returns clean structured records.
 
         Supports pandas if installed, with a zero-dependency csv fallback.
-        Populates self._data and self.columns for ModelKit validation and training.
+        Populates self._data and self.columns for AIMLite validation and training.
         """
         target = source or self.source or self.filename
         resolved = self._resolve_file_path(target)
@@ -157,7 +157,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from modelkit import Model
+from aimlite import Model
 
 
 class ChurnClassifier(Model):
@@ -286,7 +286,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseTrainer, Dataset, Model
+from aimlite import BaseTrainer, Dataset, Model
 
 
 class ChurnTrainer(BaseTrainer):
@@ -351,7 +351,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from modelkit import BaseEvaluator, Dataset, Model
+from aimlite import BaseEvaluator, Dataset, Model
 
 
 class ChurnEvaluator(BaseEvaluator):
@@ -398,7 +398,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseInference, Model
+from aimlite import BaseInference, Model
 
 
 class ChurnInference(BaseInference):
@@ -435,14 +435,14 @@ class ChurnInference(BaseInference):
         }
 
     def get_routes(self) -> Dict[str, Any]:
-        """Declares HTTP route mappings for ModelKit server."""
+        """Declares HTTP route mappings for AIMLite server."""
         return {
             "POST /predict": self.run,
             "GET /health": self.health,
         }
 `,
 
-  'modelkit.json': `{
+  'aimlite.json': `{
   "name": "telecom_churn",
   "version": "0.1.0",
   "entrypoint": "telecom_churn",
@@ -466,15 +466,15 @@ export const SCRATCH_GUIDE_STEPS: GuideStep[] = [
     filename: 'terminal.sh',
     language: 'bash',
     description:
-      'Scaffold a clean ModelKit project. Use `modelkit init <name>` to create a new folder, or `./modelkit init .` to initialize directly inside your current directory.',
+      'Scaffold a clean AIMLite project. Use `aimlite init <name>` to create a new folder, or `./aimlite init .` to initialize directly inside your current directory.',
     code: `# Option A: Create in a new project folder
-modelkit init telecom_churn
+aimlite init telecom_churn
 cd telecom_churn
 
 # Option B: Or scaffold directly inside current directory (.)
-# ./modelkit init .`,
+# ./aimlite init .`,
     whyCode:
-      'Creates the standard zero-path folder layout (data/, models/, experiments/, artifacts/, checkpoints/) and generates the project manifest modelkit.json without requiring boilerplate setup.',
+      'Creates the standard zero-path folder layout (data/, models/, experiments/, artifacts/, checkpoints/) and generates the project manifest aimlite.json without requiring boilerplate setup.',
   },
   {
     stepNumber: 2,
@@ -484,14 +484,14 @@ cd telecom_churn
     filename: 'terminal.sh',
     language: 'bash',
     description:
-      'Run `modelkit install` with your required ML libraries (e.g. scikit-learn, pandas). ModelKit automatically creates and manages `.venv` across Linux, macOS, and Windows (avoiding OS PEP 668 restrictions), and automatically updates `modelkit.json` under `"dependencies"`.',
-    code: `# Install libraries: auto-manages .venv and updates modelkit.json
-modelkit install scikit-learn pandas
+      'Run `aimlite install` with your required ML libraries (e.g. scikit-learn, pandas). AIMLite automatically creates and manages `.venv` across Linux, macOS, and Windows (avoiding OS PEP 668 restrictions), and automatically updates `aimlite.json` under `"dependencies"`.',
+    code: `# Install libraries: auto-manages .venv and updates aimlite.json
+aimlite install scikit-learn pandas
 
 # Later or on a new machine, running with no arguments reinstalls all pinned dependencies:
-# modelkit install`,
+# aimlite install`,
     whyCode:
-      'On modern OSes (Ubuntu 24+, Debian, macOS), installing global python packages is restricted (PEP 668). ModelKit ensures all projects have an isolated, self-managed .venv and tracks dependencies deterministically in modelkit.json.',
+      'On modern OSes (Ubuntu 24+, Debian, macOS), installing global python packages is restricted (PEP 668). AIMLite ensures all projects have an isolated, self-managed .venv and tracks dependencies deterministically in aimlite.json.',
   },
   {
     stepNumber: 3,
@@ -501,19 +501,19 @@ modelkit install scikit-learn pandas
     filename: 'data/telecom_churn.csv',
     language: 'bash',
     description:
-      'Download the Telecom Churn CSV from Kaggle and place it in your project as `data/telecom_churn.csv`. Then validate dataset conventions with `modelkit data validate`.',
+      'Download the Telecom Churn CSV from Kaggle and place it in your project as `data/telecom_churn.csv`. Then validate dataset conventions with `aimlite data validate`.',
     code: `# 1. Download dataset from Kaggle:
 # https://www.kaggle.com/datasets/barun2104/telecom-churn
 # Place file into: data/telecom_churn.csv
 
 # 2. Validate dataset schema and conventions:
-modelkit data validate`,
+aimlite data validate`,
     externalLink: {
       label: 'Kaggle: Telecom Churn Dataset',
       url: 'https://www.kaggle.com/datasets/barun2104/telecom-churn',
     },
     whyCode:
-      'ModelKit validates that data/ contains valid datasets and ensures columns (AccountWeeks, ContractRenewal, DataPlan, CustServCalls, MonthlyCharge, Churn) match expected schema before training begins.',
+      'AIMLite validates that data/ contains valid datasets and ensures columns (AccountWeeks, ContractRenewal, DataPlan, CustServCalls, MonthlyCharge, Churn) match expected schema before training begins.',
   },
   {
     stepNumber: 4,
@@ -523,10 +523,10 @@ modelkit data validate`,
     filename: 'data.py',
     language: 'python',
     description:
-      'Implement `TelecomChurnDataset` inheriting from `modelkit.Dataset` with explicit `filename = "telecom_churn.csv"`. Uses pandas for accelerated reading with a pure-Python csv fallback, and populates `self._data` and `self.columns`.',
+      'Implement `TelecomChurnDataset` inheriting from `aimlite.Dataset` with explicit `filename = "telecom_churn.csv"`. Uses pandas for accelerated reading with a pure-Python csv fallback, and populates `self._data` and `self.columns`.',
     code: SCRATCH_FILES['data.py'],
     whyCode:
-      'Setting `filename = "telecom_churn.csv"` tells ModelKit exactly which CSV file in `data/` to bind, validate, and partition. Assigning `self._data` and `self.columns` enables ModelKit automated split contracts and pre-flight validation.',
+      'Setting `filename = "telecom_churn.csv"` tells AIMLite exactly which CSV file in `data/` to bind, validate, and partition. Assigning `self._data` and `self.columns` enables AIMLite automated split contracts and pre-flight validation.',
   },
   {
     stepNumber: 5,
@@ -536,10 +536,10 @@ modelkit data validate`,
     filename: 'model.py',
     language: 'python',
     description:
-      'Define `ChurnClassifier` subclassing `modelkit.Model`. Encapsulates `RandomForestClassifier` with balanced class weights, implements `predict()` and `predict_proba()`, and provides standard pickle serialization.',
+      'Define `ChurnClassifier` subclassing `aimlite.Model`. Encapsulates `RandomForestClassifier` with balanced class weights, implements `predict()` and `predict_proba()`, and provides standard pickle serialization.',
     code: SCRATCH_FILES['model.py'],
     whyCode:
-      'Inheriting from Model gives you automatic registration with ModelKit discovery. Zero-path commands (train, evaluate, serve) can inspect and instantiate ChurnClassifier by name.',
+      'Inheriting from Model gives you automatic registration with AIMLite discovery. Zero-path commands (train, evaluate, serve) can inspect and instantiate ChurnClassifier by name.',
   },
   {
     stepNumber: 6,
@@ -552,7 +552,7 @@ modelkit data validate`,
       'Define `ChurnTrainer` subclassing `BaseTrainer`. Performs an 80/20 train/validation split, fits the model, reports train/val accuracy, and saves weights into `artifacts/churn_classifier.pkl`.',
     code: SCRATCH_FILES['trainer.py'],
     whyCode:
-      'BaseTrainer standardizes execution lifecycle. ModelKit invokes fit(model, dataset) and guarantees checkpoints are cleanly stored in artifacts/ without ad-hoc path manipulation.',
+      'BaseTrainer standardizes execution lifecycle. AIMLite invokes fit(model, dataset) and guarantees checkpoints are cleanly stored in artifacts/ without ad-hoc path manipulation.',
   },
   {
     stepNumber: 7,
@@ -578,7 +578,7 @@ modelkit data validate`,
       'Define `ChurnInference` subclassing `BaseInference`. Automatically loads weights from `artifacts/churn_classifier.pkl`, calculates churn risk score, and routes customers to retention workflows.',
     code: SCRATCH_FILES['inference.py'],
     whyCode:
-      'BaseInference provides production-ready REST API route mapping (POST /predict, GET /health). ModelKit serve uses this class to power low-latency prediction servers.',
+      'BaseInference provides production-ready REST API route mapping (POST /predict, GET /health). AIMLite serve uses this class to power low-latency prediction servers.',
   },
   {
     stepNumber: 9,
@@ -588,15 +588,15 @@ modelkit data validate`,
     filename: 'terminal.sh',
     language: 'bash',
     description:
-      'Execute the end-to-end machine learning lifecycle using ModelKit CLI commands. Train the model, benchmark metrics, and start the production inference HTTP server.',
+      'Execute the end-to-end machine learning lifecycle using AIMLite CLI commands. Train the model, benchmark metrics, and start the production inference HTTP server.',
     code: `# 1. Train classifier and write weights to artifacts/
-modelkit train ChurnClassifier
+aimlite train ChurnClassifier
 
 # 2. Evaluate accuracy, precision, recall, and F1
-modelkit evaluate ChurnClassifier
+aimlite evaluate ChurnClassifier
 
 # 3. Start production inference REST server
-modelkit serve ChurnClassifier --port 8000
+aimlite serve ChurnClassifier --port 8000
 
 # 4. Test inference endpoint (in another terminal):
 curl -X POST http://127.0.0.1:8000/predict \\
@@ -635,14 +635,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from modelkit import Dataset
-from modelkit.rag import Document, TextSplitter
+from aimlite import Dataset
+from aimlite.rag import Document, TextSplitter
 
 SAMPLE_KNOWLEDGE_DOCS = [
     {
         "filename": "auth_policy.md",
         "content": (
-            "Authentication and Security Policy: ModelKit supports API key and Bearer token authentication. "
+            "Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. "
             "Session tokens expire after 24 hours of inactivity. Multi-factor authentication (MFA) is required "
             "for administrative access to production model endpoints."
         ),
@@ -650,7 +650,7 @@ SAMPLE_KNOWLEDGE_DOCS = [
     {
         "filename": "deployment_guide.md",
         "content": (
-            "Production Deployment Guide: ModelKit models can be served via 'modelkit serve --port 8000'. "
+            "Production Deployment Guide: AIMLite models can be served via 'aimlite serve --port 8000'. "
             "For production deployments, containerize using Docker with the provided Dockerfile. "
             "Horizontal scaling can be achieved with Kubernetes by configuring the replica count."
         ),
@@ -735,7 +735,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from modelkit.rag import (
+from aimlite.rag import (
     BaseEmbedding,
     Document,
     MemoryVectorStore,
@@ -839,7 +839,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseTrainer, Dataset, Model
+from aimlite import BaseTrainer, Dataset, Model
 
 
 class IndexBuilderTrainer(BaseTrainer):
@@ -851,7 +851,7 @@ class IndexBuilderTrainer(BaseTrainer):
             documents = dataset.load_documents()
         else:
             records = dataset.load()
-            from modelkit.rag import Document
+            from aimlite.rag import Document
 
             documents = [
                 Document(content=r.get("content", str(r)), metadata=r.get("metadata", {}))
@@ -891,7 +891,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseInference, Model
+from aimlite import BaseInference, Model
 
 
 class RAGInference(BaseInference):
@@ -917,14 +917,14 @@ class RAGInference(BaseInference):
         }
 
     def get_routes(self) -> Dict[str, Any]:
-        """Declares HTTP route mappings for ModelKit server."""
+        """Declares HTTP route mappings for AIMLite server."""
         return {
             "POST /predict": self.run,
             "GET /health": self.health,
         }
 `,
 
-  'modelkit.json': `{
+  'aimlite.json': `{
   "name": "support_rag",
   "version": "0.1.0",
   "entrypoint": "support_rag",
@@ -948,12 +948,12 @@ export const RAG_GUIDE_STEPS: GuideStep[] = [
     filename: 'terminal.sh',
     language: 'bash',
     description:
-      'Scaffold a new RAG knowledge retrieval project with ModelKit conventions.',
+      'Scaffold a new RAG knowledge retrieval project with AIMLite conventions.',
     code: `# Create and enter project directory
-modelkit init support_rag
+aimlite init support_rag
 cd support_rag`,
     whyCode:
-      'Sets up standard directory conventions (data/, artifacts/) and initializes modelkit.json.',
+      'Sets up standard directory conventions (data/, artifacts/) and initializes aimlite.json.',
   },
   {
     stepNumber: 2,
@@ -963,9 +963,9 @@ cd support_rag`,
     filename: 'terminal.sh',
     language: 'bash',
     description:
-      'Install `sentence-transformers` and `numpy`. ModelKit manages `.venv` automatically and records dependencies into `modelkit.json`.',
+      'Install `sentence-transformers` and `numpy`. AIMLite manages `.venv` automatically and records dependencies into `aimlite.json`.',
     code: `# Install embedding libraries into managed .venv:
-modelkit install sentence-transformers numpy`,
+aimlite install sentence-transformers numpy`,
     whyCode:
       'SentenceTransformers computes dense vector embeddings for semantic similarity search. TfidfEmbedding acts as a zero-dependency fallback.',
   },
@@ -977,11 +977,11 @@ modelkit install sentence-transformers numpy`,
     filename: 'data/faq.md',
     language: 'markdown',
     description:
-      'Place Markdown (.md) or Text (.txt) articles into the `data/` directory. ModelKit ingests and chunks all documents automatically.',
-    code: `# ModelKit Architecture & Deployment FAQ
+      'Place Markdown (.md) or Text (.txt) articles into the `data/` directory. AIMLite ingests and chunks all documents automatically.',
+    code: `# AIMLite Architecture & Deployment FAQ
 
 ### What is Zero-Path Execution?
-ModelKit dynamically discovers data.py, model.py, trainer.py, and inference.py
+AIMLite dynamically discovers data.py, model.py, trainer.py, and inference.py
 by inspecting project conventions. No manual routing or wiring is required.
 
 ### How are artifacts stored?
@@ -998,7 +998,7 @@ Vector indices are serialized into artifacts/rag_index.json.`,
     filename: 'data.py',
     language: 'python',
     description:
-      'Implement `KnowledgeDocsDataset` using ModelKit built-in `TextSplitter` to segment documentation into overlapping semantic windows.',
+      'Implement `KnowledgeDocsDataset` using AIMLite built-in `TextSplitter` to segment documentation into overlapping semantic windows.',
     code: RAG_FILES['data.py'],
     whyCode:
       'TextSplitter(chunk_size=300, chunk_overlap=40) prevents boundary truncation and ensures complete context during vector retrieval.',
@@ -1052,17 +1052,17 @@ Vector indices are serialized into artifacts/rag_index.json.`,
     description:
       'Build the vector index and start the production knowledge query server.',
     code: `# 1. Ingest documents and build vector index
-modelkit train SupportDocRAG
+aimlite train SupportDocRAG
 
 # 2. Start knowledge API server
-modelkit serve SupportDocRAG --port 8000
+aimlite serve SupportDocRAG --port 8000
 
 # 3. Query the knowledge base
 curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
   -d '{"query": "How does zero-path execution work?", "top_k": 3}'`,
     whyCode:
-      'Executes the entire RAG lifecycle using standard ModelKit CLI commands.',
+      'Executes the entire RAG lifecycle using standard AIMLite CLI commands.',
   },
 ];
 
@@ -1083,7 +1083,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from modelkit import Dataset
+from aimlite import Dataset
 
 SAMPLE_INSTRUCTIONS = [
     {
@@ -1172,7 +1172,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from modelkit.adapters import AdapterConfig, AdapterModel
+from aimlite.adapters import AdapterConfig, AdapterModel
 
 
 class LoRAInstructionModel(AdapterModel):
@@ -1278,7 +1278,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseTrainer, Dataset, Model
+from aimlite import BaseTrainer, Dataset, Model
 
 
 class AdapterInstructionTrainer(BaseTrainer):
@@ -1331,7 +1331,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-from modelkit import BaseInference, Model
+from aimlite import BaseInference, Model
 
 
 class AdapterInference(BaseInference):
@@ -1353,14 +1353,14 @@ class AdapterInference(BaseInference):
         }
 
     def get_routes(self) -> Dict[str, Any]:
-        """Declares HTTP route mappings for ModelKit server."""
+        """Declares HTTP route mappings for AIMLite server."""
         return {
             "POST /predict": self.run,
             "GET /health": self.health,
         }
 `,
 
-  'modelkit.json': `{
+  'aimlite.json': `{
   "name": "lora_instructions",
   "version": "0.1.0",
   "entrypoint": "lora_instructions",
@@ -1386,10 +1386,10 @@ export const ADAPTER_GUIDE_STEPS: GuideStep[] = [
     description:
       'Scaffold a new LoRA instruction tuning project.',
     code: `# Create and enter project directory
-modelkit init lora_instructions
+aimlite init lora_instructions
 cd lora_instructions`,
     whyCode:
-      'Sets up standard project conventions and generates modelkit.json.',
+      'Sets up standard project conventions and generates aimlite.json.',
   },
   {
     stepNumber: 2,
@@ -1399,9 +1399,9 @@ cd lora_instructions`,
     filename: 'terminal.sh',
     language: 'bash',
     description:
-      'Install `torch` and `peft`. ModelKit automatically sets up `.venv` and updates `modelkit.json`.',
+      'Install `torch` and `peft`. AIMLite automatically sets up `.venv` and updates `aimlite.json`.',
     code: `# Install PEFT fine-tuning dependencies:
-modelkit install torch peft`,
+aimlite install torch peft`,
     whyCode:
       'Hugging Face PEFT and PyTorch provide Low-Rank Adaptation (LoRA) matrix optimization.',
   },
@@ -1491,10 +1491,10 @@ modelkit install torch peft`,
     description:
       'Execute LoRA fine-tuning and start the production inference server.',
     code: `# 1. Train lightweight delta weights
-modelkit train LoRAInstructionModel
+aimlite train LoRAInstructionModel
 
 # 2. Start serving fine-tuned model
-modelkit serve LoRAInstructionModel --port 8000
+aimlite serve LoRAInstructionModel --port 8000
 
 # 3. Test generation endpoint
 curl -X POST http://127.0.0.1:8000/predict \\

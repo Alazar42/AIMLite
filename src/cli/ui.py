@@ -1,7 +1,7 @@
-"""Vite-inspired minimalistic, ultra-clean Terminal UI engine for ModelKit CLI.
+"""Vite-inspired minimalistic, ultra-clean Terminal UI engine for AIMLite CLI.
 
 Zero dependencies, zero emojis. Follows modern Vite / Astral styling conventions:
-subtle brand banners, arrow prompts, clean whitespace, and colored status indicators.
+subbrand banners, arrow prompts, clean whitespace, and colored status indicators.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ C = Color
 
 def vite_header(subcommand: str = "", extra: str = "") -> str:
     """Renders a Vite-style brand banner."""
-    brand = f"{C.BOLD}{C.BRIGHT_CYAN}MODELKIT{C.RESET} {C.DIM}v0.1.0{C.RESET}"
+    brand = f"{C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET} {C.DIM}v0.1.0{C.RESET}"
     if subcommand:
         tag = f" {C.GREEN}{subcommand}{C.RESET}"
     else:

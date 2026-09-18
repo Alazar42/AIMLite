@@ -14,7 +14,7 @@ import {
   Sparkles,
   Layers,
 } from 'lucide-react';
-import { type DocSection, type DocParameter } from '../data/modelkitDocs';
+import { type DocSection, type DocParameter } from '../data/aimliteDocs';
 import GuideStepCard from './GuideStepCard';
 
 interface EndpointDocProps {
@@ -342,7 +342,7 @@ export default function EndpointDoc({
           <div className="flex items-center gap-2 p-2.5 rounded-lg bg-zinc-900/30 border border-zinc-800/60 text-[11px] text-zinc-400">
             <AlertCircle size={13} className="text-amber-400 shrink-0" />
             <span>
-              <strong className="text-zinc-300">Convention rule:</strong> ModelKit strictly halts (exit code 1) if starter directories or files are empty to prevent invalid training cycles.
+              <strong className="text-zinc-300">Convention rule:</strong> AIMLite strictly halts (exit code 1) if starter directories or files are empty to prevent invalid training cycles.
             </span>
           </div>
         </>

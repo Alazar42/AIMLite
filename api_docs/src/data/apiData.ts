@@ -212,7 +212,7 @@ export const PAYMENT_CREATE_DATA = {
   ] as ErrorCode[],
 
   codeSnippets: {
-    curl: `curl -X POST https://api.modelkit.dev/v1/payments/create \\
+    curl: `curl -X POST https://api.aimlite.dev/v1/payments/create \\
   -H "Authorization: Bearer sec_test_99a8b7c6d5e4f3a2b1" \\
   -H "Idempotency-Key: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d" \\
   -H "Content-Type: application/json" \\
@@ -231,10 +231,10 @@ export const PAYMENT_CREATE_DATA = {
     }
   }'`,
 
-    typescript: `import { ModelKitClient } from '@modelkit/client';
+    typescript: `import { AIMLiteClient } from '@aimlite/client';
 
-const client = new ModelKitClient({
-  apiKey: process.env.MODELKIT_SECRET_KEY,
+const client = new AIMLiteClient({
+  apiKey: process.env.AIMLITE_SECRET_KEY,
 });
 
 const payment = await client.payments.create({
@@ -256,9 +256,9 @@ const payment = await client.payments.create({
 console.log('Payment initialized:', payment.id);`,
 
     python: `import os
-import modelkit
+import aimlite
 
-client = modelkit.Client(api_key=os.environ.get("MODELKIT_SECRET_KEY"))
+client = aimlite.Client(api_key=os.environ.get("AIMLITE_SECRET_KEY"))
 
 payment = client.payments.create(
     amount=2500,  # $25.00 USD
@@ -282,24 +282,24 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/modelkit/modelkit-go"
+	"github.com/aimlite/aimlite-go"
 )
 
 func main() {
-	client := modelkit.NewClient(os.Getenv("MODELKIT_SECRET_KEY"))
+	client := aimlite.NewClient(os.Getenv("AIMLITE_SECRET_KEY"))
 
-	params := &modelkit.PaymentCreateParams{
-		Amount:   modelkit.Int64(2500),
-		Currency: modelkit.String("usd"),
-		CustomerID: modelkit.String("cus_9xK2m1p0Lq"),
-		PaymentMethod: &modelkit.PaymentMethodParams{
-			Type:  modelkit.String("card"),
-			Token: modelkit.String("pm_tok_visa_4242"),
+	params := &aimlite.PaymentCreateParams{
+		Amount:   aimlite.Int64(2500),
+		Currency: aimlite.String("usd"),
+		CustomerID: aimlite.String("cus_9xK2m1p0Lq"),
+		PaymentMethod: &aimlite.PaymentMethodParams{
+			Type:  aimlite.String("card"),
+			Token: aimlite.String("pm_tok_visa_4242"),
 		},
-		Capture: modelkit.Bool(true),
+		Capture: aimlite.Bool(true),
 	}
 
-	opts := &modelkit.RequestOptions{
+	opts := &aimlite.RequestOptions{
 		IdempotencyKey: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
 	}
 
@@ -351,8 +351,8 @@ func main() {
       },
     },
     captured: true,
-    receipt_url: 'https://pay.modelkit.dev/receipts/pay_99f2b1a8c7e6d5',
-    statement_descriptor: 'MODELKIT* SERVICES',
+    receipt_url: 'https://pay.aimlite.dev/receipts/pay_99f2b1a8c7e6d5',
+    statement_descriptor: 'AIMLITE* SERVICES',
     metadata: {
       order_id: 'ord_9921',
       channel: 'web_checkout',

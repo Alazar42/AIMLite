@@ -1,6 +1,23 @@
-# ModelKit
+# AIMLite
 
-**The Django for Machine Learning & AI** — an opinionated, convention-over-configuration Python ML framework with zero-path CLI execution.
+**The Django for AI & Machine Learning** — an opinionated, convention-over-configuration Python framework with zero-path CLI execution.
+
+---
+
+## PyPI Installation
+
+```bash
+pip install aimlite
+```
+
+Or with [`uv`](https://docs.astral.sh/uv/):
+```bash
+uv add aimlite
+```
+
+```python
+from aimlite import Model, Dataset, BaseTrainer, BaseConfig, BaseEvaluator, BaseInference
+```
 
 ---
 
@@ -11,14 +28,14 @@
 
 ---
 
-## Why ModelKit?
+## Why AIMLite?
 
-Traditional machine learning projects suffer from repetitive boilerplate: scattered scripts, brittle path configurations, unstandardized train/test splits, hardcoded checkpoint paths, and ad-hoc serving code.
+Traditional AI and machine learning projects suffer from repetitive boilerplate: scattered scripts, brittle path configurations, unstandardized train/test splits, hardcoded checkpoint paths, and ad-hoc serving code.
 
-ModelKit provides a standardized, convention-based structure inspired by modern web frameworks like Django and Vite:
-- **Zero-Path Execution**: Run `modelkit` or `./modelkit` anywhere inside your project directory. ModelKit resolves modules, sets up paths, and locates your data and models automatically.
-- **Automated Virtual Environment Management**: Automatically detects and uses project `.venv` (powered by `uv` or `pip`).
-- **First-Class IDE Typing Headers**: Generates `.modelkit/modelkit.pyi` on project initialization, giving VS Code, Cursor, and PyCharm immediate auto-completion, parameter hints, and docstrings with zero global installs.
+AIMLite provides a standardized, convention-based structure inspired by modern web frameworks like Django and Vite:
+- **Zero-Path Execution**: Run `aimlite` anywhere inside your project directory. AIMLite resolves modules, sets up paths, and locates your data and models automatically.
+- **Automated Virtual Environment Management**: Automatically creates `.venv` and pre-installs `aimlite` on `init`.
+- **Instant IDE Type Safety**: Because `aimlite` is installed in the project `.venv` with PEP 561 headers (`py.typed`), editors like VS Code, Cursor, and PyCharm deliver immediate auto-completion, parameter hints, and docstrings with zero configuration.
 - **Per-Model Artifacts & Lifecycle**: Supports multiple model classes per project with standardized naming (`models/<model_name>.pkl` and `experiments/<model_name>_snapshot.json`).
 - **Built-in Inference Serving**: Production-ready HTTP server with `POST /predict`, `GET /health`, `GET /docs`, custom user-defined endpoints, and optional static frontend hosting.
 
@@ -29,16 +46,15 @@ ModelKit provides a standardized, convention-based structure inspired by modern 
 Requires Python **>= 3.10** (tested on 3.14) and [`uv`](https://docs.astral.sh/uv/) (or `pip`).
 
 ```bash
-git clone https://github.com/Alazar42/ModelKit.git
-cd ModelKit
+git clone https://github.com/Alazar42/aimlite.git
+cd aimlite
 uv sync
 ```
 
 ### Essential Commands
 
 ```bash
-uv run cli --help             # Run CLI entrypoint via uv
-./build/modelkit --help       # Run standalone compiled CLI binary directly
+uv run aimlite --help         # Run AIMLite CLI
 uv run test                   # Run core test suite (41 tests)
 uv run pytest                 # Full pytest runner
 ```
@@ -47,12 +63,12 @@ uv run pytest                 # Full pytest runner
 
 ## Project Structure Conventions
 
-When you run `modelkit init <project_name>` (or `modelkit init .`), ModelKit scaffolds a standardized convention layout:
+When you run `aimlite init <project_name>` (or `aimlite init .`), AIMLite scaffolds a standardized convention layout:
 
 ```text
 my_project/
-├── .modelkit/
-│   └── modelkit.pyi          # IDE typing stubs for full autocomplete & IntelliSense
+├── .aimlite/
+│   └── workspace.json        # IDE workspace configuration
 ├── .venv/                    # Project-isolated virtual environment
 ├── data/                     # Raw datasets (.csv, .json, .txt, .md)
 ├── models/                   # Model architectures and saved weights (*.pkl)
@@ -62,15 +78,14 @@ my_project/
 ├── trainer.py                # Training lifecycle hooks extending BaseTrainer
 ├── evaluator.py              # Metric benchmarks extending BaseEvaluator
 ├── inference.py              # Inference pipeline extending BaseInference
-├── modelkit.json             # Project config, dependencies manifest, and paradigms
-└── modelkit                  # Project-local CLI binary (self-contained executable)
+└── aimlite.json              # Project config, dependencies manifest, and paradigms
 ```
 
 ---
 
 ## The 3 AI Paradigms
 
-ModelKit is architected around the 3 primary modern machine learning paradigms:
+AIMLite is architected around the 3 primary modern machine learning paradigms:
 
 ### Paradigm 1: Training from Scratch (Customer Churn Classifier)
 
@@ -79,7 +94,7 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
 - **Dataset**: Kaggle Telecom Churn Dataset ([Kaggle Source](https://www.kaggle.com/datasets/barun2104/telecom-churn))
 - **Required Dependencies**:
   ```bash
-  modelkit install scikit-learn pandas
+  aimlite install scikit-learn pandas
   # or
   pip install scikit-learn pandas
   ```
@@ -92,12 +107,12 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
 - **Workflow**:
   ```bash
   # Initialize (new directory or in-place with .)
-  modelkit init churn_model && cd churn_model
+  aimlite init churn_model && cd churn_model
   # Place telecom_churn.csv in data/
-  modelkit data validate
-  modelkit train ChurnClassifier
-  modelkit evaluate ChurnClassifier
-  modelkit serve ChurnClassifier --port 8000
+  aimlite data validate
+  aimlite train ChurnClassifier
+  aimlite evaluate ChurnClassifier
+  aimlite serve ChurnClassifier --port 8000
   ```
 
 ---
@@ -109,7 +124,7 @@ Ground foundation models in enterprise documents with semantic vector search and
 - **Data Formats**: Markdown (`.md`) or text (`.txt`) documents placed in `data/`.
 - **Required Dependencies**:
   ```bash
-  modelkit install sentence-transformers numpy
+  aimlite install sentence-transformers numpy
   # or
   pip install sentence-transformers numpy
   ```
@@ -120,10 +135,10 @@ Ground foundation models in enterprise documents with semantic vector search and
   - `inference.py`: `RAGInference(BaseInference)` querying the retriever and synthesizing grounded answers with citations.
 - **Workflow**:
   ```bash
-  modelkit init support_rag && cd support_rag
+  aimlite init support_rag && cd support_rag
   # Place knowledge documents in data/
-  modelkit train SupportDocRAG
-  modelkit serve SupportDocRAG --port 8000
+  aimlite train SupportDocRAG
+  aimlite serve SupportDocRAG --port 8000
   ```
 
 ---
@@ -135,7 +150,7 @@ Parameter-efficient adaptation with lightweight delta checkpoints (~50KB to 50MB
 - **Data Formats**: Prompt-response instruction pairs in `data/instructions.json` or `data/instructions.jsonl`.
 - **Required Dependencies**:
   ```bash
-  modelkit install torch peft
+  aimlite install torch peft
   # or
   pip install torch peft
   ```
@@ -146,27 +161,27 @@ Parameter-efficient adaptation with lightweight delta checkpoints (~50KB to 50MB
   - `inference.py`: `AdapterInference(BaseInference)` executing fine-tuned generations via `POST /predict`.
 - **Workflow**:
   ```bash
-  modelkit init lora_app && cd lora_app
+  aimlite init lora_app && cd lora_app
   # Place instructions.json in data/
-  modelkit train LoRAInstructionModel
-  modelkit serve LoRAInstructionModel --port 8000
+  aimlite train LoRAInstructionModel
+  aimlite serve LoRAInstructionModel --port 8000
   ```
 
 ---
 
 ## Zero-Path CLI Reference
 
-ModelKit provides zero-path convention-over-configuration commands:
+AIMLite provides zero-path convention-over-configuration commands:
 
 | Command | Description |
 |---|---|
-| `modelkit init [project_name \| .]` | Scaffolds a project in a new folder or directly in the current directory (`.`), setting up `.venv`, `.modelkit/modelkit.pyi` IDE stubs, starter files, and the local binary. |
-| `modelkit install [packages...]` | Without arguments, installs all dependencies listed in `modelkit.json`. With packages, installs them into `.venv` using `uv` (or `pip`) and adds them to `modelkit.json`. |
-| `modelkit data validate` | Validates dataset schema, record count, column names, and partition readiness across all datasets in `data/`. |
-| `modelkit train [ModelName]` | Automatically discovers registered models and executes training. Saves checkpoint to `models/<model_name>.pkl` and snapshots to `experiments/`. |
-| `modelkit evaluate [ModelName]` | Loads the model's checkpoint and calculates benchmark metrics on test partitions. |
-| `modelkit serve [ModelName] [--port 8000] [--frontend <dir>]` | Starts an HTTP inference server exposing `POST /predict`, `GET /health`, `GET /docs`, custom routes, and optional static frontend hosting. |
-| `modelkit doctor` | Diagnoses runtime health, virtual environment, hardware accelerator availability (`cuda`, `mps`, `cpu`), and directory permissions. |
+| `aimlite init [project_name \| .]` | Scaffolds a project in a new folder or directly in the current directory (`.`), setting up `.venv`, pre-installing `aimlite`, starter files, and conventions. |
+| `aimlite install [packages...]` | Without arguments, installs all dependencies listed in `aimlite.json`. With packages, installs them into `.venv` using `uv` (or `pip`) and adds them to `aimlite.json`. |
+| `aimlite data validate` | Validates dataset schema, record count, column names, and partition readiness across all datasets in `data/`. |
+| `aimlite train [ModelName]` | Automatically discovers registered models and executes training. Saves checkpoint to `models/<model_name>.pkl` and snapshots to `experiments/`. |
+| `aimlite evaluate [ModelName]` | Loads the model's checkpoint and calculates benchmark metrics on test partitions. |
+| `aimlite serve [ModelName] [--port 8000] [--frontend <dir>]` | Starts an HTTP inference server exposing `POST /predict`, `GET /health`, `GET /docs`, custom routes, and optional static frontend hosting. |
+| `aimlite doctor` | Diagnoses runtime health, virtual environment, hardware accelerator availability (`cuda`, `mps`, `cpu`), and directory permissions. |
 
 ---
 
@@ -179,7 +194,7 @@ The standalone binary is packaged using Python's native `zipapp` format into a s
 python3 build/build_cli.py
 
 # Run directly without python invocation:
-./build/modelkit doctor
+./build/aimlite doctor
 ```
 
 ---
@@ -199,7 +214,7 @@ npm run build   # Build production bundle into api_docs/dist/
 
 ## Testing
 
-ModelKit includes a comprehensive 41-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, and end-to-end paradigm workflows:
+AIMLite includes a comprehensive 41-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, and end-to-end paradigm workflows:
 
 ```bash
 uv run test        # Core test runner

@@ -10,14 +10,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from modelkit import Dataset
-from modelkit.rag import Document, TextSplitter
+from aimlite import Dataset
+from aimlite.rag import Document, TextSplitter
 
 SAMPLE_KNOWLEDGE_DOCS = [
     {
         "filename": "auth_policy.md",
         "content": (
-            "Authentication and Security Policy: ModelKit supports API key and Bearer token authentication. "
+            "Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. "
             "Session tokens expire after 24 hours of inactivity. Multi-factor authentication (MFA) is required "
             "for administrative access to production model endpoints."
         ),
@@ -25,7 +25,7 @@ SAMPLE_KNOWLEDGE_DOCS = [
     {
         "filename": "deployment_guide.md",
         "content": (
-            "Production Deployment Guide: ModelKit models can be served via 'modelkit serve --port 8000'. "
+            "Production Deployment Guide: AIMLite models can be served via 'aimlite serve --port 8000'. "
             "For production deployments, containerize using Docker with the provided Dockerfile. "
             "Horizontal scaling can be achieved with Kubernetes by configuring the replica count."
         ),
