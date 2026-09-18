@@ -66,6 +66,7 @@ class TestAIMLiteCLI(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp(prefix="aimlite_cli_test_")
         self.test_root = Path(self.temp_dir)
         self.orig_cwd = os.getcwd()
+        os.chdir(self.test_root)
 
     def tearDown(self):
         os.chdir(self.orig_cwd)
@@ -517,12 +518,12 @@ class ModelB(Model):
         self.assertTrue(os.access(executable, os.X_OK), "build/aimlite is not executable")
 
         # Test --version
-        res = subprocess.run([str(executable), "--version"], capture_output=True, text=True)
+        res = subprocess.run([str(executable), "--version"], cwd=str(self.test_root), capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
-        self.assertIn("aimlite 0.1.1", res.stdout)
+        self.assertIn("aimlite 0.1.2", res.stdout)
 
         # Test doctor
-        res = subprocess.run([str(executable), "doctor"], capture_output=True, text=True)
+        res = subprocess.run([str(executable), "doctor"], cwd=str(self.test_root), capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
         self.assertIn("AIMLite Doctor", res.stdout)
 

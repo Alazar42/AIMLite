@@ -17,7 +17,7 @@ from cli.commands import (
 )
 from cli.ui import C, vite_header
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 
 def print_custom_help() -> None:

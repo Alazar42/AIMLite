@@ -55,8 +55,8 @@ uv sync
 
 ```bash
 uv run aimlite --help         # Run AIMLite CLI
-uv run test                   # Run core test suite (42 tests)
-uv run pytest                 # Full pytest runner
+uv run test                   # Run core test suite (47 tests)
+uv run pytest                 # Full pytest runner (47/47 passing)
 ```
 
 ---
@@ -176,12 +176,20 @@ Demonstrates semantic vector retrieval and context augmentation. Ingest text, Ma
 
 ### Reference Template 3: Fine-Tuning & Adapters (LoRA & PEFT)
 
-Demonstrates parameter-efficient fine-tuning with lightweight delta checkpoints. Ingest any prompt format, CSV, Parquet, JSON, JSONL, or custom schema with any filename you choose.
+Demonstrates parameter-efficient fine-tuning with mathematical low-rank matrix decomposition, multi-adapter routing, zero-latency weight merging, and lightweight delta checkpoints (~50KB to 50MB instead of 14GB+). Ingest any prompt format, CSV, Parquet, JSON, JSONL, or custom schema with any filename you choose.
 
+- **Key LoRA Capabilities**:
+  - **Low-Rank Decomposition (`LoRALayer`)**: Freezes base foundation weights $W_0$ and trains low-rank matrices $A \in \mathbb{R}^{r \times d_{in}}$ and $B \in \mathbb{R}^{d_{out} \times r}$:
+    $$h = W_0 x + \frac{\alpha}{r} (B \cdot A) x$$
+  - **Zero-Latency Serving**: In-place `model.merge_weights()` folds delta matrices directly into foundation weights with 0 inference overhead; `model.unmerge_weights()` restores base parameters.
+  - **Multi-Adapter Hot-Swapping (`MultiAdapterManager`)**: Register multiple domain adapters on a single running model (`model.add_adapter("coder", cfg)`) and hot-swap at runtime per request (`model.set_active_adapter("coder")`).
+  - **Parameter Diagnostics**: Real-time parameter accounting (`model.print_trainable_parameters()`) showing trainable vs total weights and memory reduction percentages.
+  - **Hugging Face PEFT Format**: Serializes to standard `adapter_config.json`, `adapter_model.pkl`, and `adapter_metadata.json`.
+  - **Zero Heavy Dependencies**: Runs out of the box in pure Python / NumPy, while fully supporting PyTorch tensors and PEFT.
 - **Example Implementation**: [`docs/examples/instruction_adapter/`](docs/examples/instruction_adapter/)
   - `data.py`: `InstructionDataset(Dataset)` preparing fine-tuning data.
-  - `model.py`: `LoRAInstructionModel(AdapterModel)` configuring adapter rank and alpha.
-  - `trainer.py`: `AdapterInstructionTrainer(BaseTrainer)` optimizing low-rank delta matrices.
+  - `model.py`: `LoRAInstructionModel(AdapterModel)` configuring adapter rank, alpha, and routing.
+  - `trainer.py`: `AdapterInstructionTrainer(BaseTrainer)` optimizing low-rank delta matrices with parameter diagnostics.
   - `inference.py`: `AdapterInference(BaseInference)` executing fine-tuned generations via `POST /predict`.
 - **Workflow**:
   ```bash
@@ -238,9 +246,9 @@ npm run build   # Build production bundle into api_docs/dist/
 
 ## Testing
 
-AIMLite includes a comprehensive 42-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, and end-to-end paradigm workflows:
+AIMLite includes a comprehensive 47-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, LoRA low-rank adaptation, and end-to-end paradigm workflows:
 
 ```bash
 uv run test        # Core test runner
-uv run pytest      # Full pytest runner (42/42 passing)
+uv run pytest      # Full pytest runner (47/47 passing)
 ```

@@ -57,10 +57,16 @@ def run_doctor(project_root: Optional[Path] = None) -> int:
 
     for label, path in check_dirs.items():
         try:
+            existed = path.exists()
             path.mkdir(parents=True, exist_ok=True)
             test_file = path / ".write_test"
             test_file.write_text("ok", encoding="utf-8")
             test_file.unlink()
+            if not existed:
+                try:
+                    path.rmdir()
+                except OSError:
+                    pass
 
             try:
                 rel = f"./{path.relative_to(cwd)}"

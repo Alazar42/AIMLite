@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,6 +17,15 @@ if str(ROOT) not in sys.path:
 
 class TestExampleParadigms(unittest.TestCase):
     """Tests that the example code files for Scratch, RAG, and Adapter execute cleanly."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp(prefix="aimlite_example_test_")
+        self.orig_cwd = os.getcwd()
+        os.chdir(self.temp_dir)
+
+    def tearDown(self):
+        os.chdir(self.orig_cwd)
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_churn_scratch_paradigm(self):
         """Tests the Customer Churn scratch model pipeline."""
