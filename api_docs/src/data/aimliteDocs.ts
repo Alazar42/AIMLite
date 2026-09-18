@@ -992,54 +992,59 @@ aimlite serve SupportDocRAG --port 8000`,
     id: 'paradigm-adapters',
     category: 'The 3 AI Paradigms',
     title: 'Paradigm 3: Fine-Tuning (LoRA & PEFT Adapters)',
-    subtitle: 'Parameter-efficient adaptation with lightweight delta checkpoints (~50MB instead of 14GB).',
+    subtitle: 'Parameter-efficient adaptation with mathematical low-rank matrix decomposition and zero-latency serving.',
     badge: { label: 'PARADIGM 3', variant: 'pillar' },
-    signatureOrPath: 'from aimlite.adapters import AdapterConfig, AdapterModel, AdapterTrainer',
+    signatureOrPath: 'from aimlite.adapters import AdapterConfig, AdapterModel, AdapterTrainer, LoRALayer, MultiAdapterManager',
     breadcrumbs: ['Paradigms', 'Fine-Tuning'],
     overview:
-      'Fine-tuning specializes base foundation models for custom instruction-following using low-rank adapters (LoRA/QLoRA). AdapterModel freezes the base model and saves exclusively lightweight delta weights (~50KB to 50MB instead of 14GB+), saving gigabytes of storage and compute. Required dependencies: aimlite install torch peft.',
+      'Fine-tuning specializes base foundation models for custom instruction-following using mathematical low-rank decomposition (LoRA/PEFT). AdapterModel freezes the base model and trains only low-rank matrices A and B (W = W0 + (alpha/r)*B*A). Supports zero-latency serving via in-place weight merging (merge_weights()), multi-adapter hot-swapping (MultiAdapterManager), and real-time parameter efficiency diagnostics (get_trainable_parameters()). Runs out-of-the-box in pure Python/NumPy, with full PyTorch/PEFT interop.',
     djangoAnalogy:
-      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the underlying database table. In AIMLite, AdapterModel attaches trainable delta matrices to a frozen base model.',
+      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the underlying database table. In AIMLite, AdapterModel attaches trainable low-rank delta matrices to a frozen base model.',
     whyCode: [
       {
         component: 'data.py (InstructionDataset)',
         reason:
-          'Loads instruction-following prompt/response pairs from data/instructions.json and formats them into standard instruction templates (### Instruction: ... ### Response:).',
+          'Loads instruction-following prompt/response pairs from any dataset file in data/ and formats them into standard instruction templates (### Instruction: ... ### Response:).',
       },
       {
-        component: 'model.py (LoRAInstructionModel)',
+        component: 'model.py (LoRALayer & MultiAdapterManager)',
         reason:
-          'Subclasses AdapterModel and freezes base foundation weights via freeze_base_model(). Attaches low-rank trainable matrices based on AdapterConfig(r=8, alpha=16.0).',
+          'Applies low-rank decomposition h = W0*x + (alpha/r)*(B*A)*x. Enables zero-overhead weight merging (merge_weights()) and runtime multi-adapter routing without reloading foundation models.',
       },
       {
-        component: 'trainer.py (AdapterInstructionTrainer)',
+        component: 'trainer.py (AdapterTrainer / AdapterInstructionTrainer)',
         reason:
-          'Optimizes exclusively adapter matrices, drastically reducing GPU VRAM requirements and compute overhead.',
+          'Optimizes exclusively adapter matrices with real-time parameter efficiency tracking and convergence loss history.',
       },
       {
-        component: 'Lightweight Checkpointing',
+        component: 'Parameter Diagnostics (print_trainable_parameters)',
         reason:
-          'Saves only low-rank delta weights (~50KB to 50MB instead of duplicating 14GB base weights), enabling instant multi-tenant model switching.',
+          'Calculates trainable parameters vs total parameters and memory reduction percentages directly in CLI output and metadata.',
+      },
+      {
+        component: 'Hugging Face PEFT Checkpointing',
+        reason:
+          'Saves only low-rank delta weights (~50KB to 50MB instead of duplicating 14GB base weights) via standard adapter_config.json and adapter_model.pkl.',
       },
       {
         component: 'inference.py (AdapterInference)',
         reason:
-          'Dynamically serves fine-tuned responses on top of the shared foundation model via POST /predict.',
+          'Dynamically serves fine-tuned responses on top of the shared foundation model via POST /predict with zero runtime latency penalty.',
       },
     ],
     conventions: [
       {
-        title: 'Instruction Data Convention',
-        description: 'Place instructions.json in data/ containing prompt/instruction/output records.',
+        title: 'Flexible Instruction Data',
+        description: 'Place your instruction file (e.g. instructions.json, prompts.jsonl) in data/ and declare filename on Dataset.',
       },
       {
-        title: 'Required Dependencies',
-        description: 'Run `aimlite install torch peft` (or `pip install torch peft`).',
+        title: 'Zero Heavy Dependencies',
+        description: 'Runs out-of-the-box in pure Python and NumPy. Optional deep learning backends: `aimlite install torch peft`.',
       },
       {
         title: 'Delta Persistence',
         description:
-          'Calling model.save() writes adapter_config.json and adapter_model.json without duplicating the foundation model.',
+          'Calling model.save() writes adapter_config.json, adapter_model.pkl, and adapter_metadata.json without duplicating the foundation model.',
       },
     ],
     snippets: {

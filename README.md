@@ -79,8 +79,8 @@ uv sync
 
 ```bash
 uv run aimlite --help         # Run AIMLite CLI
-uv run test                   # Run core test suite (41 tests)
-uv run pytest                 # Full pytest runner
+uv run test                   # Run core test suite (47 tests)
+uv run pytest                 # Full pytest runner (47/47 passing)
 ```
 
 ---
@@ -167,21 +167,22 @@ Demonstrates semantic vector retrieval, query intelligence, smart document chunk
 
 ---
 
-### Paradigm 3: Fine-Tuning (LoRA & PEFT Adapters)
+### Reference Template 3: Fine-Tuning & Adapters (LoRA & PEFT)
 
-Parameter-efficient adaptation with lightweight delta checkpoints (~50KB to 50MB instead of 14GB+).
+Demonstrates parameter-efficient fine-tuning with mathematical low-rank matrix decomposition, multi-adapter routing, zero-latency weight merging, and lightweight delta checkpoints (~50KB to 50MB instead of 14GB+). Ingest any prompt format, CSV, Parquet, JSON, JSONL, or custom schema with any filename you choose.
 
-- **Data Formats**: Prompt-response instruction pairs in `data/instructions.json` or `data/instructions.jsonl`.
-- **Required Dependencies**:
-  ```bash
-  aimlite install torch peft
-  # or
-  pip install torch peft
-  ```
-- **Example Files**: [`docs/examples/instruction_adapter/`](docs/examples/instruction_adapter/)
-  - `data.py`: `InstructionDataset(Dataset)` formatting instruction prompt templates.
-  - `model.py`: `LoRAInstructionModel(AdapterModel)` configuring `AdapterConfig(r=8, alpha=16.0)` and freezing foundation weights.
-  - `trainer.py`: `AdapterInstructionTrainer(BaseTrainer)` optimizing low-rank delta matrices.
+- **Key LoRA Capabilities**:
+  - **Low-Rank Decomposition (`LoRALayer`)**: Freezes base foundation weights $W_0$ and trains low-rank matrices $A \in \mathbb{R}^{r \times d_{in}}$ and $B \in \mathbb{R}^{d_{out} \times r}$:
+    $$h = W_0 x + \frac{\alpha}{r} (B \cdot A) x$$
+  - **Zero-Latency Serving**: In-place `model.merge_weights()` folds delta matrices directly into foundation weights with 0 inference overhead; `model.unmerge_weights()` restores base parameters.
+  - **Multi-Adapter Hot-Swapping (`MultiAdapterManager`)**: Register multiple domain adapters on a single running model (`model.add_adapter("coder", cfg)`) and hot-swap at runtime per request (`model.set_active_adapter("coder")`).
+  - **Parameter Diagnostics**: Real-time parameter accounting (`model.print_trainable_parameters()`) showing trainable vs total weights and memory reduction percentages.
+  - **Hugging Face PEFT Format**: Serializes to standard `adapter_config.json`, `adapter_model.pkl`, and `adapter_metadata.json`.
+  - **Zero Heavy Dependencies**: Runs out of the box in pure Python / NumPy, while fully supporting PyTorch tensors and PEFT.
+- **Example Implementation**: [`docs/examples/instruction_adapter/`](docs/examples/instruction_adapter/)
+  - `data.py`: `InstructionDataset(Dataset)` preparing fine-tuning data.
+  - `model.py`: `LoRAInstructionModel(AdapterModel)` configuring adapter rank, alpha, and routing.
+  - `trainer.py`: `AdapterInstructionTrainer(BaseTrainer)` optimizing low-rank delta matrices with parameter diagnostics.
   - `inference.py`: `AdapterInference(BaseInference)` executing fine-tuned generations via `POST /predict`.
 - **Workflow**:
   ```bash
@@ -247,43 +248,9 @@ npm run build   # Produces optimized production bundle in api_docs/dist/
 
 ## Testing
 
-AIMLite includes a comprehensive 41-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, and end-to-end paradigm workflows:
+AIMLite includes a comprehensive 47-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, LoRA low-rank adaptation, and end-to-end paradigm workflows:
 
 ```bash
-# RAG Subsystem (Chat providers, SmartChunker, QueryAnalyzer, PostgresVectorStore, KnowledgeModel):
-PYTHONPATH=src:. python3 -m unittest test.test_rag
-
-# Adapters & LoRA Fine-Tuning:
-PYTHONPATH=src:. python3 -m unittest test.test_adapters
-
-# Zero-Path CLI & Discovery:
-PYTHONPATH=src:. python3 -m unittest test.test_cli
-
-# End-to-End Reference Paradigms:
-PYTHONPATH=src:. python3 -m unittest test.test_examples
-
-# Pillar Headers & Core Interfaces:
-PYTHONPATH=src:. python3 -m unittest test.test_headers
+uv run test        # Core test runner
+uv run pytest      # Full pytest runner (47/47 passing)
 ```
-
----
-
-## Business & Enterprise
-
-AIMLite is **100% free and open-source under the Apache 2.0 license** for individual developers, students, researchers, and startups.
-
-For companies and teams seeking enterprise extensions or dedicated collaboration:
-- **Custom Data Connectors**: Direct integrations with enterprise data warehouses (Snowflake, BigQuery, PostgreSQL, Databricks).
-- **Turnkey Production Starter Kits**: Pre-built commercial templates for customer retention/churn, enterprise RAG knowledge bases, and multi-adapter LoRA specialists.
-- **Consulting & Implementation**: Architecture design, model optimization, and white-glove deployment directly with the core framework creators.
-
-For commercial inquiries, partnerships, or custom integrations:
-- **Mickyas Tesfaye**: [alazartesfaye42@gmail.com](mailto:alazartesfaye42@gmail.com)
-- **Beamlak Tadesse**: [atocodes@gmail.com](mailto:atocodes@gmail.com)
-
----
-
-## License
-
-AIMLite is released under the [Apache 2.0 License](LICENSE). Free for commercial and non-commercial use.
-
