@@ -15,15 +15,13 @@ from cli.ui import C, arrow, check, cross, vite_header
 
 def run_install(
     packages: List[str],
-    requirement_file: Optional[str] = None,
     upgrade: bool = False,
     project_root: Optional[Path] = None,
 ) -> int:
     """Safely installs packages into the project .venv and updates aimlite.json.
 
     Args:
-        packages: List of package names/specs to install. If empty, installs from aimlite.json or requirements.txt.
-        requirement_file: Optional path to requirements.txt.
+        packages: List of package names/specs to install. If empty, installs from aimlite.json.
         upgrade: Whether to upgrade packages.
         project_root: Optional project root path override.
 
@@ -33,61 +31,9 @@ def run_install(
     root = project_root or find_project_root() or Path.cwd()
     manifest_path = get_manifest_path(root)
 
-    resolved_packages: List[str] = []
-    
-    # Check for -r flag inside packages list
-    i = 0
-    while i < len(packages):
-        p = packages[i]
-        if p in ("-r", "--requirement", "--requirements"):
-            if i + 1 < len(packages):
-                requirement_file = packages[i + 1]
-                i += 2
-                continue
-            else:
-                print(f"{cross('Flag -r requires a requirements file argument.')}\n")
-                return 1
-        elif p.startswith("-r="):
-            requirement_file = p[3:]
-            i += 1
-            continue
-        else:
-            resolved_packages.append(p)
-            i += 1
-
-    packages = resolved_packages
-
-    # Load from requirement file if provided
-    if requirement_file:
-        req_path = Path(requirement_file)
-        if not req_path.is_absolute():
-            req_path = root / req_path
-        if req_path.is_file():
-            try:
-                for line in req_path.read_text(encoding="utf-8").splitlines():
-                    clean_line = line.strip()
-                    if clean_line and not clean_line.startswith("#") and not clean_line.startswith("-"):
-                        packages.append(clean_line)
-            except Exception as e:
-                print(f"{cross(f'Error reading {req_path}: {e}')}\n")
-                return 1
-        else:
-            print(f"{cross(f'Requirements file not found: {req_path}')}\n")
-            return 1
-
-    # If no packages specified, attempt to install existing dependencies from manifest or requirements.txt
+    # If no packages specified, attempt to install existing dependencies from manifest
     if not packages:
-        req_default = root / "requirements.txt"
-        if req_default.is_file():
-            try:
-                for line in req_default.read_text(encoding="utf-8").splitlines():
-                    clean_line = line.strip()
-                    if clean_line and not clean_line.startswith("#") and not clean_line.startswith("-"):
-                        packages.append(clean_line)
-            except Exception:
-                pass
-
-        if not packages and manifest_path.is_file():
+        if manifest_path.is_file():
             try:
                 with open(manifest_path, "r", encoding="utf-8") as f:
                     manifest = json.load(f)
@@ -100,8 +46,8 @@ def run_install(
                 pass
 
         if not packages:
-            print(f"\n  {C.YELLOW}Usage:{C.RESET} aimlite install -r requirements.txt | aimlite install <package ...> [--upgrade]\n")
-            print(f"  {C.DIM}No dependencies found in {manifest_path.name} or requirements.txt.{C.RESET}\n")
+            print(f"\n  {C.YELLOW}Usage:{C.RESET} aimlite install <package_name ...> [--upgrade]\n")
+            print(f"  {C.DIM}No dependencies found in {manifest_path.name}. Specify packages to install.{C.RESET}\n")
             return 1
 
     print(vite_header("install"))

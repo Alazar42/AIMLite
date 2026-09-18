@@ -905,144 +905,82 @@ aimlite serve ChurnClassifier --port 8000`,
   'paradigm-rag': {
     id: 'paradigm-rag',
     category: 'The 3 AI Paradigms',
-    title: 'Paradigm 2: RAG (Retrieval-Augmented Generation & Knowledge Models)',
-    subtitle: 'Ground foundation models in enterprise documents with PostgreSQL ORM vector search, query intelligence, and smart chunking.',
+    title: 'Paradigm 2: RAG (Retrieval-Augmented Generation)',
+    subtitle: 'Ground foundation models in private documents with semantic vector search and zero hallucination.',
     badge: { label: 'PARADIGM 2', variant: 'pillar' },
-    signatureOrPath: 'from aimlite.rag import Document, SmartChunker, PostgresVectorStore, QueryAnalyzer, BaseChatProvider, KnowledgeModel, RAGModel, RAGTrainer',
-    breadcrumbs: ['Paradigms', 'RAG & Knowledge Models'],
+    signatureOrPath: 'from aimlite.rag import Document, TextSplitter, MemoryVectorStore, VectorRetriever, RAGModel',
+    breadcrumbs: ['Paradigms', 'RAG'],
     overview:
-      'The RAG paradigm turns enterprise knowledge into actionable intelligence with zero hallucinations and no expensive fine-tuning. AIMLite provides enterprise-grade abstractions: SmartChunker (Markdown hierarchy and semantic boundary awareness), QueryAnalyzer (intent decomposition, search expansion, and HyDE), BaseChatProvider (OpenAI, Anthropic, Gemini, Ollama, and local models), PostgresVectorStore (PostgreSQL ORM with native pgvector support), pre-defined task prompts, KnowledgeModel, and RAGTrainer orchestration.',
+      'The RAG paradigm turns enterprise knowledge into actionable intelligence without expensive retraining. AIMLite provides first-class Document loaders, sliding-window text chunkers, zero-dependency TF-IDF or dense embeddings, in-memory vector stores, and RAGModel. Required dependencies: aimlite install sentence-transformers numpy.',
     djangoAnalogy:
-      'In Django, you define Models backed by a PostgreSQL database and query them with QuerySets. In AIMLite RAG, you define a KnowledgeModel backed by PostgresVectorStore (or MemoryVectorStore) and query it with QueryAnalyzer and VectorRetriever to dynamically inject grounded context into chat prompts.',
+      'In Django, you query the database using ORM QuerySets. In AIMLite RAG, you query your knowledge base using VectorRetriever to dynamically inject relevant context passages into generation prompts.',
     whyCode: [
       {
-        component: 'data.py (KnowledgeDocsDataset & SmartChunker)',
+        component: 'data.py (KnowledgeDocsDataset)',
         reason:
-          'Ingests Markdown and documentation articles using SmartChunker. Preserves header hierarchies (#, ##), paragraphs, and injects contextual metadata into every chunk.',
+          'Ingests Markdown and text documents from data/ and chunks them with TextSplitter into overlapping passages, ensuring passages fit embedding model context limits without truncation.',
       },
       {
-        component: 'model.py (KnowledgeModel / SupportDocRAG)',
+        component: 'model.py (SupportDocRAG)',
         reason:
-          'Subclasses KnowledgeModel/RAGModel, coordinating QueryAnalyzer, PostgresVectorStore / MemoryVectorStore, and BaseChatProvider (OpenAI, Gemini, Claude, Ollama, or local LLMs).',
+          'Subclasses RAGModel and binds MemoryVectorStore with VectorRetriever. Ranks documents using cosine similarity and synthesizes grounded answers with source citations.',
       },
       {
-        component: 'Query Intelligence (QueryAnalyzer & HyDE)',
+        component: 'trainer.py (IndexBuilderTrainer)',
         reason:
-          'Deconstructs search queries into user intent, keywords, expanded multi-query variations, and Hypothetical Document Embeddings (HyDE) for maximum semantic recall.',
-      },
-      {
-        component: 'Database Vector Store (PostgresVectorStore & ORM)',
-        reason:
-          'Persists document vectors directly in PostgreSQL using native pgvector (<=> cosine / <-> L2 distance) or in-memory fallback, with declarative ORM records (KnowledgeDocumentRecord, KnowledgeChunkRecord).',
-      },
-      {
-        component: 'trainer.py (RAGTrainer / IndexBuilderTrainer)',
-        reason:
-          'Standardized lifecycle trainer coordinating document loading -> smart chunking -> embedding calculation -> vector database persistence.',
+          'Indexes document passages and calculates semantic embeddings as an offline background step, ensuring production queries execute with sub-10ms latency.',
       },
       {
         component: 'inference.py (RAGInference)',
         reason:
-          'Production HTTP endpoint executing queries over the vector index and returning grounded responses alongside verifiable document citations and confidence scores.',
-      },
-    ],
-    parametersTitle: 'KnowledgeModel & RAG Configuration Parameters',
-    parameters: [
-      {
-        name: 'chat_provider',
-        type: 'BaseChatProvider',
-        required: false,
-        defaultValue: 'MockChatProvider()',
-        description: 'LLM chat completion provider: OpenAIChatProvider, AnthropicChatProvider, GeminiChatProvider, OllamaChatProvider, LocalChatProvider, or custom.',
-      },
-      {
-        name: 'query_analyzer',
-        type: 'QueryAnalyzer',
-        required: false,
-        defaultValue: 'QueryAnalyzer()',
-        description: 'Query intelligence engine performing intent extraction, keyword tagging, multi-query expansion, and HyDE passage generation.',
-      },
-      {
-        name: 'chunker',
-        type: 'SmartChunker',
-        required: false,
-        defaultValue: 'SmartChunker(max_chunk_size=600)',
-        description: 'Structure-aware text splitter that preserves Markdown headings, code blocks, and section hierarchies.',
-      },
-      {
-        name: 'vector_store',
-        type: 'BaseVectorStore',
-        required: false,
-        defaultValue: 'MemoryVectorStore()',
-        description: 'Vector database engine: PostgresVectorStore (with pgvector support) or in-memory MemoryVectorStore.',
-      },
-      {
-        name: 'embedding_fn',
-        type: 'BaseEmbedding',
-        required: false,
-        defaultValue: 'TfidfEmbedding()',
-        description: 'Dense or sparse embedding engine: SentenceTransformerEmbedding, APIEmbedding, or zero-dependency TfidfEmbedding.',
-      },
-      {
-        name: 'top_k',
-        type: 'int',
-        required: false,
-        defaultValue: '3',
-        description: 'Number of top-ranked context document passages to retrieve for answer synthesis.',
+          'Production HTTP endpoint executing queries over the vector index and returning answers alongside verifiable document citations and confidence scores.',
       },
     ],
     conventions: [
       {
-        title: 'Smart Markdown & Document Chunking',
+        title: 'Document Ingestion',
         description:
-          'SmartChunker splits documents along natural section and paragraph boundaries, retaining document title and section headings in chunk metadata.',
+          'Place Markdown (.md) or Text (.txt) knowledge articles in data/. TextSplitter chunks them into sliding windows automatically.',
       },
       {
-        title: 'Pre-Defined Task System Prompts',
-        description:
-          'Standardized system prompts are built-in: PROMPT_RAG_QA (grounded QA with citations), PROMPT_QUERY_ANALYZER (intent & HyDE), PROMPT_SMART_CHUNKER (semantic summarization), and PROMPT_CONVERSATIONAL_RAG (multi-turn chat).',
+        title: 'Required Dependencies',
+        description: 'Run `aimlite install sentence-transformers numpy` (or `pip install sentence-transformers numpy`).',
       },
       {
-        title: 'PostgreSQL & ORM Database Integration',
+        title: 'Built-in Vector Store',
         description:
-          'PostgresVectorStore connects to any PostgreSQL database with pgvector support and provides standard ORM records (KnowledgeDocumentRecord, KnowledgeChunkRecord).',
-      },
-      {
-        title: 'Universal Chat Providers',
-        description:
-          'Supports API models (OpenAI GPT-4o, Anthropic Claude 3.5, Gemini 1.5/2.0) and local models (Ollama, HuggingFace transformers, local callables) under a unified BaseChatProvider contract.',
+          'MemoryVectorStore supports cosine similarity search and built-in save/load serialization to artifacts/rag_index.json.',
       },
     ],
     snippets: {
       files: RAG_FILES,
-      cli: `# 1. Install optional production dependencies
-aimlite install sentence-transformers psycopg2-binary
-# or pip install sentence-transformers psycopg2-binary
+      cli: `# 1. Install dependencies into managed .venv
+aimlite install sentence-transformers numpy
 
-# 2. Scaffold RAG project
+# 2. Scaffold project
 aimlite init support_rag
 cd support_rag
 
 # 3. Add knowledge documents to data/ (e.g. data/faq.md)
 
-# 4. Build vector index & database embeddings
+# 4. Build vector index
 aimlite train SupportDocRAG
 
 # 5. Serve knowledge API
 aimlite serve SupportDocRAG --port 8000`,
       curl: `curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
-  -d '{"query": "How do session tokens expire?", "top_k": 3}'`,
+  -d '{"query": "How does zero-path execution work?", "top_k": 3}'`,
     },
     guideSteps: RAG_GUIDE_STEPS,
-    defaultPayload: '{\n  "query": "How do session tokens expire?",\n  "top_k": 3\n}',
+    defaultPayload: '{\n  "query": "How does zero-path execution work?",\n  "top_k": 3\n}',
     defaultResponse: {
-      query: "How do session tokens expire?",
-      answer: "Based on auth_policy.md: Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. Session tokens expire after 24 hours of inactivity...",
+      query: "How does zero-path execution work?",
+      answer: "Based on faq.md: AIMLite supports zero-path CLI execution by resolving conventions...",
       sources: [
         {
-          source: "auth_policy.md",
-          snippet: "Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. Session tokens expire after 24 hours...",
+          source: "faq.md",
+          snippet: "AIMLite supports zero-path CLI execution...",
           score: 0.9412,
         },
       ],
@@ -1054,59 +992,54 @@ aimlite serve SupportDocRAG --port 8000`,
     id: 'paradigm-adapters',
     category: 'The 3 AI Paradigms',
     title: 'Paradigm 3: Fine-Tuning (LoRA & PEFT Adapters)',
-    subtitle: 'Parameter-efficient adaptation with mathematical low-rank matrix decomposition and zero-latency serving.',
+    subtitle: 'Parameter-efficient adaptation with lightweight delta checkpoints (~50MB instead of 14GB).',
     badge: { label: 'PARADIGM 3', variant: 'pillar' },
-    signatureOrPath: 'from aimlite.adapters import AdapterConfig, AdapterModel, AdapterTrainer, LoRALayer, MultiAdapterManager',
+    signatureOrPath: 'from aimlite.adapters import AdapterConfig, AdapterModel, AdapterTrainer',
     breadcrumbs: ['Paradigms', 'Fine-Tuning'],
     overview:
-      'Fine-tuning specializes base foundation models for custom instruction-following using mathematical low-rank decomposition (LoRA/PEFT). AdapterModel freezes the base model and trains only low-rank matrices A and B (W = W0 + (alpha/r)*B*A). Supports zero-latency serving via in-place weight merging (merge_weights()), multi-adapter hot-swapping (MultiAdapterManager), and real-time parameter efficiency diagnostics (get_trainable_parameters()). Runs out-of-the-box in pure Python/NumPy, with full PyTorch/PEFT interop.',
+      'Fine-tuning specializes base foundation models for custom instruction-following using low-rank adapters (LoRA/QLoRA). AdapterModel freezes the base model and saves exclusively lightweight delta weights (~50KB to 50MB instead of 14GB+), saving gigabytes of storage and compute. Required dependencies: aimlite install torch peft.',
     djangoAnalogy:
-      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the underlying database table. In AIMLite, AdapterModel attaches trainable low-rank delta matrices to a frozen base model.',
+      'In Django, you use model inheritance or Proxy models to extend behavior without duplicating the underlying database table. In AIMLite, AdapterModel attaches trainable delta matrices to a frozen base model.',
     whyCode: [
       {
         component: 'data.py (InstructionDataset)',
         reason:
-          'Loads instruction-following prompt/response pairs from any dataset file in data/ and formats them into standard instruction templates (### Instruction: ... ### Response:).',
+          'Loads instruction-following prompt/response pairs from data/instructions.json and formats them into standard instruction templates (### Instruction: ... ### Response:).',
       },
       {
-        component: 'model.py (LoRALayer & MultiAdapterManager)',
+        component: 'model.py (LoRAInstructionModel)',
         reason:
-          'Applies low-rank decomposition h = W0*x + (alpha/r)*(B*A)*x. Enables zero-overhead weight merging (merge_weights()) and runtime multi-adapter routing without reloading foundation models.',
+          'Subclasses AdapterModel and freezes base foundation weights via freeze_base_model(). Attaches low-rank trainable matrices based on AdapterConfig(r=8, alpha=16.0).',
       },
       {
-        component: 'trainer.py (AdapterTrainer / AdapterInstructionTrainer)',
+        component: 'trainer.py (AdapterInstructionTrainer)',
         reason:
-          'Optimizes exclusively adapter matrices with real-time parameter efficiency tracking and convergence loss history.',
+          'Optimizes exclusively adapter matrices, drastically reducing GPU VRAM requirements and compute overhead.',
       },
       {
-        component: 'Parameter Diagnostics (print_trainable_parameters)',
+        component: 'Lightweight Checkpointing',
         reason:
-          'Calculates trainable parameters vs total parameters and memory reduction percentages directly in CLI output and metadata.',
-      },
-      {
-        component: 'Hugging Face PEFT Checkpointing',
-        reason:
-          'Saves only low-rank delta weights (~50KB to 50MB instead of duplicating 14GB base weights) via standard adapter_config.json and adapter_model.pkl.',
+          'Saves only low-rank delta weights (~50KB to 50MB instead of duplicating 14GB base weights), enabling instant multi-tenant model switching.',
       },
       {
         component: 'inference.py (AdapterInference)',
         reason:
-          'Dynamically serves fine-tuned responses on top of the shared foundation model via POST /predict with zero runtime latency penalty.',
+          'Dynamically serves fine-tuned responses on top of the shared foundation model via POST /predict.',
       },
     ],
     conventions: [
       {
-        title: 'Flexible Instruction Data',
-        description: 'Place your instruction file (e.g. instructions.json, prompts.jsonl) in data/ and declare filename on Dataset.',
+        title: 'Instruction Data Convention',
+        description: 'Place instructions.json in data/ containing prompt/instruction/output records.',
       },
       {
-        title: 'Zero Heavy Dependencies',
-        description: 'Runs out-of-the-box in pure Python and NumPy. Optional deep learning backends: `aimlite install torch peft`.',
+        title: 'Required Dependencies',
+        description: 'Run `aimlite install torch peft` (or `pip install torch peft`).',
       },
       {
         title: 'Delta Persistence',
         description:
-          'Calling model.save() writes adapter_config.json, adapter_model.pkl, and adapter_metadata.json without duplicating the foundation model.',
+          'Calling model.save() writes adapter_config.json and adapter_model.json without duplicating the foundation model.',
       },
     ],
     snippets: {

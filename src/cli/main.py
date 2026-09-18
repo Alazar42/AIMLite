@@ -17,7 +17,7 @@ from cli.commands import (
 )
 from cli.ui import C, vite_header
 
-VERSION = "0.1.2"
+VERSION = "0.1.0"
 
 
 def print_custom_help() -> None:
@@ -66,49 +66,10 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser = subparsers.add_parser("init")
     init_parser.add_argument("name", nargs="?", default=None)
     init_parser.add_argument("--no-venv", action="store_true", help="Skip creating .venv and installing aimlite")
-    init_parser.add_argument(
-        "--type",
-        "--template",
-        dest="template_type",
-        choices=["rag", "fine-tuning", "adapter", "scratch", "default"],
-        default=None,
-        help="System paradigm template: rag, fine-tuning, or scratch",
-    )
-    init_parser.add_argument(
-        "--chat-provider",
-        dest="chat_provider",
-        choices=["openai", "gemini", "anthropic", "ollama", "local", "mock"],
-        default=None,
-        help="Chat provider for RAG LLM synthesis",
-    )
-    init_parser.add_argument(
-        "--vector-db",
-        dest="vector_db",
-        choices=["postgres", "memory"],
-        default=None,
-        help="Vector database backend (postgres or memory)",
-    )
-    init_parser.add_argument(
-        "--model",
-        "--model-name",
-        dest="model_name",
-        default=None,
-        help="LLM model identifier",
-    )
-    init_parser.add_argument(
-        "--embedding",
-        "--embedding-engine",
-        dest="embedding_engine",
-        choices=["sentence-transformers", "api", "tfidf"],
-        default=None,
-        help="Embedding engine for vector generation",
-    )
-    init_parser.add_argument("-y", "--yes", "--non-interactive", dest="non_interactive", action="store_true", help="Non-interactive mode")
 
     # install
     install_parser = subparsers.add_parser("install")
     install_parser.add_argument("packages", nargs="*", default=[])
-    install_parser.add_argument("-r", "--requirement", dest="requirement", default=None, help="Install from the given requirements file")
     install_parser.add_argument("--upgrade", action="store_true")
 
     # data
@@ -120,36 +81,14 @@ def build_parser() -> argparse.ArgumentParser:
     # train
     train_parser = subparsers.add_parser("train")
     train_parser.add_argument("target", nargs="?", default=None, help="Model or Dataset class name to train (e.g. UserModel)")
-    train_parser.add_argument(
-        "--resume",
-        nargs="?",
-        const=True,
-        default=None,
-        help="Resume training from latest past checkpoint, or specify an explicit checkpoint path",
-    )
-    train_parser.add_argument(
-        "--checkpoint-dir",
-        default=None,
-        help="Custom destination directory to place checkpoints (defaults to models/)",
-    )
 
     # evaluate
     evaluate_parser = subparsers.add_parser("evaluate")
     evaluate_parser.add_argument("target", nargs="?", default=None, help="Model class name to evaluate (e.g. UserModel)")
-    evaluate_parser.add_argument(
-        "--checkpoint",
-        default=None,
-        help="Specific past checkpoint path to evaluate (defaults to discovering latest checkpoint)",
-    )
 
     # serve
     serve_parser = subparsers.add_parser("serve")
     serve_parser.add_argument("target", nargs="?", default=None, help="Model class name to serve (e.g. UserModel)")
-    serve_parser.add_argument(
-        "--checkpoint",
-        default=None,
-        help="Specific past checkpoint path to load and serve (defaults to discovering latest checkpoint)",
-    )
     serve_parser.add_argument("--port", type=int, default=8000, help="Port to listen on (default: 8000)")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     serve_parser.add_argument("--frontend", default=None, help="Custom frontend build directory (e.g. dist/, frontend/)")
@@ -182,50 +121,23 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     if args.command == "init":
-        interactive_flag = False if getattr(args, "non_interactive", False) else (True if args.name is None else None)
-        return run_init(
-            project_name=args.name,
-            create_venv=not getattr(args, "no_venv", False),
-            template_type=getattr(args, "template_type", None),
-            chat_provider=getattr(args, "chat_provider", None),
-            vector_db=getattr(args, "vector_db", None),
-            embedding_engine=getattr(args, "embedding_engine", None),
-            model_name=getattr(args, "model_name", None),
-            interactive=interactive_flag,
-        )
+        return run_init(project_name=args.name, create_venv=not getattr(args, "no_venv", False))
 
     if args.command == "install":
-        return run_install(
-            packages=args.packages,
-            requirement_file=getattr(args, "requirement", None),
-            upgrade=args.upgrade,
-        )
+        return run_install(packages=args.packages, upgrade=args.upgrade)
 
     if args.command == "data":
         target = getattr(args, "target", None)
         return run_data_validate(target=target)
 
     if args.command == "train":
-        return run_train(
-            target=args.target,
-            resume=getattr(args, "resume", None),
-            checkpoint_dir=getattr(args, "checkpoint_dir", None),
-        )
+        return run_train(target=args.target)
 
     if args.command == "evaluate":
-        return run_evaluate(
-            target=args.target,
-            checkpoint=getattr(args, "checkpoint", None),
-        )
+        return run_evaluate(target=args.target)
 
     if args.command == "serve":
-        return run_serve(
-            target=args.target,
-            port=args.port,
-            host=args.host,
-            frontend=args.frontend,
-            checkpoint=getattr(args, "checkpoint", None),
-        )
+        return run_serve(target=args.target, port=args.port, host=args.host, frontend=args.frontend)
 
     if args.command == "doctor":
         return run_doctor()

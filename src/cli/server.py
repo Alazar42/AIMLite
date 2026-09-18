@@ -78,7 +78,7 @@ def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None)
         "openapi": "3.0.0",
         "info": {
             "title": f"AIMLite API - {model_name}",
-            "version": "0.1.2",
+            "version": "0.1.0",
             "description": "Developer-customizable inference server and frontend host.",
         },
         "paths": paths,
@@ -205,19 +205,7 @@ def create_handler_class(
                 self._dispatch_handler(custom_routes[route_key])
                 return
 
-            # 2. Built-in Interactive Chat Playground
-            if path in ["/chat", "/playground"]:
-                html = _load_template("chat.html")
-                data = html.encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(data)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(data)
-                return
-
-            # 3. Built-in Swagger Docs & OpenAPI
+            # 2. Built-in Swagger Docs & OpenAPI
             if path == "/docs":
                 html = _load_template("swagger.html")
                 data = html.encode("utf-8")
@@ -240,13 +228,13 @@ def create_handler_class(
                 self.wfile.write(data)
                 return
 
-            # 4. Default Health probe
+            # 3. Default Health probe
             if path == "/health":
                 payload = {"status": "healthy", "model": model_name}
                 self._dispatch_handler(lambda: payload)
                 return
 
-            # 5. Custom Frontend Serving (if configured)
+            # 4. Custom Frontend Serving (if configured)
             if frontend_dir and frontend_dir.is_dir():
                 rel_path = path.lstrip("/")
                 target_file = frontend_dir / rel_path if rel_path else frontend_dir / "index.html"
@@ -260,23 +248,9 @@ def create_handler_class(
                     if self._serve_static_file(fallback_index):
                         return
 
-            # 6. Default API root (when no custom frontend is provided)
+            # 5. Default API root (when no custom frontend is provided)
             if path in ["", "/"]:
-                accept_header = self.headers.get("Accept", "")
-                # If accessed via a web browser, serve the interactive Chat Playground
-                if "text/html" in accept_header:
-                    html = _load_template("chat.html")
-                    data = html.encode("utf-8")
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.send_header("Content-Length", str(len(data)))
-                    self._send_cors_headers()
-                    self.end_headers()
-                    self.wfile.write(data)
-                    return
-
                 endpoints = {
-                    "chat": f"GET /chat (Interactive Web Playground)",
                     "predict": f"POST /predict",
                     "health": f"GET /health",
                     "docs": f"GET /docs",
@@ -285,7 +259,7 @@ def create_handler_class(
                 payload = {
                     "name": model_name,
                     "status": "online",
-                    "version": "0.1.2",
+                    "version": "0.1.0",
                     "endpoints": endpoints,
                 }
                 data = json.dumps(payload, indent=2).encode("utf-8")
@@ -466,7 +440,6 @@ def run_inference_server(
     if checkpoint_path:
         print(arrow("Checkpoint", str(checkpoint_path)))
     print(arrow("Local API", f"http://{host}:{port}/"))
-    print(arrow("Chat UI", f"http://{host}:{port}/chat"))
     print(arrow("Inference", f"POST http://{host}:{port}/predict"))
     print(arrow("Health", f"http://{host}:{port}/health"))
     print(arrow("Docs", f"http://{host}:{port}/docs"))
