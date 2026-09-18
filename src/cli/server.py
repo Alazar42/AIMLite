@@ -78,7 +78,7 @@ def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None)
         "openapi": "3.0.0",
         "info": {
             "title": f"AIMLite API - {model_name}",
-            "version": "0.1.0",
+            "version": "0.1.1",
             "description": "Developer-customizable inference server and frontend host.",
         },
         "paths": paths,
@@ -259,7 +259,7 @@ def create_handler_class(
                 payload = {
                     "name": model_name,
                     "status": "online",
-                    "version": "0.1.0",
+                    "version": "0.1.1",
                     "endpoints": endpoints,
                 }
                 data = json.dumps(payload, indent=2).encode("utf-8")
