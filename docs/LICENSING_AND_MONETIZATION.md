@@ -4,54 +4,45 @@ This document outlines the commercial strategy, dual-licensing structure, and su
 
 ---
 
-## 1. Core Philosophy: The Free Community Guarantee
+## 1. Core Philosophy: The Apache 2.0 Open-Source Guarantee
 
-To achieve grassroots adoption across developers, students, and startups, the core open-source framework must never feel artificially crippled or restricted.
+To maximize grassroots adoption across developers, students, researchers, and startups, AIMLite is licensed under the permissive **Apache License 2.0**:
 
-### The Community Edition is:
+### The Apache 2.0 Guarantee:
 - **100% Free Forever**: Available directly via `pip install aimlite` or `uv add aimlite`.
+- **Zero Legal Anxiety**: No copyleft restrictions, no AGPL viral clauses. Developers and companies can use, modify, and embed AIMLite in commercial or non-commercial software freely.
 - **Fully Featured**: Complete access to all 3 core pillars (Data, Model, Lifecycle) and all 3 paradigms (Classical ML, Vector RAG, and LoRA/PEFT adaptation).
 - **Uncapped Execution**: No limits on training epochs, dataset row counts, local model parameters, or HTTP inference requests.
 - **Self-Contained**: CLI commands (`init`, `data validate`, `train`, `evaluate`, `serve`, `doctor`) operate entirely locally with zero telemetry locks or forced accounts.
 
-> **Key Rule**: Individual developers, students, researchers, and early-stage builders will never be asked to pay for core framework capabilities.
-
 ---
 
-## 2. The Dual-Licensing Model (The "Qt / MySQL" Architecture)
+## 2. B2B Enterprise Strategy: Direct Connectors & Custom Partnerships
 
-Inspired by the dual-licensing frameworks popularized by Qt, MySQL, and Neo4j, AIMLite operates under two parallel licenses:
+Rather than locking down the core engine with restrictive licenses, commercial revenue is driven by high-value B2B enterprise needs:
 
 ```text
-                     ┌───────────────────────────┐
-                     │    AIMLite Source Code    │
-                     └─────────────┬─────────────┘
-                                   │
-                 ┌─────────────────┴─────────────────┐
-                 ▼                                   ▼
-   ┌───────────────────────────┐       ┌───────────────────────────┐
-   │    Open-Source License    │       │    Commercial License     │
-   │      (AGPLv3 / LGPL)      │       │     (Proprietary OEM)     │
-   ├───────────────────────────┤       ├───────────────────────────┤
-   │ • 100% Free               │       │ • Paid ($1,000–$5,000/yr) │
-   │ • Students & Hobbyists    │       │ • Closed-Source Startups  │
-   │ • Open-Source Projects    │       │ • Corporations & Banks    │
-   │ • Copyleft Obligation     │       │ • Zero Code Sharing Req.  │
-   │   (share source if cloud) │       │ • Commercial Indemnity    │
-   └───────────────────────────┘       └───────────────────────────┘
+               ┌────────────────────────────────────────────────────────┐
+               │              AIMLite Framework (Apache 2.0)            │
+               │   100% Free: Full Core, CLI, RAG, LoRA, Classical ML   │
+               └───────────────────────────┬────────────────────────────┘
+                                           │
+                        ┌──────────────────┴──────────────────┐
+                        ▼                                     ▼
+         ┌─────────────────────────────┐       ┌─────────────────────────────┐
+         │  Enterprise Data Connectors │       │  Commercial AI Starter Kits │
+         ├─────────────────────────────┤       ├─────────────────────────────┤
+         │ • Snowflake / BigQuery      │       │ • Turnkey SaaS Churn Kit    │
+         │ • PostgreSQL / Databricks   │       │ • Enterprise Support RAG    │
+         │ • White-glove implementation│       │ • LoRA Fine-Tuning Kit      │
+         │ • Dedicated B2B consulting  │       │ • Fast-launch boilerplates  │
+         └─────────────────────────────┘       └─────────────────────────────┘
 ```
 
-### How It Operates:
-1. **The Open-Source License (AGPLv3 / Copyleft)**:
-   - Anyone may read, fork, modify, and run AIMLite for free.
-   - **Copyleft Clause**: If a commercial company modifies or embeds AIMLite within a closed-source SaaS platform or cloud backend, they are legally obligated to release the source code of their derivative software under the same license.
-2. **The Commercial License (Proprietary Exemption)**:
-   - Corporations, fintechs, and venture-backed startups cannot and will not open-source their proprietary business logic or closed models.
-   - To legally waive the copyleft requirement, companies purchase an **AIMLite Commercial License**.
-   - This grants the legal right to embed AIMLite in private, closed-source production applications without sharing their proprietary code, backed by commercial warranties and indemnity.
-
-### Why Enterprise Legal Teams Willingly Pay:
-Corporate legal departments have strict compliance policies prohibiting AGPL software in proprietary commercial offerings. When engineers adopt AIMLite, corporate legal will actively reach out to purchase a commercial license to satisfy their internal governance policies.
+### Direct Outreach for Enterprise Connectors
+Companies and data engineering teams store their actual production data in enterprise data warehouses (Snowflake, BigQuery, Databricks, PostgreSQL). 
+- We partner directly with companies to build, maintain, and optimize custom data ingestion pipelines connecting their private data warehouses directly into AIMLite `Dataset` classes.
+- Direct outreach and agreements allow flexible commercial agreements, tailored SLAs, and high-margin consulting contracts without altering the open-source core.
 
 ---
 

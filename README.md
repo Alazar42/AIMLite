@@ -252,3 +252,25 @@ AIMLite includes a comprehensive 49-test suite validating CLI commands, header g
 uv run test        # Core test runner
 uv run pytest      # Full pytest runner (49/49 passing)
 ```
+
+---
+
+## Business & Enterprise
+
+AIMLite is **100% free and open-source under the Apache 2.0 license** for individual developers, students, researchers, and startups.
+
+For companies and teams seeking enterprise extensions or dedicated collaboration:
+- **Custom Data Connectors**: Direct integrations with enterprise data warehouses (Snowflake, BigQuery, PostgreSQL, Databricks).
+- **Turnkey Production Starter Kits**: Pre-built commercial templates for customer retention/churn, enterprise RAG knowledge bases, and multi-adapter LoRA specialists.
+- **Consulting & Implementation**: Architecture design, model optimization, and white-glove deployment directly with the core framework creators.
+
+For commercial inquiries, partnerships, or custom integrations:
+- **Mickyas Tesfaye**: [alazartesfaye42@gmail.com](mailto:alazartesfaye42@gmail.com)
+- **Beamlak Tadesse**: [atocodes@gmail.com](mailto:atocodes@gmail.com)
+
+---
+
+## License
+
+AIMLite is released under the [Apache 2.0 License](LICENSE). Free for commercial and non-commercial use.
+

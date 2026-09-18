@@ -3,6 +3,7 @@ name = "aimlite"
 version = "0.1.2"
 description = "The Django for AI & Machine Learning — zero-configuration, zero-path execution."
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [{ name = "Mickyas Tesfaye", email = "alazartesfaye42@gmail.com" }, { name = "Beamlak Tadesse", email = "atocodes@gmail.com" }]
 dependencies = []
