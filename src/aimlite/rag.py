@@ -720,7 +720,10 @@ class OpenAIChatProvider(BaseChatProvider):
         **kwargs: Any,
     ) -> str:
         if not self.api_key:
-            return "OpenAI Error: Missing API key. Please set OPENAI_API_KEY in your .env file."
+            raise ValueError(
+                f"OpenAI Authentication Error ({self.model}): Missing API key. "
+                "Please set OPENAI_API_KEY in your .env file or environment."
+            )
 
         url = f"{self.base_url}/chat/completions"
         headers = {
@@ -752,8 +755,15 @@ class OpenAIChatProvider(BaseChatProvider):
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["choices"][0]["message"]["content"]
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
+            raise RuntimeError(
+                f"OpenAI API Error ({self.model}) [HTTP {e.code}]: {err_body}"
+            ) from e
         except Exception as e:
-            return f"OpenAI Provider Error ({self.model}): {e}"
+            raise ConnectionError(
+                f"OpenAI Connection Error ({self.model}) at '{url}': {e}"
+            ) from e
 
     def get_embedder(self) -> BaseEmbedding:
         return APIEmbedding(
@@ -795,7 +805,10 @@ class AnthropicChatProvider(BaseChatProvider):
         **kwargs: Any,
     ) -> str:
         if not self.api_key:
-            return "Anthropic Error: Missing API key. Please set ANTHROPIC_API_KEY in your .env file."
+            raise ValueError(
+                f"Anthropic Authentication Error ({self.model}): Missing API key. "
+                "Please set ANTHROPIC_API_KEY in your .env file or environment."
+            )
 
         url = "https://api.anthropic.com/v1/messages"
         headers = {
@@ -820,8 +833,15 @@ class AnthropicChatProvider(BaseChatProvider):
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["content"][0]["text"]
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
+            raise RuntimeError(
+                f"Anthropic API Error ({self.model}) [HTTP {e.code}]: {err_body}"
+            ) from e
         except Exception as e:
-            return f"Anthropic Provider Error ({self.model}): {e}"
+            raise ConnectionError(
+                f"Anthropic Connection Error ({self.model}): {e}"
+            ) from e
 
 
 class GeminiChatProvider(BaseChatProvider):
@@ -855,7 +875,10 @@ class GeminiChatProvider(BaseChatProvider):
         **kwargs: Any,
     ) -> str:
         if not self.api_key:
-            return "Gemini Error: Missing API key. Please set GEMINI_API_KEY in your .env file."
+            raise ValueError(
+                f"Gemini Authentication Error ({self.model}): Missing API key. "
+                "Please set GEMINI_API_KEY in your .env file or environment."
+            )
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
         sys_instruction = system_prompt or self.system_prompt
@@ -877,8 +900,15 @@ class GeminiChatProvider(BaseChatProvider):
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["candidates"][0]["content"]["parts"][0]["text"]
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
+            raise RuntimeError(
+                f"Gemini API Error ({self.model}) [HTTP {e.code}]: {err_body}"
+            ) from e
         except Exception as e:
-            return f"Gemini Provider Error ({self.model}): {e}"
+            raise ConnectionError(
+                f"Gemini Connection Error ({self.model}): {e}"
+            ) from e
 
 
 class OllamaChatProvider(BaseChatProvider):
@@ -925,20 +955,24 @@ class OllamaChatProvider(BaseChatProvider):
             with urllib.request.urlopen(req, timeout=90) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data.get("response", "")
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
+            raise RuntimeError(
+                f"Ollama API Error ({self.model}) [HTTP {e.code}]: {err_body}"
+            ) from e
         except Exception as e:
             err_msg = str(e)
             if "111" in err_msg or "Connection refused" in err_msg or "urlopen error" in err_msg:
-                return (
+                raise ConnectionError(
                     f"Ollama Connection Error: Could not connect to Ollama server at '{self.base_url}'. "
                     f"Please make sure Ollama is running ('ollama serve') and model '{self.model}' is downloaded ('ollama pull {self.model}')."
-                )
-            return f"Ollama Provider Error ({self.model}): {e}"
+                ) from e
+            raise ConnectionError(f"Ollama Provider Error ({self.model}): {e}") from e
 
     def get_embedder(self) -> BaseEmbedding:
-        return APIEmbedding(
-            endpoint_url=f"{self.base_url}/api/embeddings",
-            model=self.model,
-            provider="ollama",
+        return OllamaEmbedding(
+            host=self.base_url,
+            model=os.environ.get("EMBEDDING_MODEL", self.model),
         )
 
 
@@ -1237,8 +1271,7 @@ class PostgresVectorStore(BaseVectorStore):
     """PostgreSQL-backed vector store with support for pgvector and SQL ORM schema.
 
     Supports direct PostgreSQL connections (`psycopg2`, `asyncpg`, or `SQLAlchemy`),
-    with native `<=>` cosine distance operations, metadata filtering, and fallback
-    pure-Python execution for zero-dependency test/dev environments.
+    with native `<=>` cosine distance operations, metadata filtering, and strict database verification.
     """
 
     def __init__(
@@ -1250,6 +1283,7 @@ class PostgresVectorStore(BaseVectorStore):
         embedding_fn: Optional[BaseEmbedding] = None,
         vector_dim: int = 256,
         use_pgvector: bool = True,
+        strict: bool = True,
         **kwargs: Any,
     ) -> None:
         conn = connection_string or db_url or url or os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or ""
@@ -1258,17 +1292,26 @@ class PostgresVectorStore(BaseVectorStore):
         self.embedding_fn = embedding_fn or TfidfEmbedding(dim=vector_dim)
         self.vector_dim = vector_dim
         self.use_pgvector = use_pgvector
+        self.strict = strict
         self._fallback_memory_store = MemoryVectorStore(embedding_fn=self.embedding_fn)
         self._db_initialized = False
 
     def init_db(self) -> None:
         """Initializes database schema and pgvector extension if PostgreSQL is connected."""
         if not self.connection_string:
+            if self.strict:
+                raise ValueError("PostgresVectorStore requires a valid 'db_url' or DATABASE_URL environment variable.")
             return
 
         try:
             import psycopg2  # type: ignore
+        except ImportError as e:
+            raise ImportError(
+                "PostgreSQL driver 'psycopg2' is required for PostgresVectorStore. "
+                "Install it via 'aimlite install psycopg2-binary' or 'pip install psycopg2-binary'."
+            ) from e
 
+        try:
             with psycopg2.connect(self.connection_string) as conn:
                 with conn.cursor() as cur:
                     if self.use_pgvector:
@@ -1290,12 +1333,15 @@ class PostgresVectorStore(BaseVectorStore):
                     """)
                     conn.commit()
             self._db_initialized = True
-        except Exception:
-            # Gracefully fallback to memory/sqlite backend
+        except Exception as e:
             self._db_initialized = False
+            raise ConnectionError(
+                f"PostgreSQL Database Connection Error: Failed to connect to database at '{self.connection_string}'. "
+                f"Please ensure PostgreSQL service is running and credentials/network are valid. Original error: {e}"
+            ) from e
 
     def add_documents(self, documents: Sequence[Document]) -> None:
-        """Adds documents to PostgreSQL or in-memory fallback store."""
+        """Adds documents to PostgreSQL with strict database verification."""
         for doc in documents:
             if doc.embedding is None:
                 doc.embedding = self.embedding_fn.embed_text(doc.content)
@@ -1304,9 +1350,9 @@ class PostgresVectorStore(BaseVectorStore):
             self.init_db()
 
         if self.connection_string and self._db_initialized:
-            try:
-                import psycopg2  # type: ignore
+            import psycopg2  # type: ignore
 
+            try:
                 with psycopg2.connect(self.connection_string) as conn:
                     with conn.cursor() as cur:
                         for doc in documents:
@@ -1328,9 +1374,13 @@ class PostgresVectorStore(BaseVectorStore):
                             )
                         conn.commit()
                 return
-            except Exception:
-                pass
+            except Exception as e:
+                raise RuntimeError(
+                    f"PostgreSQL Storage Error: Failed to insert knowledge records into table '{self.table_name}': {e}"
+                ) from e
 
+        if self.strict:
+            raise ConnectionError("PostgresVectorStore is uninitialized or missing DATABASE_URL connection string.")
         self._fallback_memory_store.add_documents(documents)
 
     def similarity_search(
@@ -1339,11 +1389,14 @@ class PostgresVectorStore(BaseVectorStore):
         top_k: int = 4,
         filters: Optional[Dict[str, Any]] = None,
     ) -> List[Document]:
-        """Performs vector similarity search via PostgreSQL or fallback store."""
-        if self.connection_string and self._db_initialized:
-            try:
-                import psycopg2  # type: ignore
+        """Performs vector similarity search via PostgreSQL."""
+        if not self._db_initialized:
+            self.init_db()
 
+        if self.connection_string and self._db_initialized:
+            import psycopg2  # type: ignore
+
+            try:
                 with psycopg2.connect(self.connection_string) as conn:
                     with conn.cursor() as cur:
                         if self.use_pgvector:
@@ -1370,9 +1423,13 @@ class PostgresVectorStore(BaseVectorStore):
                                     )
                                 )
                             return results
-            except Exception:
-                pass
+            except Exception as e:
+                raise RuntimeError(
+                    f"PostgreSQL Search Error: Failed to execute vector similarity query on table '{self.table_name}': {e}"
+                ) from e
 
+        if self.strict:
+            raise ConnectionError("PostgresVectorStore is uninitialized or missing DATABASE_URL connection string.")
         return self._fallback_memory_store.similarity_search(query_embedding, top_k=top_k, filters=filters)
 
     def save(self, destination: Union[str, Path]) -> None:
