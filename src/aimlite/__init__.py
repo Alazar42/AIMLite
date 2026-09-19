@@ -1,3 +1,5 @@
+__version__ = "0.1.2"
+
 from aimlite import (
     adapters,
     config,
@@ -14,7 +16,7 @@ from aimlite.adapters import (
     LoRALayer,
     MultiAdapterManager,
 )
-from aimlite.config import BaseConfig
+from aimlite.config import BaseConfig, load_dotenv
 from aimlite.data import Dataset
 from aimlite.lifecycle import (
     BaseEvaluator,

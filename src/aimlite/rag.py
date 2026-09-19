@@ -648,7 +648,7 @@ class OpenAIChatProvider(BaseChatProvider):
 
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
+        model: Optional[str] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         system_prompt: Optional[str] = None,
@@ -656,8 +656,9 @@ class OpenAIChatProvider(BaseChatProvider):
         max_tokens: int = 1024,
         **kwargs: Any,
     ) -> None:
+        resolved_model = model or os.environ.get("OPENAI_MODEL") or "gpt-4o-mini"
         super().__init__(
-            model=model,
+            model=resolved_model,
             system_prompt=system_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -688,6 +689,9 @@ class OpenAIChatProvider(BaseChatProvider):
         max_tokens: Optional[int] = None,
         **kwargs: Any,
     ) -> str:
+        if not self.api_key:
+            return "OpenAI Error: Missing API key. Please set OPENAI_API_KEY in your .env file."
+
         url = f"{self.base_url}/chat/completions"
         headers = {
             "Content-Type": "application/json",
@@ -719,12 +723,13 @@ class OpenAIChatProvider(BaseChatProvider):
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["choices"][0]["message"]["content"]
         except Exception as e:
-            return f"OpenAI Provider Error: {e}"
+            return f"OpenAI Provider Error ({self.model}): {e}"
 
     def get_embedder(self) -> BaseEmbedding:
         return APIEmbedding(
             endpoint_url=f"{self.base_url}/embeddings",
             api_key=self.api_key,
+            model=os.environ.get("EMBEDDING_MODEL", "text-embedding-3-small"),
             provider="openai",
         )
 
@@ -734,15 +739,16 @@ class AnthropicChatProvider(BaseChatProvider):
 
     def __init__(
         self,
-        model: str = "claude-3-5-sonnet-20241022",
+        model: Optional[str] = None,
         api_key: Optional[str] = None,
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
         **kwargs: Any,
     ) -> None:
+        resolved_model = model or os.environ.get("ANTHROPIC_MODEL") or "claude-3-5-sonnet-20241022"
         super().__init__(
-            model=model,
+            model=resolved_model,
             system_prompt=system_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -758,6 +764,9 @@ class AnthropicChatProvider(BaseChatProvider):
         max_tokens: Optional[int] = None,
         **kwargs: Any,
     ) -> str:
+        if not self.api_key:
+            return "Anthropic Error: Missing API key. Please set ANTHROPIC_API_KEY in your .env file."
+
         url = "https://api.anthropic.com/v1/messages"
         headers = {
             "Content-Type": "application/json",
@@ -782,7 +791,7 @@ class AnthropicChatProvider(BaseChatProvider):
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["content"][0]["text"]
         except Exception as e:
-            return f"Anthropic Provider Error: {e}"
+            return f"Anthropic Provider Error ({self.model}): {e}"
 
 
 class GeminiChatProvider(BaseChatProvider):
@@ -790,15 +799,16 @@ class GeminiChatProvider(BaseChatProvider):
 
     def __init__(
         self,
-        model: str = "gemini-1.5-flash",
+        model: Optional[str] = None,
         api_key: Optional[str] = None,
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 1024,
         **kwargs: Any,
     ) -> None:
+        resolved_model = model or os.environ.get("GEMINI_MODEL") or "gemini-1.5-flash"
         super().__init__(
-            model=model,
+            model=resolved_model,
             system_prompt=system_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -814,6 +824,9 @@ class GeminiChatProvider(BaseChatProvider):
         max_tokens: Optional[int] = None,
         **kwargs: Any,
     ) -> str:
+        if not self.api_key:
+            return "Gemini Error: Missing API key. Please set GEMINI_API_KEY in your .env file."
+
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
         sys_instruction = system_prompt or self.system_prompt
         payload = {
@@ -835,7 +848,7 @@ class GeminiChatProvider(BaseChatProvider):
                 data = json.loads(resp.read().decode("utf-8"))
                 return data["candidates"][0]["content"]["parts"][0]["text"]
         except Exception as e:
-            return f"Gemini Provider Error: {e}"
+            return f"Gemini Provider Error ({self.model}): {e}"
 
 
 class OllamaChatProvider(BaseChatProvider):
@@ -843,14 +856,16 @@ class OllamaChatProvider(BaseChatProvider):
 
     def __init__(
         self,
-        model: str = "llama3.2",
-        base_url: str = "http://localhost:11434",
+        model: Optional[str] = None,
+        base_url: Optional[str] = None,
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         **kwargs: Any,
     ) -> None:
-        super().__init__(model=model, system_prompt=system_prompt, temperature=temperature, **kwargs)
-        self.base_url = base_url.rstrip("/")
+        resolved_model = model or os.environ.get("OLLAMA_MODEL") or "llama3.2"
+        super().__init__(model=resolved_model, system_prompt=system_prompt, temperature=temperature, **kwargs)
+        resolved_url = base_url or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
+        self.base_url = resolved_url.rstrip("/")
 
     def generate(
         self,
@@ -881,7 +896,13 @@ class OllamaChatProvider(BaseChatProvider):
                 data = json.loads(resp.read().decode("utf-8"))
                 return data.get("response", "")
         except Exception as e:
-            return f"Ollama Provider Error: {e}"
+            err_msg = str(e)
+            if "111" in err_msg or "Connection refused" in err_msg or "urlopen error" in err_msg:
+                return (
+                    f"Ollama Connection Error: Could not connect to Ollama server at '{self.base_url}'. "
+                    f"Please make sure Ollama is running ('ollama serve') and model '{self.model}' is downloaded ('ollama pull {self.model}')."
+                )
+            return f"Ollama Provider Error ({self.model}): {e}"
 
     def get_embedder(self) -> BaseEmbedding:
         return APIEmbedding(
