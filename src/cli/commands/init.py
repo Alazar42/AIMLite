@@ -756,11 +756,74 @@ if __name__ == "__main__":
 '''
     (dest_root / "experiments" / "benchmark.py").write_text(benchmark_py, encoding="utf-8")
 
-    # 8. Directory placeholders
+    # 8. Directory placeholders & Git configuration
     for d in ["models", "artifacts", "checkpoints"]:
         (dest_root / d / ".gitkeep").write_text("", encoding="utf-8")
 
-    # 9. Client starter script in root
+    gitignore_content = """# Environments & Virtual Envs
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Sensitive Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# ML Artifacts & Checkpoints
+artifacts/*.json
+artifacts/*.pkl
+checkpoints/*.pt
+checkpoints/*.safetensors
+checkpoints/*.bin
+"""
+    (dest_root / ".gitignore").write_text(gitignore_content, encoding="utf-8")
+
+    # 9. Sensitive variables starter template: .env.example
+    env_example = """# ==============================================================================
+# AIMLite RAG Knowledge Engine: Environment Variables & Secrets
+# ==============================================================================
+# Copy this file to .env and fill in your actual credentials:
+#   cp .env.example .env
+# Never commit your .env file containing private keys to version control!
+# ==============================================================================
+
+# --- LLM API Credentials ---
+# Required when using OpenAIChatProvider (model: gpt-4o, gpt-4o-mini, o1, o3)
+OPENAI_API_KEY=sk-proj-your-openai-api-key-here
+
+# Required when using AnthropicChatProvider (model: claude-3-5-sonnet, claude-3-opus)
+ANTHROPIC_API_KEY=sk-ant-api03-your-anthropic-key-here
+
+# Required when using GeminiChatProvider (model: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0)
+GEMINI_API_KEY=AIzaSy-your-google-gemini-key-here
+
+# --- Local LLM & Ollama ---
+# Endpoint for local Ollama instance (defaults to http://localhost:11434)
+OLLAMA_HOST=http://localhost:11434
+
+# --- Database & Vector Storage ---
+# PostgreSQL connection string for PostgresVectorStore & pgvector ORM:
+# Format: postgresql://<username>:<password>@<host>:<port>/<database_name>
+DATABASE_URL=postgresql://postgres:secretpassword@localhost:5432/knowledge_db
+
+# --- Hardware & Runtime Settings ---
+AIMLITE_DEVICE=auto
+AIMLITE_PORT=8000
+"""
+    (dest_root / ".env.example").write_text(env_example, encoding="utf-8")
+
+    # 10. Client starter script in root
     client_py = f'''"""Client test script for {project_name} RAG Knowledge Base."""
 
 from {project_name}.data import KnowledgeDocsDataset
@@ -803,7 +866,7 @@ if __name__ == "__main__":
 '''
     (dest_root / "client.py").write_text(client_py, encoding="utf-8")
 
-    # 10. Project README
+    # 11. Project README
     readme_md = f"""# {project_name.replace('_', ' ').title()} (RAG Knowledge Engine)
 
 Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
@@ -815,6 +878,46 @@ Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI 
 - `{project_name}/data.py`: SmartChunker document ingestion dataset.
 - `experiments/benchmark.py`: Latency & retrieval quality benchmark script.
 - `client.py`: Ready-to-run interactive/batch client query starter.
+- `.env.example`: Template for sensitive credentials, database URLs, and API keys.
+
+---
+
+## Environment Variables & Secrets
+
+AIMLite reads sensitive configuration (API keys, database credentials, host URLs) from system environment variables or a local `.env` file in the project root.
+
+### 1. Create your `.env` file
+Copy the provided `.env.example` template:
+```bash
+cp .env.example .env
+```
+
+### 2. Configure Credentials
+
+| Variable | Description | Example Value |
+|---|---|---|
+| `OPENAI_API_KEY` | OpenAI API Key (for GPT-4o, GPT-4o-mini) | `sk-proj-abc123xyz456...` |
+| `ANTHROPIC_API_KEY` | Anthropic API Key (for Claude 3.5 Sonnet) | `sk-ant-api03-abc...` |
+| `GEMINI_API_KEY` | Google Gemini API Key | `AIzaSyD...` |
+| `OLLAMA_HOST` | Ollama daemon endpoint (local LLM) | `http://localhost:11434` |
+| `DATABASE_URL` | PostgreSQL connection string for pgvector ORM | `postgresql://user:pass@localhost:5432/my_rag_db` |
+
+#### Example `.env` file:
+```ini
+# --- LLM API Credentials ---
+OPENAI_API_KEY=sk-proj-your-actual-api-key-here
+
+# --- Database & Vector Storage (PostgreSQL ORM) ---
+DATABASE_URL=postgresql://postgres:secretpassword@localhost:5432/knowledge_db
+
+# --- Hardware Acceleration & Serving ---
+AIMLITE_DEVICE=auto
+AIMLITE_PORT=8000
+```
+
+> **Security Note:** Never commit `.env` containing sensitive credentials to Git. `.env` is already configured in `.gitignore`.
+
+---
 
 ## Quickstart
 
@@ -1030,11 +1133,61 @@ if __name__ == "__main__":
 '''
     (dest_root / "experiments" / "benchmark.py").write_text(benchmark_py, encoding="utf-8")
 
-    # 7. Directory placeholders
+    # 7. Directory placeholders & Git configuration
     for d in ["models", "artifacts", "checkpoints"]:
         (dest_root / d / ".gitkeep").write_text("", encoding="utf-8")
 
-    # 8. Client starter script in root
+    gitignore_content = """# Environments & Virtual Envs
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Sensitive Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# ML Checkpoints & Adapters
+checkpoints/*.pt
+checkpoints/*.safetensors
+checkpoints/*.bin
+"""
+    (dest_root / ".gitignore").write_text(gitignore_content, encoding="utf-8")
+
+    # 8. Sensitive variables starter template: .env.example
+    env_example = """# ==============================================================================
+# AIMLite LoRA / Fine-Tuning: Environment Variables & Secrets
+# ==============================================================================
+# Copy this file to .env and fill in your actual credentials:
+#   cp .env.example .env
+# Never commit your .env file containing private keys to version control!
+# ==============================================================================
+
+# --- Model Registry & Hub Access Tokens ---
+# Required for downloading gated foundation weights (e.g. meta-llama/Llama-3.2)
+HF_TOKEN=hf_your_huggingface_access_token_here
+
+# --- Experiment Tracking & Monitoring ---
+# Optional Weights & Biases API key
+WANDB_API_KEY=your_wandb_api_key_here
+
+# --- Hardware Acceleration & Serving ---
+AIMLITE_DEVICE=cuda
+AIMLITE_PORT=8000
+"""
+    (dest_root / ".env.example").write_text(env_example, encoding="utf-8")
+
+    # 9. Client starter script in root
     client_py = f'''"""Client test script for {project_name} Fine-Tuning / LoRA Adapter Model."""
 
 from {project_name}.data import InstructionDataset
@@ -1074,10 +1227,52 @@ if __name__ == "__main__":
 '''
     (dest_root / "client.py").write_text(client_py, encoding="utf-8")
 
-    # 9. Project README
+    # 10. Project README
     readme_md = f"""# {project_name.replace('_', ' ').title()} (LoRA / Fine-Tuning)
 
 Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
+
+## Project Structure
+- `{project_name}/adapter.py`: LoRA configuration, target modules, and low-rank matrices.
+- `{project_name}/model.py`: Parameter-efficient AdapterModel architecture.
+- `{project_name}/data.py`: InstructionDataset loader for prompt/response pairs.
+- `experiments/benchmark.py`: Parameter efficiency & inference latency benchmark.
+- `client.py`: Ready-to-run interactive/batch client inference test.
+- `.env.example`: Template for API keys, Hugging Face tokens, and runtime settings.
+
+---
+
+## Environment Variables & Secrets
+
+AIMLite reads sensitive credentials from system environment variables or a local `.env` file in the project root.
+
+### 1. Create your `.env` file
+Copy the provided `.env.example` template:
+```bash
+cp .env.example .env
+```
+
+### 2. Configure Credentials
+
+| Variable | Description | Example Value |
+|---|---|---|
+| `HF_TOKEN` | Hugging Face Hub token for downloading gated foundation models | `hf_abc123xyz...` |
+| `WANDB_API_KEY` | Weights & Biases API key for loss & parameter logging | `wandb_api_key...` |
+| `AIMLITE_DEVICE` | Hardware accelerator target (`auto`, `cuda`, `mps`, `cpu`) | `cuda` |
+
+#### Example `.env` file:
+```ini
+# --- Model Hub Credentials ---
+HF_TOKEN=hf_your_actual_token_here
+
+# --- Hardware Acceleration ---
+AIMLITE_DEVICE=cuda
+AIMLITE_PORT=8000
+```
+
+> **Security Note:** Never commit `.env` containing sensitive credentials to Git. `.env` is already configured in `.gitignore`.
+
+---
 
 ## Quickstart
 
@@ -1166,9 +1361,54 @@ if __name__ == "__main__":
 '''
     (dest_root / "experiments" / "benchmark.py").write_text(benchmark_py, encoding="utf-8")
 
-    # Directory placeholders
+    # Directory placeholders & Git configuration
     for d in ["models", "artifacts", "checkpoints"]:
         (dest_root / d / ".gitkeep").write_text("", encoding="utf-8")
+
+    gitignore_content = """# Environments & Virtual Envs
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Sensitive Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# ML Artifacts & Checkpoints
+artifacts/*.json
+artifacts/*.pkl
+checkpoints/*.pt
+"""
+    (dest_root / ".gitignore").write_text(gitignore_content, encoding="utf-8")
+
+    # Sensitive variables starter template: .env.example
+    env_example = """# ==============================================================================
+# AIMLite Custom ML: Environment Variables & Secrets
+# ==============================================================================
+# Copy this file to .env and fill in your actual credentials:
+#   cp .env.example .env
+# Never commit your .env file containing private keys to version control!
+# ==============================================================================
+
+# --- Feature Store / Database Connection ---
+DATABASE_URL=postgresql://user:password@localhost:5432/ml_db
+
+# --- Hardware Acceleration & Serving ---
+AIMLITE_DEVICE=auto
+AIMLITE_PORT=8000
+"""
+    (dest_root / ".env.example").write_text(env_example, encoding="utf-8")
 
     # Client starter script in root
     client_py = f'''"""Client test script for {project_name} Custom ML Model."""
@@ -1206,6 +1446,48 @@ if __name__ == "__main__":
     readme_md = f"""# {project_name.replace('_', ' ').title()} (AIMLite Custom ML)
 
 Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
+
+## Project Structure
+- `{project_name}/model.py`: Model architecture and forward prediction.
+- `{project_name}/data.py`: Application dataset ingestion.
+- `{project_name}/trainer.py`: Model training orchestration.
+- `experiments/benchmark.py`: Forward throughput & latency benchmark.
+- `client.py`: Ready-to-run test client.
+- `.env.example`: Template for environment variables and secrets.
+
+---
+
+## Environment Variables & Secrets
+
+AIMLite reads sensitive credentials from system environment variables or a local `.env` file in the project root.
+
+### 1. Create your `.env` file
+Copy the provided `.env.example` template:
+```bash
+cp .env.example .env
+```
+
+### 2. Configure Credentials
+
+| Variable | Description | Example Value |
+|---|---|---|
+| `DATABASE_URL` | Feature store or SQL database connection string | `postgresql://user:pass@localhost:5432/ml_db` |
+| `AIMLITE_DEVICE` | Hardware acceleration target (`auto`, `cuda`, `cpu`) | `auto` |
+| `AIMLITE_PORT` | HTTP REST API server port | `8000` |
+
+#### Example `.env` file:
+```ini
+# --- Database / Feature Store ---
+DATABASE_URL=postgresql://postgres:secretpassword@localhost:5432/ml_db
+
+# --- Serving ---
+AIMLITE_DEVICE=auto
+AIMLITE_PORT=8000
+```
+
+> **Security Note:** Never commit `.env` containing sensitive credentials to Git. `.env` is already configured in `.gitignore`.
+
+---
 
 ## Quickstart
 
