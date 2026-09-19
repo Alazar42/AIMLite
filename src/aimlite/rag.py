@@ -525,7 +525,9 @@ class APIEmbedding(BaseEmbedding):
                 return [fallback.embed_text(t) for t in texts]
 
         elif self.provider == "ollama":
-            url = self.endpoint_url or "http://localhost:11434/api/embeddings"
+            url = self.endpoint_url or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+            if not url.endswith("/api/embeddings"):
+                url = f"{url.rstrip('/')}/api/embeddings"
             embeddings = []
             for t in texts:
                 payload = json.dumps({"model": self.model, "prompt": t}).encode("utf-8")
@@ -534,13 +536,41 @@ class APIEmbedding(BaseEmbedding):
                     with urllib.request.urlopen(req, timeout=30) as resp:
                         result = json.loads(resp.read().decode("utf-8"))
                         embeddings.append(result.get("embedding", [0.0] * self.dim))
-                except Exception:
-                    fallback = TfidfEmbedding(dim=self.dim)
-                    embeddings.append(fallback.embed_text(t))
+                except Exception as e:
+                    raise ConnectionError(
+                        f"Ollama Embedding Error: Failed to generate embeddings at '{url}'. "
+                        f"Please ensure Ollama is running ('ollama serve') and model '{self.model}' is pulled ('ollama pull {self.model}'). "
+                        f"Original error: {e}"
+                    ) from e
             return embeddings
 
-        fallback = TfidfEmbedding(dim=self.dim)
-        return [fallback.embed_text(t) for t in texts]
+        raise ValueError(f"Unsupported embedding provider '{self.provider}'. Supported: 'openai', 'ollama', 'sentence-transformers', 'tfidf'.")
+
+
+class OllamaEmbedding(BaseEmbedding):
+    """Ollama REST API embedding client with direct connection verification."""
+
+    def __init__(
+        self,
+        model: str = "nomic-embed-text",
+        host: Optional[str] = None,
+        dim: int = 768,
+    ) -> None:
+        self.model = model or os.environ.get("EMBEDDING_MODEL", "nomic-embed-text")
+        self.host = host or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+        self.dim = dim
+        self._api = APIEmbedding(
+            endpoint_url=self.host,
+            model=self.model,
+            provider="ollama",
+            dim=self.dim,
+        )
+
+    def embed_text(self, text: str) -> List[float]:
+        return self._api.embed_text(text)
+
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        return self._api.embed_batch(texts)
 
 
 # =====================================================================
