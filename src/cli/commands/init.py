@@ -364,35 +364,152 @@ class Config(BaseConfig):
 
 
 def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_config: Dict[str, Any]) -> None:
-    """Generates RAG & Knowledge Model files."""
+    """Generates RAG & Knowledge Model files with modular chat provider and storage starters."""
     chat_p = rag_config.get("chat_provider", "openai")
     vector_db = rag_config.get("vector_db", "memory")
     embed_engine = rag_config.get("embedding_engine", "sentence-transformers")
 
-    # Determine ChatProvider constructor
-    provider_cls = {
-        "openai": 'OpenAIChatProvider(model="gpt-4o-mini")',
-        "gemini": 'GeminiChatProvider(model="gemini-1.5-flash")',
-        "anthropic": 'AnthropicChatProvider(model="claude-3-5-sonnet-20241022")',
-        "ollama": 'OllamaChatProvider(model="llama3.2")',
-        "local": "LocalChatProvider()",
-        "mock": "MockChatProvider()",
-    }.get(chat_p, 'OpenAIChatProvider(model="gpt-4o-mini")')
+    # 1. Chat Provider Starter Code: chat_provider.py
+    chat_provider_py = f'''"""Chat Provider & Query Intelligence: chat_provider.py
 
-    # Determine VectorStore constructor
-    store_cls = "PostgresVectorStore()" if vector_db == "postgres" else "MemoryVectorStore(embedding_fn=embedding_fn)"
+Starter code for configuring LLM synthesis, system prompts, and query analysis (HyDE, intent decomposition, expansion).
+"""
 
-    # Determine Embedder constructor
-    if embed_engine == "sentence-transformers":
-        embed_code = """        try:
-            return SentenceTransformerEmbedding(model_name_or_path="all-MiniLM-L6-v2")
-        except Exception:
-            return TfidfEmbedding()"""
-    elif embed_engine == "api":
-        embed_code = "        return self.chat_provider.get_embedder()"
+from typing import Any, Dict, Optional
+from aimlite.rag import (
+    AnthropicChatProvider,
+    BaseChatProvider,
+    GeminiChatProvider,
+    LocalChatProvider,
+    MockChatProvider,
+    OllamaChatProvider,
+    OpenAIChatProvider,
+    QueryAnalyzer,
+    PROMPT_CONVERSATIONAL_RAG,
+    PROMPT_QUERY_ANALYZER,
+    PROMPT_RAG_QA,
+    PROMPT_SMART_CHUNKER,
+)
+
+
+def get_chat_provider(
+    provider_name: str = "{chat_p}",
+    model_name: Optional[str] = None,
+    system_prompt: Optional[str] = None,
+    temperature: float = 0.7,
+    **kwargs: Any,
+) -> BaseChatProvider:
+    """Instantiates and returns the configured LLM Chat Provider."""
+    prompt = system_prompt or PROMPT_RAG_QA
+
+    if provider_name == "openai":
+        return OpenAIChatProvider(
+            model=model_name or "gpt-4o-mini",
+            system_prompt=prompt,
+            temperature=temperature,
+            **kwargs,
+        )
+    elif provider_name == "gemini":
+        return GeminiChatProvider(
+            model=model_name or "gemini-1.5-flash",
+            system_prompt=prompt,
+            temperature=temperature,
+            **kwargs,
+        )
+    elif provider_name == "anthropic":
+        return AnthropicChatProvider(
+            model=model_name or "claude-3-5-sonnet-20241022",
+            system_prompt=prompt,
+            temperature=temperature,
+            **kwargs,
+        )
+    elif provider_name == "ollama":
+        return OllamaChatProvider(
+            model=model_name or "llama3.2",
+            system_prompt=prompt,
+            temperature=temperature,
+            **kwargs,
+        )
+    elif provider_name == "local":
+        return LocalChatProvider(
+            system_prompt=prompt,
+            **kwargs,
+        )
     else:
-        embed_code = "        return TfidfEmbedding()"
+        return MockChatProvider(
+            model=model_name or "mock-gpt",
+            system_prompt=prompt,
+            **kwargs,
+        )
 
+
+def get_query_analyzer(
+    chat_provider: Optional[BaseChatProvider] = None,
+    enable_hyde: bool = True,
+) -> QueryAnalyzer:
+    """Configures Query Intelligence for intent parsing, expansion, and hypothetical document generation."""
+    provider = chat_provider or get_chat_provider()
+    return QueryAnalyzer(chat_provider=provider, enable_hyde=enable_hyde)
+'''
+    (package_dir / "chat_provider.py").write_text(chat_provider_py, encoding="utf-8")
+
+    # 2. Storage & Vector Store Starter Code: store.py
+    store_py = f'''"""Vector Store & Database Storage: store.py
+
+Starter code for semantic vector storage, embeddings, and PostgreSQL ORM records.
+"""
+
+from typing import Any, Dict, Optional
+from aimlite.rag import (
+    BaseEmbedding,
+    BaseVectorStore,
+    KnowledgeChunkRecord,
+    KnowledgeDocumentRecord,
+    MemoryVectorStore,
+    PostgresVectorStore,
+    SentenceTransformerEmbedding,
+    TfidfEmbedding,
+)
+
+
+def get_embedding_model(
+    engine: str = "{embed_engine}",
+    model_name: str = "all-MiniLM-L6-v2",
+) -> BaseEmbedding:
+    """Instantiates embedding model (Dense Neural, API, or Pure-Python TF-IDF)."""
+    if engine == "sentence-transformers":
+        try:
+            return SentenceTransformerEmbedding(model_name_or_path=model_name)
+        except Exception:
+            return TfidfEmbedding()
+    elif engine == "tfidf":
+        return TfidfEmbedding()
+    return TfidfEmbedding()
+
+
+def get_vector_store(
+    backend: str = "{vector_db}",
+    embedding_fn: Optional[BaseEmbedding] = None,
+    db_url: Optional[str] = None,
+    **kwargs: Any,
+) -> BaseVectorStore:
+    """Instantiates vector storage backend (PostgreSQL pgvector ORM or MemoryVectorStore)."""
+    embed_fn = embedding_fn or get_embedding_model()
+
+    if backend == "postgres":
+        return PostgresVectorStore(
+            db_url=db_url,
+            embedding_fn=embed_fn,
+            **kwargs,
+        )
+    return MemoryVectorStore(
+        embedding_fn=embed_fn,
+        **kwargs,
+    )
+'''
+    (package_dir / "store.py").write_text(store_py, encoding="utf-8")
+
+    # 3. Data & Chunking: data.py
     data_py = '''"""Document & Knowledge QA (RAG Paradigm): data.py"""
 
 from pathlib import Path
@@ -427,7 +544,7 @@ class KnowledgeDocsDataset(Dataset):
         data_dir = Path("data")
 
         if data_dir.is_dir():
-            for p in data_dir.glob("*.*"):
+            for p in sorted(data_dir.glob("*.*")):
                 if p.suffix.lower() in (".md", ".txt", ".markdown", ".rst"):
                     try:
                         text = p.read_text(encoding="utf-8")
@@ -441,27 +558,20 @@ class KnowledgeDocsDataset(Dataset):
 '''
     (package_dir / "data.py").write_text(data_py, encoding="utf-8")
 
+    # 4. Model Architecture: model.py
     model_py = f'''"""Document & Knowledge QA (RAG Paradigm): model.py"""
 
 from typing import Any, Dict, Optional
 from aimlite.rag import (
-    AnthropicChatProvider,
     BaseChatProvider,
     BaseEmbedding,
     BaseVectorStore,
-    GeminiChatProvider,
     KnowledgeModel,
-    LocalChatProvider,
-    MemoryVectorStore,
-    MockChatProvider,
-    OllamaChatProvider,
-    OpenAIChatProvider,
-    PostgresVectorStore,
     QueryAnalyzer,
-    SentenceTransformerEmbedding,
     SmartChunker,
-    TfidfEmbedding,
 )
+from {project_name}.chat_provider import get_chat_provider, get_query_analyzer
+from {project_name}.store import get_embedding_model, get_vector_store
 
 
 class SupportDocRAG(KnowledgeModel):
@@ -474,32 +584,35 @@ class SupportDocRAG(KnowledgeModel):
         top_k: int = 3,
         chat_provider: Optional[BaseChatProvider] = None,
         vector_store: Optional[BaseVectorStore] = None,
+        embedding_fn: Optional[BaseEmbedding] = None,
+        query_analyzer: Optional[QueryAnalyzer] = None,
+        chunk_size: int = 400,
+        chunk_overlap: int = 40,
         **kwargs: Any,
     ) -> None:
-        provider = chat_provider or {provider_cls}
+        provider = chat_provider or get_chat_provider()
         self.chat_provider = provider
-        embedding_fn = self._init_embedding()
-        analyzer = QueryAnalyzer(chat_provider=provider, enable_hyde=True)
-        store = vector_store or {store_cls}
-        chunker = SmartChunker(max_chunk_size=400)
+
+        embed_model = embedding_fn or get_embedding_model()
+        store = vector_store or get_vector_store(embedding_fn=embed_model)
+        analyzer = query_analyzer or get_query_analyzer(chat_provider=provider)
+        chunker = SmartChunker(max_chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
         super().__init__(
             name=name,
             config=config,
             chat_provider=provider,
-            embedding_fn=embedding_fn,
+            embedding_fn=embed_model,
             vector_store=store,
             chunker=chunker,
             query_analyzer=analyzer,
             top_k=top_k,
             **kwargs,
         )
-
-    def _init_embedding(self) -> BaseEmbedding:
-{embed_code}
 '''
     (package_dir / "model.py").write_text(model_py, encoding="utf-8")
 
+    # 5. Trainer, Evaluator, Inference
     trainer_py = '''"""Document & Knowledge QA (RAG Paradigm): trainer.py"""
 
 from aimlite.rag import RAGTrainer
@@ -564,7 +677,7 @@ class RAGInference(BaseInference):
 '''
     (package_dir / "inference.py").write_text(inference_py, encoding="utf-8")
 
-    # Sample knowledge documentation in data/
+    # 6. Sample knowledge documentation in data/
     sample_md = f"""# {project_name.replace('_', ' ').title()} Knowledge Base
 
 ## Overview & Architecture
@@ -582,7 +695,72 @@ For production deployments, containerize with Docker and scale horizontally with
 """
     (dest_root / "data" / "knowledge_base.md").write_text(sample_md, encoding="utf-8")
 
-    # Client starter script in root
+    faq_md = """# Frequently Asked Questions (FAQ)
+
+## How does AIMLite manage model checkpoints?
+AIMLite automatically persists model weights, optimizer states, and configuration metadata into the `checkpoints/` directory.
+
+## Can I switch from SQLite/Memory to PostgreSQL in production?
+Yes! Simply configure `PostgresVectorStore(db_url="postgresql://user:pass@localhost:5432/rag_db")` in `store.py`.
+
+## How do I customize LLM System Prompts?
+Edit `chat_provider.py` to change prompt templates or pass custom instructions directly to `get_chat_provider()`.
+"""
+    (dest_root / "data" / "faq.md").write_text(faq_md, encoding="utf-8")
+
+    # 7. Experiments benchmark starter script
+    benchmark_py = f'''"""Benchmark and evaluation experiment script for {project_name} RAG Knowledge Base."""
+
+import time
+from {project_name}.data import KnowledgeDocsDataset
+from {project_name}.model import SupportDocRAG
+
+
+def run_benchmark() -> None:
+    print("=" * 60)
+    print("  AIMLite RAG Knowledge Base Retrieval & Latency Benchmark")
+    print("=" * 60)
+
+    model = SupportDocRAG()
+    dataset = KnowledgeDocsDataset()
+
+    # 1. Ingestion Benchmark
+    t0 = time.perf_counter()
+    docs = dataset.load_documents()
+    model.index_documents(docs)
+    ingest_time = (time.perf_counter() - t0) * 1000
+    print(f"\\n[*] Ingestion & Indexing: {{len(docs)}} passages indexed in {{ingest_time:.2f}} ms")
+
+    # 2. Query Latency & Grounding Tests
+    benchmark_queries = [
+        "What are the authentication and session expiration rules?",
+        "How do you serve and scale AIMLite in production?",
+        "How do I customize LLM System Prompts?",
+    ]
+
+    print("\\n[*] Evaluating Benchmark Queries:")
+    for idx, query in enumerate(benchmark_queries, start=1):
+        t0 = time.perf_counter()
+        result = model.predict(query, top_k=2)
+        latency_ms = (time.perf_counter() - t0) * 1000
+
+        print(f"\\n[{{idx}}] Query: '{{query}}' ({{latency_ms:.2f}} ms)")
+        print(f"    Answer: {{result.get('answer', '')[:120]}}...")
+        print(f"    Retrieved Sources: {{len(result.get('sources', []))}} chunks")
+
+    print("\\n[OK] Benchmark completed successfully.")
+
+
+if __name__ == "__main__":
+    run_benchmark()
+'''
+    (dest_root / "experiments" / "benchmark.py").write_text(benchmark_py, encoding="utf-8")
+
+    # 8. Directory placeholders
+    for d in ["models", "artifacts", "checkpoints"]:
+        (dest_root / d / ".gitkeep").write_text("", encoding="utf-8")
+
+    # 9. Client starter script in root
     client_py = f'''"""Client test script for {project_name} RAG Knowledge Base."""
 
 from {project_name}.data import KnowledgeDocsDataset
@@ -599,20 +777,25 @@ def main() -> None:
     print(f"[*] Ingested and chunked {{len(docs)}} passage(s) from data/.")
     model.index_documents(docs)
 
-    # Execute test query
-    test_query = "How do session tokens expire?"
-    print(f"\\n[?] Query: {{test_query}}")
-    result = model.predict(test_query, top_k=2)
+    # Execute test queries
+    test_queries = [
+        "How do session tokens expire?",
+        "How can I switch to PostgreSQL for vector storage?",
+    ]
 
-    print(f"[!] Answer: {{result['answer']}}")
-    print(f"[!] Sources Citations:")
-    for idx, s in enumerate(result.get("sources", []), start=1):
-        meta = s.get("metadata", {{}})
-        source_label = meta.get("source", "knowledge_base.md")
-        if meta.get("heading_path"):
-            source_label = f"{{source_label}} ({{meta.get('heading_path')}})"
-        score_str = f"{{s.get('score', 0):.4f}}" if isinstance(s.get("score"), (int, float)) else str(s.get("score"))
-        print(f"    [{{idx}}] {{source_label}} (score: {{score_str}})")
+    for test_query in test_queries:
+        print(f"\\n[?] Query: {{test_query}}")
+        result = model.predict(test_query, top_k=2)
+
+        print(f"[!] Answer: {{result['answer']}}")
+        print(f"[!] Sources Citations:")
+        for idx, s in enumerate(result.get("sources", []), start=1):
+            meta = s.get("metadata", {{}})
+            source_label = meta.get("source", "knowledge_base.md")
+            if meta.get("heading_path"):
+                source_label = f"{{source_label}} ({{meta.get('heading_path')}})"
+            score_str = f"{{s.get('score', 0):.4f}}" if isinstance(s.get("score"), (int, float)) else str(s.get("score"))
+            print(f"    [{{idx}}] {{source_label}} (score: {{score_str}})")
 
 
 if __name__ == "__main__":
@@ -620,10 +803,18 @@ if __name__ == "__main__":
 '''
     (dest_root / "client.py").write_text(client_py, encoding="utf-8")
 
-    # Project README
+    # 10. Project README
     readme_md = f"""# {project_name.replace('_', ' ').title()} (RAG Knowledge Engine)
 
 Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
+
+## Project Structure
+- `{project_name}/chat_provider.py`: Chat Provider & Query Intelligence LLM configuration.
+- `{project_name}/store.py`: Vector store, PostgreSQL ORM, and embedding setup.
+- `{project_name}/model.py`: High-level Knowledge Model connecting retrieval and generation.
+- `{project_name}/data.py`: SmartChunker document ingestion dataset.
+- `experiments/benchmark.py`: Latency & retrieval quality benchmark script.
+- `client.py`: Ready-to-run interactive/batch client query starter.
 
 ## Quickstart
 
@@ -640,7 +831,10 @@ aimlite train
 # 4. Run local client test
 python client.py
 
-# 5. Serve HTTP API
+# 5. Run retrieval benchmark
+python experiments/benchmark.py
+
+# 6. Serve HTTP API
 aimlite serve --port 8000
 ```
 """
@@ -649,6 +843,34 @@ aimlite serve --port 8000
 
 def _scaffold_fine_tuning(package_dir: Path, dest_root: Path, project_name: str, adapter_config: Dict[str, Any]) -> None:
     """Generates Fine-Tuning & LoRA Adapter files."""
+    # 1. Adapter Configuration Starter: adapter.py
+    adapter_py = f'''"""Fine-Tuning & Adapter Configuration: adapter.py
+
+Starter code for LoRA low-rank decomposition matrices, target linear modules, and parameter diagnostics.
+"""
+
+from typing import Any, Dict, List, Optional
+from aimlite import AdapterConfig
+
+
+def get_adapter_config(
+    r: int = {adapter_config.get("r", 8)},
+    alpha: float = {adapter_config.get("alpha", 16.0)},
+    dropout: float = 0.05,
+    target_modules: Optional[List[str]] = None,
+) -> AdapterConfig:
+    """Returns the LoRA hyperparameter configuration."""
+    modules = target_modules or {adapter_config.get("target_modules", ["q_proj", "v_proj"])}
+    return AdapterConfig(
+        r=r,
+        alpha=alpha,
+        dropout=dropout,
+        target_modules=modules,
+    )
+'''
+    (package_dir / "adapter.py").write_text(adapter_py, encoding="utf-8")
+
+    # 2. Data loader: data.py
     data_py = '''"""Fine-Tuning & LoRA (Adapter Paradigm): data.py"""
 
 import json
@@ -678,10 +900,12 @@ class InstructionDataset(Dataset):
 '''
     (package_dir / "data.py").write_text(data_py, encoding="utf-8")
 
+    # 3. Model: model.py
     model_py = f'''"""Fine-Tuning & LoRA (Adapter Paradigm): model.py"""
 
 from typing import Any, Dict, Optional
-from aimlite import AdapterConfig, AdapterModel
+from aimlite import AdapterModel
+from {project_name}.adapter import get_adapter_config
 
 
 class LoRAInstructionModel(AdapterModel):
@@ -695,11 +919,7 @@ class LoRAInstructionModel(AdapterModel):
         alpha: float = {adapter_config.get("alpha", 16.0)},
         **kwargs: Any,
     ) -> None:
-        adapter_cfg = AdapterConfig(
-            r=r,
-            alpha=alpha,
-            target_modules={adapter_config.get("target_modules", ["q_proj", "v_proj"])},
-        )
+        adapter_cfg = get_adapter_config(r=r, alpha=alpha)
         super().__init__(name=name, adapter_config=adapter_cfg, config=config, **kwargs)
 
     def predict(self, inputs: Any, **kwargs: Any) -> Dict[str, Any]:
@@ -713,6 +933,7 @@ class LoRAInstructionModel(AdapterModel):
 '''
     (package_dir / "model.py").write_text(model_py, encoding="utf-8")
 
+    # 4. Trainer, Evaluator, Inference
     trainer_py = '''"""Fine-Tuning & LoRA (Adapter Paradigm): trainer.py"""
 
 from aimlite import AdapterTrainer
@@ -765,14 +986,55 @@ class AdapterInference(BaseInference):
 '''
     (package_dir / "inference.py").write_text(inference_py, encoding="utf-8")
 
-    # Sample instructions in data/
+    # 5. Sample instructions in data/
     sample_jsonl = """{"instruction": "What is AIMLite?", "response": "AIMLite is the Django for AI & Machine Learning with zero-path CLI execution."}
 {"instruction": "How does LoRA reduce checkpoint size?", "response": "LoRA freezes foundation parameters and trains low-rank delta matrices, reducing weights from 14GB down to under 50MB."}
 {"instruction": "How do you evaluate adapter models in AIMLite?", "response": "Run aimlite evaluate to compute parameter efficiency, rank sparsity, and loss convergence."}
 """
     (dest_root / "data" / "instructions.jsonl").write_text(sample_jsonl, encoding="utf-8")
 
-    # Client starter script in root
+    # 6. Experiments benchmark script
+    benchmark_py = f'''"""Benchmark script evaluating parameter efficiency and latency for {project_name} LoRA Adapter."""
+
+import time
+from {project_name}.data import InstructionDataset
+from {project_name}.model import LoRAInstructionModel
+
+
+def run_benchmark() -> None:
+    print("=" * 60)
+    print("  AIMLite LoRA Adapter Parameter Efficiency & Latency Benchmark")
+    print("=" * 60)
+
+    model = LoRAInstructionModel()
+    dataset = InstructionDataset()
+    records = dataset.load()
+
+    diag = model.get_trainable_parameters() if hasattr(model, "get_trainable_parameters") else {{}}
+    print(f"\\n[*] Parameter Efficiency Diagnostics:")
+    for k, v in diag.items():
+        print(f"    • {{k}}: {{v}}")
+
+    print(f"\\n[*] Evaluating Inference Latency across {{len(records)}} instruction(s):")
+    for idx, item in enumerate(records, start=1):
+        t0 = time.perf_counter()
+        result = model.predict(item)
+        latency_ms = (time.perf_counter() - t0) * 1000
+        print(f"[{{idx}}] Latency: {{latency_ms:.3f}} ms | Output: {{result.get('response', '')}}")
+
+    print("\\n[OK] Benchmark completed successfully.")
+
+
+if __name__ == "__main__":
+    run_benchmark()
+'''
+    (dest_root / "experiments" / "benchmark.py").write_text(benchmark_py, encoding="utf-8")
+
+    # 7. Directory placeholders
+    for d in ["models", "artifacts", "checkpoints"]:
+        (dest_root / d / ".gitkeep").write_text("", encoding="utf-8")
+
+    # 8. Client starter script in root
     client_py = f'''"""Client test script for {project_name} Fine-Tuning / LoRA Adapter Model."""
 
 from {project_name}.data import InstructionDataset
@@ -812,7 +1074,7 @@ if __name__ == "__main__":
 '''
     (dest_root / "client.py").write_text(client_py, encoding="utf-8")
 
-    # Project README
+    # 9. Project README
     readme_md = f"""# {project_name.replace('_', ' ').title()} (LoRA / Fine-Tuning)
 
 Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
@@ -835,7 +1097,10 @@ aimlite evaluate
 # 5. Run local client test
 python client.py
 
-# 6. Serve HTTP API
+# 6. Run benchmark
+python experiments/benchmark.py
+
+# 7. Serve HTTP API
 aimlite serve --port 8000
 ```
 """
@@ -869,6 +1134,41 @@ def _scaffold_scratch(package_dir: Path, dest_root: Path, project_name: str) -> 
 1.8,3.1,1.1,13.5
 """
     (dest_root / "data" / "dataset.csv").write_text(sample_csv, encoding="utf-8")
+
+    # Experiments benchmark
+    benchmark_py = f'''"""Benchmark script evaluating latency and throughput for {project_name} Model."""
+
+import time
+from {project_name}.data import AppDataset
+from {project_name}.model import AppModel
+
+
+def run_benchmark() -> None:
+    print("=" * 60)
+    print("  AIMLite Model Benchmark & Latency Evaluation")
+    print("=" * 60)
+
+    model = AppModel()
+    dataset = AppDataset()
+
+    sample = {{"feature_1": 1.2, "feature_2": 3.4, "feature_3": 0.5}}
+
+    t0 = time.perf_counter()
+    for _ in range(100):
+        _ = model.predict(sample)
+    total_ms = (time.perf_counter() - t0) * 1000
+    print(f"\\n[*] 100 Forward passes executed in {{total_ms:.2f}} ms ({{total_ms/100:.3f}} ms/query)")
+    print("\\n[OK] Benchmark completed successfully.")
+
+
+if __name__ == "__main__":
+    run_benchmark()
+'''
+    (dest_root / "experiments" / "benchmark.py").write_text(benchmark_py, encoding="utf-8")
+
+    # Directory placeholders
+    for d in ["models", "artifacts", "checkpoints"]:
+        (dest_root / d / ".gitkeep").write_text("", encoding="utf-8")
 
     # Client starter script in root
     client_py = f'''"""Client test script for {project_name} Custom ML Model."""
@@ -925,7 +1225,10 @@ aimlite evaluate
 # 5. Run local client test
 python client.py
 
-# 6. Serve HTTP API
+# 6. Run benchmark
+python experiments/benchmark.py
+
+# 7. Serve HTTP API
 aimlite serve --port 8000
 ```
 """
