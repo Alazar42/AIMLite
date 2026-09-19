@@ -89,7 +89,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Vector database backend (postgres or memory)",
     )
     init_parser.add_argument(
+        "--model",
+        "--model-name",
+        dest="model_name",
+        default=None,
+        help="LLM model identifier",
+    )
+    init_parser.add_argument(
         "--embedding",
+        "--embedding-engine",
         dest="embedding_engine",
         choices=["sentence-transformers", "api", "tfidf"],
         default=None,
@@ -100,6 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
     # install
     install_parser = subparsers.add_parser("install")
     install_parser.add_argument("packages", nargs="*", default=[])
+    install_parser.add_argument("-r", "--requirement", dest="requirement", default=None, help="Install from the given requirements file")
     install_parser.add_argument("--upgrade", action="store_true")
 
     # data
@@ -181,11 +190,16 @@ def main(argv: Optional[List[str]] = None) -> int:
             chat_provider=getattr(args, "chat_provider", None),
             vector_db=getattr(args, "vector_db", None),
             embedding_engine=getattr(args, "embedding_engine", None),
+            model_name=getattr(args, "model_name", None),
             interactive=interactive_flag,
         )
 
     if args.command == "install":
-        return run_install(packages=args.packages, upgrade=args.upgrade)
+        return run_install(
+            packages=args.packages,
+            requirement_file=getattr(args, "requirement", None),
+            upgrade=args.upgrade,
+        )
 
     if args.command == "data":
         target = getattr(args, "target", None)
