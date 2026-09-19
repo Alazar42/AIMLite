@@ -582,6 +582,70 @@ For production deployments, containerize with Docker and scale horizontally with
 """
     (dest_root / "data" / "knowledge_base.md").write_text(sample_md, encoding="utf-8")
 
+    # Client starter script in root
+    client_py = f'''"""Client test script for {project_name} RAG Knowledge Base."""
+
+from {project_name}.data import KnowledgeDocsDataset
+from {project_name}.model import SupportDocRAG
+
+
+def main() -> None:
+    print("[*] Initializing {project_name} Knowledge Model...")
+    model = SupportDocRAG()
+    dataset = KnowledgeDocsDataset()
+
+    # Ingest and chunk documents
+    docs = dataset.load_documents()
+    print(f"[*] Ingested and chunked {{len(docs)}} passage(s) from data/.")
+    model.index_documents(docs)
+
+    # Execute test query
+    test_query = "How do session tokens expire?"
+    print(f"\\n[?] Query: {{test_query}}")
+    result = model.predict(test_query, top_k=2)
+
+    print(f"[!] Answer: {{result['answer']}}")
+    print(f"[!] Sources Citations:")
+    for idx, s in enumerate(result.get("sources", []), start=1):
+        meta = s.get("metadata", {{}})
+        source_label = meta.get("source", "knowledge_base.md")
+        if meta.get("heading_path"):
+            source_label = f"{{source_label}} ({{meta.get('heading_path')}})"
+        score_str = f"{{s.get('score', 0):.4f}}" if isinstance(s.get("score"), (int, float)) else str(s.get("score"))
+        print(f"    [{{idx}}] {{source_label}} (score: {{score_str}})")
+
+
+if __name__ == "__main__":
+    main()
+'''
+    (dest_root / "client.py").write_text(client_py, encoding="utf-8")
+
+    # Project README
+    readme_md = f"""# {project_name.replace('_', ' ').title()} (RAG Knowledge Engine)
+
+Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
+
+## Quickstart
+
+```bash
+# 1. Install dependencies
+aimlite install
+
+# 2. Validate data
+aimlite data validate
+
+# 3. Build & persist vector index
+aimlite train
+
+# 4. Run local client test
+python client.py
+
+# 5. Serve HTTP API
+aimlite serve --port 8000
+```
+"""
+    (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
+
 
 def _scaffold_fine_tuning(package_dir: Path, dest_root: Path, project_name: str, adapter_config: Dict[str, Any]) -> None:
     """Generates Fine-Tuning & LoRA Adapter files."""
@@ -640,10 +704,11 @@ class LoRAInstructionModel(AdapterModel):
 
     def predict(self, inputs: Any, **kwargs: Any) -> Dict[str, Any]:
         prompt = inputs.get("instruction", str(inputs)) if isinstance(inputs, dict) else str(inputs)
+        active_name = self.adapter_manager.active_adapter_name if hasattr(self, "adapter_manager") else "default"
         return {{
             "instruction": prompt,
             "response": f"Adapter-tuned response for: '{{prompt}}'",
-            "adapter_active": self.adapter_manager.get_active_adapter_name() if hasattr(self, "adapter_manager") else "default",
+            "adapter_active": active_name,
         }}
 '''
     (package_dir / "model.py").write_text(model_py, encoding="utf-8")
@@ -703,8 +768,78 @@ class AdapterInference(BaseInference):
     # Sample instructions in data/
     sample_jsonl = """{"instruction": "What is AIMLite?", "response": "AIMLite is the Django for AI & Machine Learning with zero-path CLI execution."}
 {"instruction": "How does LoRA reduce checkpoint size?", "response": "LoRA freezes foundation parameters and trains low-rank delta matrices, reducing weights from 14GB down to under 50MB."}
+{"instruction": "How do you evaluate adapter models in AIMLite?", "response": "Run aimlite evaluate to compute parameter efficiency, rank sparsity, and loss convergence."}
 """
     (dest_root / "data" / "instructions.jsonl").write_text(sample_jsonl, encoding="utf-8")
+
+    # Client starter script in root
+    client_py = f'''"""Client test script for {project_name} Fine-Tuning / LoRA Adapter Model."""
+
+from {project_name}.data import InstructionDataset
+from {project_name}.model import LoRAInstructionModel
+
+
+def main() -> None:
+    print("[*] Initializing {project_name} LoRA Adapter Model...")
+    model = LoRAInstructionModel()
+    dataset = InstructionDataset()
+
+    # Load instruction dataset
+    records = dataset.load()
+    print(f"[*] Loaded {{len(records)}} training instruction pair(s) from data/.")
+
+    # Inspect adapter parameter efficiency
+    params = model.get_trainable_parameters() if hasattr(model, "get_trainable_parameters") else {{}}
+    print(f"[*] Adapter Diagnostics: {{params}}")
+
+    # Run inference test on prompt instructions
+    test_prompts = [
+        "What is AIMLite?",
+        "How does LoRA reduce checkpoint size?",
+        "How to deploy this model to production?",
+    ]
+
+    print("\\n[>] Running Client Inference Tests:")
+    for prompt in test_prompts:
+        result = model.predict({{"instruction": prompt}})
+        print(f"\\n  [Prompt]   {{prompt}}")
+        print(f"  [Response] {{result.get('response', result)}}")
+        print(f"  [Adapter]  {{result.get('adapter_active', 'default')}}")
+
+
+if __name__ == "__main__":
+    main()
+'''
+    (dest_root / "client.py").write_text(client_py, encoding="utf-8")
+
+    # Project README
+    readme_md = f"""# {project_name.replace('_', ' ').title()} (LoRA / Fine-Tuning)
+
+Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
+
+## Quickstart
+
+```bash
+# 1. Install dependencies
+aimlite install
+
+# 2. Validate data
+aimlite data validate
+
+# 3. Train LoRA adapter weights
+aimlite train
+
+# 4. Assess parameter efficiency and loss
+aimlite evaluate
+
+# 5. Run local client test
+python client.py
+
+# 6. Serve HTTP API
+aimlite serve --port 8000
+```
+"""
+    (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
 
 
 def _scaffold_scratch(package_dir: Path, dest_root: Path, project_name: str) -> None:
@@ -724,6 +859,77 @@ def _scaffold_scratch(package_dir: Path, dest_root: Path, project_name: str) -> 
                 shutil.copy2(src, dst)
     else:
         _write_fallback_scratch_files(package_dir)
+
+    # Sample dataset in data/
+    sample_csv = """feature_1,feature_2,feature_3,target
+1.2,3.4,0.5,10.2
+2.1,1.8,1.4,14.8
+0.9,4.2,0.8,12.1
+3.5,2.1,2.0,19.4
+1.8,3.1,1.1,13.5
+"""
+    (dest_root / "data" / "dataset.csv").write_text(sample_csv, encoding="utf-8")
+
+    # Client starter script in root
+    client_py = f'''"""Client test script for {project_name} Custom ML Model."""
+
+from {project_name}.data import AppDataset
+from {project_name}.model import AppModel
+
+
+def main() -> None:
+    print("[*] Initializing {project_name} Model...")
+    model = AppModel()
+    dataset = AppDataset()
+
+    print(f"[*] App dataset ready (file: {{getattr(dataset, 'filename', 'dataset.csv')}}).")
+
+    # Test sample inference
+    sample_inputs = [
+        {{"feature_1": 1.2, "feature_2": 3.4, "feature_3": 0.5}},
+        {{"feature_1": 2.1, "feature_2": 1.8, "feature_3": 1.4}},
+    ]
+
+    print("\\n[>] Running Client Inference Tests:")
+    for sample in sample_inputs:
+        output = model.predict(sample)
+        print(f"  [Input]  {{sample}}")
+        print(f"  [Output] {{output}}")
+
+
+if __name__ == "__main__":
+    main()
+'''
+    (dest_root / "client.py").write_text(client_py, encoding="utf-8")
+
+    # Project README
+    readme_md = f"""# {project_name.replace('_', ' ').title()} (AIMLite Custom ML)
+
+Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
+
+## Quickstart
+
+```bash
+# 1. Install dependencies
+aimlite install
+
+# 2. Validate data
+aimlite data validate
+
+# 3. Train model
+aimlite train
+
+# 4. Evaluate performance
+aimlite evaluate
+
+# 5. Run local client test
+python client.py
+
+# 6. Serve HTTP API
+aimlite serve --port 8000
+```
+"""
+    (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
 
 
 def _write_fallback_scratch_files(package_dir: Path) -> None:

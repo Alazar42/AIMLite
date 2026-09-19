@@ -15,6 +15,9 @@ from aimlite import Model
 class AppModel(Model):
     """Application model definition."""
 
+    def __init__(self, name: str = "app_model", **kwargs: Any) -> None:
+        super().__init__(name=name, **kwargs)
+
     def predict(self, inputs: Any, **kwargs: Any) -> Any:
         """Executes forward prediction across batch or single instance."""
         return inputs
