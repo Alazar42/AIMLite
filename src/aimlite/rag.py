@@ -439,11 +439,18 @@ class TfidfEmbedding(BaseEmbedding):
 
 
 class SentenceTransformerEmbedding(BaseEmbedding):
-    """Dense semantic embedding powered by local SentenceTransformers models."""
+    """Dense semantic embedding powered by local SentenceTransformers models with graceful pure-Python fallback."""
 
-    def __init__(self, model_name_or_path: str = "all-MiniLM-L6-v2", device: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        model_name_or_path: str = "all-MiniLM-L6-v2",
+        device: Optional[str] = None,
+        fallback_to_tfidf: bool = True,
+    ) -> None:
         self.model_name = model_name_or_path
         self.device = device
+        self.fallback_to_tfidf = fallback_to_tfidf
+        self._fallback_tfidf: Optional[TfidfEmbedding] = None
         self._model: Any = None
 
     def _get_model(self) -> Any:
@@ -452,20 +459,28 @@ class SentenceTransformerEmbedding(BaseEmbedding):
                 from sentence_transformers import SentenceTransformer
 
                 self._model = SentenceTransformer(self.model_name, device=self.device)
-            except ImportError as err:
+            except (ImportError, Exception):
+                if self.fallback_to_tfidf:
+                    if self._fallback_tfidf is None:
+                        self._fallback_tfidf = TfidfEmbedding()
+                    return None
                 raise ImportError(
                     "sentence-transformers is required for SentenceTransformerEmbedding. "
                     "Install it via 'aimlite install sentence-transformers' or 'pip install sentence-transformers'."
-                ) from err
+                )
         return self._model
 
     def embed_text(self, text: str) -> List[float]:
         model = self._get_model()
+        if model is None:
+            return self._fallback_tfidf.embed_text(text)  # type: ignore
         vec = model.encode(text, convert_to_numpy=True)
         return [float(x) for x in vec.tolist()]
 
     def embed_batch(self, texts: List[str]) -> List[List[float]]:
         model = self._get_model()
+        if model is None:
+            return self._fallback_tfidf.embed_batch(texts)  # type: ignore
         vecs = model.encode(texts, convert_to_numpy=True)
         return [[float(x) for x in v.tolist()] for v in vecs]
 
@@ -1043,7 +1058,7 @@ class BaseVectorStore(ABC):
 class MemoryVectorStore(BaseVectorStore):
     """In-memory cosine similarity vector store with local JSON serialization."""
 
-    def __init__(self, embedding_fn: Optional[BaseEmbedding] = None) -> None:
+    def __init__(self, embedding_fn: Optional[BaseEmbedding] = None, **kwargs: Any) -> None:
         self.embedding_fn = embedding_fn or TfidfEmbedding()
         self.documents: List[Document] = []
 
@@ -1070,7 +1085,6 @@ class MemoryVectorStore(BaseVectorStore):
     ) -> List[Document]:
         scored: List[Tuple[float, Document]] = []
         for doc in self.documents:
-            # Apply metadata filters if provided
             if filters:
                 match = True
                 for k, v in filters.items():
@@ -1089,14 +1103,25 @@ class MemoryVectorStore(BaseVectorStore):
         results: List[Document] = []
         for sim, doc in scored[:top_k]:
             doc_copy = Document(
+                id=doc.id,
                 content=doc.content,
                 metadata=dict(doc.metadata),
-                id=doc.id,
                 embedding=doc.embedding,
                 score=round(float(sim), 4),
             )
             results.append(doc_copy)
         return results
+
+    def search(
+        self,
+        query: str,
+        top_k: int = 4,
+        filters: Optional[Dict[str, Any]] = None,
+    ) -> List[Document]:
+        if not self.documents:
+            return []
+        query_embedding = self.embedding_fn.embed_text(query)
+        return self.similarity_search(query_embedding, top_k=top_k, filters=filters)
 
     def save(self, destination: Union[str, Path]) -> None:
         dest = Path(destination)
@@ -1120,7 +1145,7 @@ class MemoryVectorStore(BaseVectorStore):
                 data = json.load(f)
             self.documents = [
                 Document(
-                    content=item["content"],
+                    content=item.get("content", ""),
                     metadata=item.get("metadata", {}),
                     id=item.get("id", ""),
                     embedding=item.get("embedding"),
@@ -1168,12 +1193,16 @@ class PostgresVectorStore(BaseVectorStore):
     def __init__(
         self,
         connection_string: Optional[str] = None,
+        db_url: Optional[str] = None,
+        url: Optional[str] = None,
         table_name: str = "aimlite_knowledge_chunks",
         embedding_fn: Optional[BaseEmbedding] = None,
         vector_dim: int = 256,
         use_pgvector: bool = True,
+        **kwargs: Any,
     ) -> None:
-        self.connection_string = connection_string or os.environ.get("DATABASE_URL", "")
+        conn = connection_string or db_url or url or os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or ""
+        self.connection_string = conn
         self.table_name = table_name
         self.embedding_fn = embedding_fn or TfidfEmbedding(dim=vector_dim)
         self.vector_dim = vector_dim
