@@ -36,6 +36,19 @@ def _prompt_choice(question: str, options: List[Tuple[str, str]], default_idx: i
     return options[default_idx][0]
 
 
+def _prompt_text(question: str, default: str) -> str:
+    """Interactively prompts the user for text input with a default value."""
+    if not sys.stdin.isatty():
+        return default
+    print(f"\n  {C.GREEN}?{C.RESET} {C.BOLD}{question}{C.RESET} {C.DIM}(default: {default}){C.RESET}")
+    prompt_str = f"  {C.DIM}»{C.RESET} "
+    try:
+        raw = input(prompt_str).strip()
+        return raw or default
+    except Exception:
+        return default
+
+
 def _prompt_confirm(question: str, default: bool = True) -> bool:
     """Interactively prompts for a yes/no confirmation."""
     if not sys.stdin.isatty():
@@ -60,6 +73,7 @@ def run_init(
     chat_provider: Optional[str] = None,
     vector_db: Optional[str] = None,
     embedding_engine: Optional[str] = None,
+    model_name: Optional[str] = None,
     interactive: Optional[bool] = None,
 ) -> int:
     """Initializes a new AIMLite project with paradigm selection and follow-up configs.
@@ -72,6 +86,7 @@ def run_init(
         chat_provider: Preselected chat provider ('openai', 'anthropic', 'gemini', 'ollama', 'local', 'mock').
         vector_db: Preselected vector store ('postgres', 'memory').
         embedding_engine: Preselected embedding ('sentence-transformers', 'api', 'tfidf').
+        model_name: Preselected LLM model identifier.
         interactive: Whether to prompt for options if not passed.
 
     Returns:
@@ -142,6 +157,21 @@ def run_init(
             )
         chat_provider = (chat_provider or "openai").lower()
 
+        # Medium-level model defaults
+        default_model = {
+            "openai": "gpt-4o-mini",
+            "gemini": "gemini-1.5-flash",
+            "anthropic": "claude-3-5-sonnet-20241022",
+            "ollama": "llama3.2",
+            "local": "meta-llama/Llama-3.2-3B",
+            "mock": "mock-gpt",
+        }.get(chat_provider, "gpt-4o-mini")
+
+        if is_tty and not model_name:
+            model_name = _prompt_text(f"Specify model identifier for {chat_provider.upper()}:", default=default_model)
+        else:
+            model_name = model_name or default_model
+
         if is_tty and not vector_db:
             vector_db = _prompt_choice(
                 "Select Vector Database backend:",
@@ -165,11 +195,17 @@ def run_init(
             )
         embedding_engine = (embedding_engine or "sentence-transformers").lower()
 
+        default_embed_model = "all-MiniLM-L6-v2" if embedding_engine == "sentence-transformers" else (
+            "text-embedding-3-small" if chat_provider == "openai" else ("nomic-embed-text" if chat_provider == "ollama" else "tfidf")
+        )
+
         enable_hyde = _prompt_confirm("Enable Query Intelligence (Intent decomposition, expansion & HyDE)?", default=True) if is_tty else True
         enable_smart_chunker = _prompt_confirm("Enable Structure-Aware Smart Chunker (Markdown heading hierarchy)?", default=True) if is_tty else True
 
         rag_config = {
             "chat_provider": chat_provider,
+            "model_name": model_name,
+            "embedding_model": default_embed_model,
             "vector_db": vector_db,
             "embedding_engine": embedding_engine,
             "enable_hyde": enable_hyde,
@@ -366,8 +402,10 @@ class Config(BaseConfig):
 def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_config: Dict[str, Any]) -> None:
     """Generates RAG & Knowledge Model files with modular chat provider and storage starters."""
     chat_p = rag_config.get("chat_provider", "openai")
+    model_name = rag_config.get("model_name", "gpt-4o-mini")
     vector_db = rag_config.get("vector_db", "memory")
     embed_engine = rag_config.get("embedding_engine", "sentence-transformers")
+    embed_model = rag_config.get("embedding_model", "all-MiniLM-L6-v2")
 
     # 1. Chat Provider Starter Code: chat_provider.py
     chat_provider_py = f'''"""Chat Provider & Query Intelligence: chat_provider.py
@@ -375,6 +413,7 @@ def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_con
 Starter code for configuring LLM synthesis, system prompts, and query analysis (HyDE, intent decomposition, expansion).
 """
 
+import os
 from typing import Any, Dict, Optional
 from aimlite.rag import (
     AnthropicChatProvider,
@@ -399,45 +438,47 @@ def get_chat_provider(
     temperature: float = 0.7,
     **kwargs: Any,
 ) -> BaseChatProvider:
-    """Instantiates and returns the configured LLM Chat Provider."""
+    """Instantiates and returns the configured LLM Chat Provider reading models and endpoints from environment."""
     prompt = system_prompt or PROMPT_RAG_QA
 
     if provider_name == "openai":
         return OpenAIChatProvider(
-            model=model_name or "gpt-4o-mini",
+            model=model_name or os.environ.get("OPENAI_MODEL", "{model_name}"),
             system_prompt=prompt,
             temperature=temperature,
             **kwargs,
         )
     elif provider_name == "gemini":
         return GeminiChatProvider(
-            model=model_name or "gemini-1.5-flash",
+            model=model_name or os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"),
             system_prompt=prompt,
             temperature=temperature,
             **kwargs,
         )
     elif provider_name == "anthropic":
         return AnthropicChatProvider(
-            model=model_name or "claude-3-5-sonnet-20241022",
+            model=model_name or os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
             system_prompt=prompt,
             temperature=temperature,
             **kwargs,
         )
     elif provider_name == "ollama":
         return OllamaChatProvider(
-            model=model_name or "llama3.2",
+            model=model_name or os.environ.get("OLLAMA_MODEL", "{model_name}"),
+            base_url=os.environ.get("OLLAMA_HOST", "http://localhost:11434"),
             system_prompt=prompt,
             temperature=temperature,
             **kwargs,
         )
     elif provider_name == "local":
         return LocalChatProvider(
+            model_name=model_name or os.environ.get("LOCAL_MODEL", "meta-llama/Llama-3.2-3B"),
             system_prompt=prompt,
             **kwargs,
         )
     else:
         return MockChatProvider(
-            model=model_name or "mock-gpt",
+            model=model_name or os.environ.get("MOCK_MODEL", "mock-gpt"),
             system_prompt=prompt,
             **kwargs,
         )
@@ -459,6 +500,7 @@ def get_query_analyzer(
 Starter code for semantic vector storage, embeddings, and PostgreSQL ORM records.
 """
 
+import os
 from typing import Any, Dict, Optional
 from aimlite.rag import (
     BaseEmbedding,
@@ -474,12 +516,13 @@ from aimlite.rag import (
 
 def get_embedding_model(
     engine: str = "{embed_engine}",
-    model_name: str = "all-MiniLM-L6-v2",
+    model_name: Optional[str] = None,
 ) -> BaseEmbedding:
     """Instantiates embedding model (Dense Neural, API, or Pure-Python TF-IDF)."""
+    resolved_model = model_name or os.environ.get("EMBEDDING_MODEL", "{embed_model}")
     if engine == "sentence-transformers":
         try:
-            return SentenceTransformerEmbedding(model_name_or_path=model_name)
+            return SentenceTransformerEmbedding(model_name_or_path=resolved_model)
         except Exception:
             return TfidfEmbedding()
     elif engine == "tfidf":
@@ -495,10 +538,11 @@ def get_vector_store(
 ) -> BaseVectorStore:
     """Instantiates vector storage backend (PostgreSQL pgvector ORM or MemoryVectorStore)."""
     embed_fn = embedding_fn or get_embedding_model()
+    resolved_db = db_url or os.environ.get("DATABASE_URL")
 
     if backend == "postgres":
         return PostgresVectorStore(
-            db_url=db_url,
+            db_url=resolved_db,
             embedding_fn=embed_fn,
             **kwargs,
         )
@@ -789,51 +833,89 @@ checkpoints/*.bin
 """
     (dest_root / ".gitignore").write_text(gitignore_content, encoding="utf-8")
 
-    # 9. Sensitive variables starter template: .env.example
-    env_example = """# ==============================================================================
-# AIMLite RAG Knowledge Engine: Environment Variables & Secrets
+    # 9. Sensitive variables starter template: .env.example and auto-created .env
+    env_content = f"""# ==============================================================================
+# AIMLite RAG Knowledge Engine: Environment Variables & Secrets (.env)
 # ==============================================================================
-# Copy this file to .env and fill in your actual credentials:
-#   cp .env.example .env
-# Never commit your .env file containing private keys to version control!
-# ==============================================================================
+
+# --- Chat LLM Model Identifiers ---
+OPENAI_MODEL={"gpt-4o-mini" if chat_p != "openai" else model_name}
+ANTHROPIC_MODEL={"claude-3-5-sonnet-20241022" if chat_p != "anthropic" else model_name}
+GEMINI_MODEL={"gemini-1.5-flash" if chat_p != "gemini" else model_name}
+OLLAMA_MODEL={"llama3.2" if chat_p != "ollama" else model_name}
+LOCAL_MODEL=meta-llama/Llama-3.2-3B
+
+# --- Embedding Model Identifier ---
+EMBEDDING_MODEL={embed_model}
 
 # --- LLM API Credentials ---
-# Required when using OpenAIChatProvider (model: gpt-4o, gpt-4o-mini, o1, o3)
-OPENAI_API_KEY=sk-proj-your-openai-api-key-here
-
-# Required when using AnthropicChatProvider (model: claude-3-5-sonnet, claude-3-opus)
-ANTHROPIC_API_KEY=sk-ant-api03-your-anthropic-key-here
-
-# Required when using GeminiChatProvider (model: gemini-1.5-flash, gemini-1.5-pro, gemini-2.0)
-GEMINI_API_KEY=AIzaSy-your-google-gemini-key-here
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
 
 # --- Local LLM & Ollama ---
-# Endpoint for local Ollama instance (defaults to http://localhost:11434)
 OLLAMA_HOST=http://localhost:11434
 
 # --- Database & Vector Storage ---
-# PostgreSQL connection string for PostgresVectorStore & pgvector ORM:
-# Format: postgresql://<username>:<password>@<host>:<port>/<database_name>
 DATABASE_URL=postgresql://postgres:secretpassword@localhost:5432/knowledge_db
 
-# --- Hardware & Runtime Settings ---
+# --- Hardware Acceleration & Serving ---
 AIMLITE_DEVICE=auto
 AIMLITE_PORT=8000
 """
-    (dest_root / ".env.example").write_text(env_example, encoding="utf-8")
+    (dest_root / ".env.example").write_text(env_content, encoding="utf-8")
+    if not (dest_root / ".env").exists():
+        (dest_root / ".env").write_text(env_content, encoding="utf-8")
 
-    # 10. Client starter script in root
+    # 10. Client starter script in root with health check
     client_py = f'''"""Client test script for {project_name} RAG Knowledge Base."""
 
+import os
+import urllib.request
 from {project_name}.data import KnowledgeDocsDataset
 from {project_name}.model import SupportDocRAG
+
+
+def check_provider_health(model: SupportDocRAG) -> None:
+    """Pre-flight check verifying whether local servers (Ollama) or required API keys are configured."""
+    provider = getattr(model, "chat_provider", None)
+    if not provider:
+        return
+
+    provider_name = provider.__class__.__name__
+
+    if "Ollama" in provider_name:
+        host = getattr(provider, "base_url", "http://localhost:11434")
+        model_name = getattr(provider, "model", "llama3.2")
+        try:
+            req = urllib.request.Request(f"{{host}}/api/tags", method="GET")
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                pass
+            print(f"[*] Ollama server connected at {{host}} (model: {{model_name}})")
+        except Exception:
+            print(f"\\n[!] Note: Ollama daemon is not responding at {{host}}.")
+            print(f"    To run Ollama locally:")
+            print(f"      1. Start server:   ollama serve")
+            print(f"      2. Pull model:     ollama pull {{model_name}}")
+            print(f"      3. Set OLLAMA_HOST or OLLAMA_MODEL in .env if using custom settings\\n")
+
+    elif "OpenAI" in provider_name:
+        if not getattr(provider, "api_key", None) and not os.environ.get("OPENAI_API_KEY"):
+            print("\\n[!] Note: OPENAI_API_KEY is not set in .env. LLM generation requires an active key.\\n")
+    elif "Anthropic" in provider_name:
+        if not getattr(provider, "api_key", None) and not os.environ.get("ANTHROPIC_API_KEY"):
+            print("\\n[!] Note: ANTHROPIC_API_KEY is not set in .env. LLM generation requires an active key.\\n")
+    elif "Gemini" in provider_name:
+        if not getattr(provider, "api_key", None) and not os.environ.get("GEMINI_API_KEY"):
+            print("\\n[!] Note: GEMINI_API_KEY is not set in .env. LLM generation requires an active key.\\n")
 
 
 def main() -> None:
     print("[*] Initializing {project_name} Knowledge Model...")
     model = SupportDocRAG()
     dataset = KnowledgeDocsDataset()
+
+    check_provider_health(model)
 
     # Ingest and chunk documents
     docs = dataset.load_documents()
@@ -878,34 +960,43 @@ Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI 
 - `{project_name}/data.py`: SmartChunker document ingestion dataset.
 - `experiments/benchmark.py`: Latency & retrieval quality benchmark script.
 - `client.py`: Ready-to-run interactive/batch client query starter.
+- `.env`: Active local environment configuration with model identifiers.
 - `.env.example`: Template for sensitive credentials, database URLs, and API keys.
 
 ---
 
 ## Environment Variables & Secrets
 
-AIMLite reads sensitive configuration (API keys, database credentials, host URLs) from system environment variables or a local `.env` file in the project root.
+AIMLite reads sensitive configuration (API keys, database credentials, model names, host URLs) from system environment variables or a local `.env` file in the project root.
 
-### 1. Create your `.env` file
-Copy the provided `.env.example` template:
-```bash
-cp .env.example .env
-```
+### Configured Environment Variables
 
-### 2. Configure Credentials
-
-| Variable | Description | Example Value |
+| Variable | Description | Default / Example Value |
 |---|---|---|
-| `OPENAI_API_KEY` | OpenAI API Key (for GPT-4o, GPT-4o-mini) | `sk-proj-abc123xyz456...` |
-| `ANTHROPIC_API_KEY` | Anthropic API Key (for Claude 3.5 Sonnet) | `sk-ant-api03-abc...` |
+| `OPENAI_MODEL` | OpenAI Model Identifier | `gpt-4o-mini` |
+| `OLLAMA_MODEL` | Ollama Local Model Identifier | `llama3.2` |
+| `GEMINI_MODEL` | Google Gemini Model Identifier | `gemini-1.5-flash` |
+| `ANTHROPIC_MODEL` | Anthropic Claude Model Identifier | `claude-3-5-sonnet-20241022` |
+| `EMBEDDING_MODEL` | Semantic Dense Vector Embedding Model | `all-MiniLM-L6-v2` |
+| `OPENAI_API_KEY` | OpenAI API Key | `sk-proj-abc123xyz456...` |
+| `ANTHROPIC_API_KEY` | Anthropic API Key | `sk-ant-api03-abc...` |
 | `GEMINI_API_KEY` | Google Gemini API Key | `AIzaSyD...` |
 | `OLLAMA_HOST` | Ollama daemon endpoint (local LLM) | `http://localhost:11434` |
 | `DATABASE_URL` | PostgreSQL connection string for pgvector ORM | `postgresql://user:pass@localhost:5432/my_rag_db` |
 
 #### Example `.env` file:
 ```ini
-# --- LLM API Credentials ---
-OPENAI_API_KEY=sk-proj-your-actual-api-key-here
+# --- Model Identifiers ---
+OLLAMA_MODEL={model_name}
+OPENAI_MODEL=gpt-4o-mini
+EMBEDDING_MODEL={embed_model}
+
+# --- LLM API Credentials (if using cloud providers) ---
+OPENAI_API_KEY=
+GEMINI_API_KEY=
+
+# --- Local Ollama Endpoint ---
+OLLAMA_HOST=http://localhost:11434
 
 # --- Database & Vector Storage (PostgreSQL ORM) ---
 DATABASE_URL=postgresql://postgres:secretpassword@localhost:5432/knowledge_db
