@@ -66,10 +66,49 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser = subparsers.add_parser("init")
     init_parser.add_argument("name", nargs="?", default=None)
     init_parser.add_argument("--no-venv", action="store_true", help="Skip creating .venv and installing aimlite")
+    init_parser.add_argument(
+        "--type",
+        "--template",
+        dest="template_type",
+        choices=["rag", "fine-tuning", "adapter", "scratch", "default"],
+        default=None,
+        help="System paradigm template: rag, fine-tuning, or scratch",
+    )
+    init_parser.add_argument(
+        "--chat-provider",
+        dest="chat_provider",
+        choices=["openai", "gemini", "anthropic", "ollama", "local", "mock"],
+        default=None,
+        help="Chat provider for RAG LLM synthesis",
+    )
+    init_parser.add_argument(
+        "--vector-db",
+        dest="vector_db",
+        choices=["postgres", "memory"],
+        default=None,
+        help="Vector database backend (postgres or memory)",
+    )
+    init_parser.add_argument(
+        "--model",
+        "--model-name",
+        dest="model_name",
+        default=None,
+        help="LLM model identifier",
+    )
+    init_parser.add_argument(
+        "--embedding",
+        "--embedding-engine",
+        dest="embedding_engine",
+        choices=["sentence-transformers", "api", "tfidf"],
+        default=None,
+        help="Embedding engine for vector generation",
+    )
+    init_parser.add_argument("-y", "--yes", "--non-interactive", dest="non_interactive", action="store_true", help="Non-interactive mode")
 
     # install
     install_parser = subparsers.add_parser("install")
     install_parser.add_argument("packages", nargs="*", default=[])
+    install_parser.add_argument("-r", "--requirement", dest="requirement", default=None, help="Install from the given requirements file")
     install_parser.add_argument("--upgrade", action="store_true")
 
     # data
@@ -143,10 +182,24 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     if args.command == "init":
-        return run_init(project_name=args.name, create_venv=not getattr(args, "no_venv", False))
+        interactive_flag = False if getattr(args, "non_interactive", False) else (True if args.name is None else None)
+        return run_init(
+            project_name=args.name,
+            create_venv=not getattr(args, "no_venv", False),
+            template_type=getattr(args, "template_type", None),
+            chat_provider=getattr(args, "chat_provider", None),
+            vector_db=getattr(args, "vector_db", None),
+            embedding_engine=getattr(args, "embedding_engine", None),
+            model_name=getattr(args, "model_name", None),
+            interactive=interactive_flag,
+        )
 
     if args.command == "install":
-        return run_install(packages=args.packages, upgrade=args.upgrade)
+        return run_install(
+            packages=args.packages,
+            requirement_file=getattr(args, "requirement", None),
+            upgrade=args.upgrade,
+        )
 
     if args.command == "data":
         target = getattr(args, "target", None)

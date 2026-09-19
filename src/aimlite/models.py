@@ -26,7 +26,7 @@ class Model(ABC):
 
     def __init__(
         self,
-        name: str,
+        name: str = "model",
         config: Optional[Dict[str, Any]] = None,
         dataset: Optional[Any] = None,
     ) -> None:

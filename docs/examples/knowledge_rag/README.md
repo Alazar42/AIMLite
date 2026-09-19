@@ -1,19 +1,20 @@
 # Knowledge Base QA (RAG Model Example)
 
-This example demonstrates how to build and serve a Retrieval-Augmented Generation (RAG) knowledge base question-answering pipeline using AIMLite's first-class RAG abstractions.
+This example demonstrates how to build, index, and serve a Retrieval-Augmented Generation (RAG) knowledge engine using AIMLite's enterprise RAG abstractions.
 
 ## Architecture
-- **Data Ingestion**: Chunks Markdown and text files into overlapping passages using `TextSplitter`.
-- **Embeddings**: Vectorizes text using `sentence-transformers` (with deterministic hash fallback).
-- **Vector Store**: `InMemoryVectorStore` with cosine similarity search.
-- **Inference**: Returns grounded answers with source citations and confidence scores.
+- **Data Ingestion & Smart Chunking**: Chunks Markdown and documentation files into structured passages using `SmartChunker`, preserving heading hierarchy and section metadata.
+- **Query Intelligence**: Uses `QueryAnalyzer` with pre-defined system prompts (`PROMPT_QUERY_ANALYZER`) for intent analysis, multi-query expansion, and Hypothetical Document Embeddings (HyDE).
+- **Embeddings & Vector Stores**: Dense vectors via `sentence-transformers`, `OpenAIChatProvider`, or built-in `TfidfEmbedding`, stored in `MemoryVectorStore` or `PostgresVectorStore` (`pgvector` / PostgreSQL ORM).
+- **Chat Generation**: Modular `BaseChatProvider` (OpenAI, Anthropic, Gemini, Ollama, Local callable, or Mock baseline) with pre-defined task prompts (`PROMPT_RAG_QA`).
+- **High-Level Model**: `KnowledgeModel` and `RAGTrainer` integrating the end-to-end indexing and inference workflow.
 
 ## Dependencies
-Install the required packages using AIMLite or pip:
+Install optional packages for production vector indexing and neural embeddings:
 ```bash
-aimlite install sentence-transformers numpy
+aimlite install sentence-transformers psycopg2-binary
 # or
-pip install sentence-transformers numpy
+pip install sentence-transformers psycopg2-binary
 ```
 
 ## Quickstart
@@ -29,13 +30,13 @@ aimlite init .
 ```
 
 ### 2. Copy Knowledge Documents & Code
-Place your `.txt` or `.md` files into the `data/` directory. Place `data.py`, `model.py`, `trainer.py`, and `inference.py` into your project package directory.
+Place your `.txt` or `.md` files into the `data/` directory. Place `data.py`, `model.py`, `trainer.py`, and `inference.py` into your project directory.
 
 ### 3. Build Vector Index
 ```bash
 aimlite train
 ```
-This chunks your knowledge documents, calculates semantic embeddings, and saves the index to `artifacts/rag_index.json`.
+This chunks your knowledge documents via `SmartChunker`, generates semantic embeddings, and saves the index artifact to `artifacts/rag_index.json` (or syncs with PostgreSQL).
 
 ### 4. Serve Knowledge API
 ```bash

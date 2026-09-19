@@ -625,9 +625,9 @@ curl -X POST http://127.0.0.1:8000/predict \\
 export const RAG_FILES: Record<string, string> = {
   'data.py': `"""Document & Knowledge QA (RAG Paradigm): data.py
 
-Knowledge base document loader and text chunker for RAG pipelines.
-Ingests text or markdown files from data/ and splits them into
-retrievable document passages with metadata.
+Knowledge base document loader and smart chunker for RAG pipelines.
+Ingests text or Markdown files and splits them into semantically coherent,
+retrievable document passages enriched with header and document metadata.
 """
 
 from __future__ import annotations
@@ -636,38 +636,43 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from aimlite import Dataset
-from aimlite.rag import Document, TextSplitter
+from aimlite.rag import Document, SmartChunker
 
 SAMPLE_KNOWLEDGE_DOCS = [
     {
         "filename": "auth_policy.md",
         "content": (
-            "Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. "
-            "Session tokens expire after 24 hours of inactivity. Multi-factor authentication (MFA) is required "
-            "for administrative access to production model endpoints."
+            "# Authentication and Security Policy\\n\\n"
+            "AIMLite supports API key and Bearer token authentication. "
+            "Session tokens expire after 24 hours of inactivity.\\n\\n"
+            "## Multi-Factor Authentication\\n\\n"
+            "Multi-factor authentication (MFA) is required for administrative access to production endpoints."
         ),
     },
     {
         "filename": "deployment_guide.md",
         "content": (
-            "Production Deployment Guide: AIMLite models can be served via 'aimlite serve --port 8000'. "
-            "For production deployments, containerize using Docker with the provided Dockerfile. "
+            "# Production Deployment Guide\\n\\n"
+            "AIMLite models can be served via 'aimlite serve --port 8000'. "
+            "For production deployments, containerize using Docker.\\n\\n"
+            "## Horizontal Scaling\\n\\n"
             "Horizontal scaling can be achieved with Kubernetes by configuring the replica count."
         ),
     },
     {
         "filename": "adapter_tuning.md",
         "content": (
-            "Parameter-Efficient Fine-Tuning: Adapter models use Low-Rank Adaptation (LoRA) to train "
-            "lightweight delta matrices. This reduces checkpoint size from 14GB down to under 50MB, "
-            "enabling rapid model swapping in multi-tenant environments."
+            "# Parameter-Efficient Fine-Tuning\\n\\n"
+            "Adapter models use Low-Rank Adaptation (LoRA) to train lightweight delta matrices.\\n\\n"
+            "## Efficiency Analytics\\n\\n"
+            "This reduces checkpoint size from 14GB down to under 50MB, enabling rapid model swapping."
         ),
     },
 ]
 
 
 class KnowledgeDocsDataset(Dataset):
-    """Ingests documentation articles and splits them into retrievable passages."""
+    """Ingests documentation articles and splits them into retrievable passages using SmartChunker."""
 
     filename: str = "knowledge_base.txt"
 
@@ -675,13 +680,13 @@ class KnowledgeDocsDataset(Dataset):
         self,
         source: Optional[str | Path] = None,
         data_path: Optional[str | Path] = None,
-        chunk_size: int = 300,
+        max_chunk_size: int = 400,
         chunk_overlap: int = 40,
         **kwargs: Any,
     ) -> None:
         src = source or data_path
         super().__init__(source=src, **kwargs)
-        self.splitter = TextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        self.chunker = SmartChunker(max_chunk_size=max_chunk_size, chunk_overlap=chunk_overlap)
 
     def load(self, **kwargs: Any) -> List[Dict[str, Any]]:
         """Loads and parses knowledge articles from disk."""
@@ -690,7 +695,7 @@ class KnowledgeDocsDataset(Dataset):
 
     def load_documents(self) -> List[Document]:
         """Reads Markdown and Text files from data/ directory and returns chunked passages."""
-        documents: List[Document] = []
+        raw_documents: List[Document] = []
         data_dir = Path("data")
 
         if data_dir.is_dir():
@@ -698,70 +703,82 @@ class KnowledgeDocsDataset(Dataset):
                 if p.suffix.lower() in (".md", ".txt", ".markdown"):
                     try:
                         text = p.read_text(encoding="utf-8")
-                        chunks = self.splitter.split_text(text)
-                        for idx, chunk in enumerate(chunks):
-                            documents.append(
-                                Document(
-                                    content=chunk,
-                                    metadata={"source": p.name, "chunk_id": idx},
-                                )
+                        raw_documents.append(
+                            Document(
+                                content=text,
+                                metadata={"source": p.name, "title": p.stem},
                             )
+                        )
                     except Exception:
                         continue
 
-        if not documents:
+        if not raw_documents:
             for sample in SAMPLE_KNOWLEDGE_DOCS:
-                chunks = self.splitter.split_text(sample["content"])
-                for idx, chunk in enumerate(chunks):
-                    documents.append(
-                        Document(
-                            content=chunk,
-                            metadata={"source": sample["filename"], "chunk_id": idx},
-                        )
+                raw_documents.append(
+                    Document(
+                        content=sample["content"],
+                        metadata={"source": sample["filename"], "title": sample["filename"].split(".")[0]},
                     )
+                )
 
-        return documents
+        return self.chunker.split_documents(raw_documents)
 `,
 
   'model.py': `"""Document & Knowledge QA (RAG Paradigm): model.py
 
-Specialized RAGModel subclass providing vector-indexed document retrieval
-and context-grounded answer synthesis.
+Specialized KnowledgeModel subclass providing vector-indexed document retrieval,
+query intelligence analysis, and context-grounded answer synthesis.
 """
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from aimlite.rag import (
+    BaseChatProvider,
     BaseEmbedding,
+    BaseVectorStore,
     Document,
+    KnowledgeModel,
     MemoryVectorStore,
-    RAGModel,
+    MockChatProvider,
+    PostgresVectorStore,
+    QueryAnalyzer,
+    SmartChunker,
     TfidfEmbedding,
     VectorRetriever,
 )
 
 
-class SupportDocRAG(RAGModel):
-    """Knowledge Base QA Model utilizing semantic vector search and passage synthesis."""
+class SupportDocRAG(KnowledgeModel):
+    """Knowledge Base QA Model utilizing semantic vector search, query analysis, and chat generation."""
 
     def __init__(
         self,
         name: str = "support_doc_rag",
         config: Optional[Dict[str, Any]] = None,
         top_k: int = 3,
+        chat_provider: Optional[BaseChatProvider] = None,
+        vector_store: Optional[BaseVectorStore] = None,
         **kwargs: Any,
     ) -> None:
-        super().__init__(name=name, config=config, **kwargs)
-        self.top_k = top_k
-        self.embedding_fn: BaseEmbedding = self._init_embedding()
-        self.vector_store = MemoryVectorStore(embedding_fn=self.embedding_fn)
-        self.retriever = VectorRetriever(
-            vector_store=self.vector_store,
-            embedding_fn=self.embedding_fn,
+        embedding_fn = self._init_embedding()
+        provider = chat_provider or MockChatProvider()
+        analyzer = QueryAnalyzer(chat_provider=provider)
+        store = vector_store or MemoryVectorStore(embedding_fn=embedding_fn)
+        chunker = SmartChunker()
+
+        super().__init__(
+            name=name,
+            config=config,
+            chat_provider=provider,
+            embedding_fn=embedding_fn,
+            vector_store=store,
+            chunker=chunker,
+            query_analyzer=analyzer,
+            top_k=top_k,
+            **kwargs,
         )
 
     def _init_embedding(self) -> BaseEmbedding:
@@ -781,51 +798,42 @@ class SupportDocRAG(RAGModel):
         except ImportError:
             return TfidfEmbedding()
 
-    def index_documents(self, documents: List[Document]) -> int:
-        """Adds documents to internal vector store."""
-        return self.vector_store.add_documents(documents)
-
     def predict(self, inputs: Any, **kwargs: Any) -> Dict[str, Any]:
-        """Queries the vector index and returns context-grounded answers."""
+        """Queries the vector index and returns context-grounded answers with citations."""
         query = inputs.get("query", "") if isinstance(inputs, dict) else str(inputs)
         top_k = kwargs.get("top_k", self.top_k)
 
+        # 1. Retrieve relevant passages (optimized with QueryAnalyzer)
         retrieved_docs = self.retriever.retrieve(query, top_k=top_k)
+
+        if not retrieved_docs:
+            return {
+                "query": query,
+                "answer": "No relevant documentation found for the provided query.",
+                "sources": [],
+                "confidence": 0.0,
+            }
 
         sources = [
             {
                 "source": d.metadata.get("source", "knowledge_base"),
-                "chunk_id": d.metadata.get("chunk_id", 0),
+                "chunk_index": d.metadata.get("chunk_index", 0),
                 "snippet": d.content[:160] + "..." if len(d.content) > 160 else d.content,
+                "score": round(d.score or 0.0, 4),
             }
             for d in retrieved_docs
         ]
 
-        if retrieved_docs:
-            primary_src = sources[0]["source"]
-            answer = f"According to {primary_src}: {retrieved_docs[0].content}"
-        else:
-            answer = "No relevant knowledge articles found matching the query."
+        top_passage = retrieved_docs[0].content
+        answer = f"Based on {sources[0]['source']}: {top_passage}"
 
         return {
             "query": query,
             "answer": answer,
             "sources": sources,
-            "total_retrieved": len(retrieved_docs),
+            "confidence": round(retrieved_docs[0].score or 0.85, 4),
+            "status": "success",
         }
-
-    def save(self, destination: Union[str, Path], **kwargs: Any) -> None:
-        """Serializes vector store documents and embeddings to disk."""
-        dest_path = Path(destination)
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-        self.vector_store.save(dest_path)
-
-    def load(self, source: Union[str, Path], **kwargs: Any) -> None:
-        """Loads serialized vector index from disk."""
-        src_path = Path(source)
-        if not src_path.is_file():
-            raise FileNotFoundError(f"Vector index not found at: {source}")
-        self.vector_store.load(src_path)
 `,
 
   'trainer.py': `"""Document & Knowledge QA (RAG Paradigm): trainer.py
@@ -836,48 +844,12 @@ generates embeddings, and persists the vector index into artifacts/.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Dict
-
-from aimlite import BaseTrainer, Dataset, Model
+from aimlite.rag import RAGTrainer
 
 
-class IndexBuilderTrainer(BaseTrainer):
+class IndexBuilderTrainer(RAGTrainer):
     """Trainer orchestrator building and saving the semantic vector index."""
-
-    def fit(self, model: Model, dataset: Dataset, **kwargs: Any) -> Dict[str, Any]:
-        """Builds semantic vector index from dataset documents."""
-        if hasattr(dataset, "load_documents"):
-            documents = dataset.load_documents()
-        else:
-            records = dataset.load()
-            from aimlite.rag import Document
-
-            documents = [
-                Document(content=r.get("content", str(r)), metadata=r.get("metadata", {}))
-                for r in records
-            ]
-
-        if not documents:
-            return {"status": "failed", "error": "No documents found to index"}
-
-        # Index documents in RAGModel
-        if hasattr(model, "index_documents"):
-            indexed_count = model.index_documents(documents)
-        else:
-            indexed_count = len(documents)
-
-        # Persist index artifact
-        artifacts_dir = Path("artifacts")
-        artifacts_dir.mkdir(parents=True, exist_ok=True)
-        index_path = artifacts_dir / "rag_index.json"
-        model.save(index_path)
-
-        return {
-            "status": "completed",
-            "indexed_chunks": indexed_count,
-            "index_path": str(index_path),
-        }
+    pass
 `,
 
   'inference.py': `"""Document & Knowledge QA (RAG Paradigm): inference.py
@@ -930,7 +902,8 @@ class RAGInference(BaseInference):
   "entrypoint": "support_rag",
   "dependencies": [
     "numpy",
-    "sentence-transformers"
+    "sentence-transformers",
+    "psycopg2-binary"
   ],
   "config": {
     "device": "auto",
@@ -963,9 +936,9 @@ cd support_rag`,
     filename: 'terminal.sh',
     language: 'bash',
     description:
-      'Install `sentence-transformers` and `numpy`. AIMLite manages `.venv` automatically and records dependencies into `aimlite.json`.',
-    code: `# Install embedding libraries into managed .venv:
-aimlite install sentence-transformers numpy`,
+      'Install `sentence-transformers` and optional database drivers like `psycopg2-binary`. AIMLite manages `.venv` automatically.',
+    code: `# Install embedding & database libraries into managed .venv:
+aimlite install sentence-transformers psycopg2-binary`,
     whyCode:
       'SentenceTransformers computes dense vector embeddings for semantic similarity search. TfidfEmbedding acts as a zero-dependency fallback.',
   },
@@ -984,37 +957,36 @@ aimlite install sentence-transformers numpy`,
 AIMLite dynamically discovers data.py, model.py, trainer.py, and inference.py
 by inspecting project conventions. No manual routing or wiring is required.
 
-### How are artifacts stored?
-Checkpoints and trained models are stored in artifacts/ and checkpoints/.
-Vector indices are serialized into artifacts/rag_index.json.`,
+### How are vector indices and databases stored?
+Checkpoints and vector indices are serialized into artifacts/rag_index.json or synced to PostgreSQL via PostgresVectorStore.`,
     whyCode:
-      'Raw documentation files in data/ are converted into retrievable chunks by TextSplitter without hardcoded text in code.',
+      'Raw documentation files in data/ are converted into contextual chunks by SmartChunker without hardcoded text in code.',
   },
   {
     stepNumber: 4,
-    title: 'data.py: Document Chunking with TextSplitter',
+    title: 'data.py: Document Chunking with SmartChunker',
     badge: 'CHUNKER',
     badgeVariant: 'pillar',
     filename: 'data.py',
     language: 'python',
     description:
-      'Implement `KnowledgeDocsDataset` using AIMLite built-in `TextSplitter` to segment documentation into overlapping semantic windows.',
+      'Implement `KnowledgeDocsDataset` using AIMLite built-in `SmartChunker` to segment documentation into natural semantic passages with header context.',
     code: RAG_FILES['data.py'],
     whyCode:
-      'TextSplitter(chunk_size=300, chunk_overlap=40) prevents boundary truncation and ensures complete context during vector retrieval.',
+      'SmartChunker preserves Markdown heading hierarchy (#, ##) and attaches parent section titles to chunk metadata.',
   },
   {
     stepNumber: 5,
-    title: 'model.py: SupportDocRAG & MemoryVectorStore',
+    title: 'model.py: KnowledgeModel, QueryAnalyzer & ChatProvider',
     badge: 'MODEL',
     badgeVariant: 'pillar',
     filename: 'model.py',
     language: 'python',
     description:
-      'Subclass `RAGModel` and configure `MemoryVectorStore` with `VectorRetriever` for cosine similarity matching and context-grounded answers.',
+      'Subclass `KnowledgeModel` and configure `QueryAnalyzer`, `BaseChatProvider`, and `PostgresVectorStore`/`MemoryVectorStore` for context-grounded answers.',
     code: RAG_FILES['model.py'],
     whyCode:
-      'RAGModel provides standard predict(query) returning answer text alongside verifiable citation snippets and similarity scores.',
+      'KnowledgeModel coordinates QueryAnalyzer (intent, multi-query expansion, HyDE) and ChatProvider (OpenAI, Gemini, Claude, Ollama, or local).',
   },
   {
     stepNumber: 6,
@@ -1024,7 +996,7 @@ Vector indices are serialized into artifacts/rag_index.json.`,
     filename: 'trainer.py',
     language: 'python',
     description:
-      'Subclass `BaseTrainer` as `IndexBuilderTrainer` to calculate embeddings offline and serialize the vector index to `artifacts/rag_index.json`.',
+      'Subclass `RAGTrainer` as `IndexBuilderTrainer` to calculate embeddings offline and serialize the vector index to `artifacts/rag_index.json` or database.',
     code: RAG_FILES['trainer.py'],
     whyCode:
       'Pre-indexing document embeddings offline guarantees that user queries during production serving execute with sub-10ms latency.',
@@ -1060,9 +1032,9 @@ aimlite serve SupportDocRAG --port 8000
 # 3. Query the knowledge base
 curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
-  -d '{"query": "How does zero-path execution work?", "top_k": 3}'`,
+  -d '{"query": "How do session tokens expire?", "top_k": 3}'`,
     whyCode:
-      'Executes the entire RAG lifecycle using standard AIMLite CLI commands.',
+      'Executes zero-path end-to-end training and launches an enterprise FastAPI-grade server.',
   },
 ];
 

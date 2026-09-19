@@ -905,82 +905,144 @@ aimlite serve ChurnClassifier --port 8000`,
   'paradigm-rag': {
     id: 'paradigm-rag',
     category: 'The 3 AI Paradigms',
-    title: 'Paradigm 2: RAG (Retrieval-Augmented Generation)',
-    subtitle: 'Ground foundation models in private documents with semantic vector search and zero hallucination.',
+    title: 'Paradigm 2: RAG (Retrieval-Augmented Generation & Knowledge Models)',
+    subtitle: 'Ground foundation models in enterprise documents with PostgreSQL ORM vector search, query intelligence, and smart chunking.',
     badge: { label: 'PARADIGM 2', variant: 'pillar' },
-    signatureOrPath: 'from aimlite.rag import Document, TextSplitter, MemoryVectorStore, VectorRetriever, RAGModel',
-    breadcrumbs: ['Paradigms', 'RAG'],
+    signatureOrPath: 'from aimlite.rag import Document, SmartChunker, PostgresVectorStore, QueryAnalyzer, BaseChatProvider, KnowledgeModel, RAGModel, RAGTrainer',
+    breadcrumbs: ['Paradigms', 'RAG & Knowledge Models'],
     overview:
-      'The RAG paradigm turns enterprise knowledge into actionable intelligence without expensive retraining. AIMLite provides first-class Document loaders, sliding-window text chunkers, zero-dependency TF-IDF or dense embeddings, in-memory vector stores, and RAGModel. Required dependencies: aimlite install sentence-transformers numpy.',
+      'The RAG paradigm turns enterprise knowledge into actionable intelligence with zero hallucinations and no expensive fine-tuning. AIMLite provides enterprise-grade abstractions: SmartChunker (Markdown hierarchy and semantic boundary awareness), QueryAnalyzer (intent decomposition, search expansion, and HyDE), BaseChatProvider (OpenAI, Anthropic, Gemini, Ollama, and local models), PostgresVectorStore (PostgreSQL ORM with native pgvector support), pre-defined task prompts, KnowledgeModel, and RAGTrainer orchestration.',
     djangoAnalogy:
-      'In Django, you query the database using ORM QuerySets. In AIMLite RAG, you query your knowledge base using VectorRetriever to dynamically inject relevant context passages into generation prompts.',
+      'In Django, you define Models backed by a PostgreSQL database and query them with QuerySets. In AIMLite RAG, you define a KnowledgeModel backed by PostgresVectorStore (or MemoryVectorStore) and query it with QueryAnalyzer and VectorRetriever to dynamically inject grounded context into chat prompts.',
     whyCode: [
       {
-        component: 'data.py (KnowledgeDocsDataset)',
+        component: 'data.py (KnowledgeDocsDataset & SmartChunker)',
         reason:
-          'Ingests Markdown and text documents from data/ and chunks them with TextSplitter into overlapping passages, ensuring passages fit embedding model context limits without truncation.',
+          'Ingests Markdown and documentation articles using SmartChunker. Preserves header hierarchies (#, ##), paragraphs, and injects contextual metadata into every chunk.',
       },
       {
-        component: 'model.py (SupportDocRAG)',
+        component: 'model.py (KnowledgeModel / SupportDocRAG)',
         reason:
-          'Subclasses RAGModel and binds MemoryVectorStore with VectorRetriever. Ranks documents using cosine similarity and synthesizes grounded answers with source citations.',
+          'Subclasses KnowledgeModel/RAGModel, coordinating QueryAnalyzer, PostgresVectorStore / MemoryVectorStore, and BaseChatProvider (OpenAI, Gemini, Claude, Ollama, or local LLMs).',
       },
       {
-        component: 'trainer.py (IndexBuilderTrainer)',
+        component: 'Query Intelligence (QueryAnalyzer & HyDE)',
         reason:
-          'Indexes document passages and calculates semantic embeddings as an offline background step, ensuring production queries execute with sub-10ms latency.',
+          'Deconstructs search queries into user intent, keywords, expanded multi-query variations, and Hypothetical Document Embeddings (HyDE) for maximum semantic recall.',
+      },
+      {
+        component: 'Database Vector Store (PostgresVectorStore & ORM)',
+        reason:
+          'Persists document vectors directly in PostgreSQL using native pgvector (<=> cosine / <-> L2 distance) or in-memory fallback, with declarative ORM records (KnowledgeDocumentRecord, KnowledgeChunkRecord).',
+      },
+      {
+        component: 'trainer.py (RAGTrainer / IndexBuilderTrainer)',
+        reason:
+          'Standardized lifecycle trainer coordinating document loading -> smart chunking -> embedding calculation -> vector database persistence.',
       },
       {
         component: 'inference.py (RAGInference)',
         reason:
-          'Production HTTP endpoint executing queries over the vector index and returning answers alongside verifiable document citations and confidence scores.',
+          'Production HTTP endpoint executing queries over the vector index and returning grounded responses alongside verifiable document citations and confidence scores.',
+      },
+    ],
+    parametersTitle: 'KnowledgeModel & RAG Configuration Parameters',
+    parameters: [
+      {
+        name: 'chat_provider',
+        type: 'BaseChatProvider',
+        required: false,
+        defaultValue: 'MockChatProvider()',
+        description: 'LLM chat completion provider: OpenAIChatProvider, AnthropicChatProvider, GeminiChatProvider, OllamaChatProvider, LocalChatProvider, or custom.',
+      },
+      {
+        name: 'query_analyzer',
+        type: 'QueryAnalyzer',
+        required: false,
+        defaultValue: 'QueryAnalyzer()',
+        description: 'Query intelligence engine performing intent extraction, keyword tagging, multi-query expansion, and HyDE passage generation.',
+      },
+      {
+        name: 'chunker',
+        type: 'SmartChunker',
+        required: false,
+        defaultValue: 'SmartChunker(max_chunk_size=600)',
+        description: 'Structure-aware text splitter that preserves Markdown headings, code blocks, and section hierarchies.',
+      },
+      {
+        name: 'vector_store',
+        type: 'BaseVectorStore',
+        required: false,
+        defaultValue: 'MemoryVectorStore()',
+        description: 'Vector database engine: PostgresVectorStore (with pgvector support) or in-memory MemoryVectorStore.',
+      },
+      {
+        name: 'embedding_fn',
+        type: 'BaseEmbedding',
+        required: false,
+        defaultValue: 'TfidfEmbedding()',
+        description: 'Dense or sparse embedding engine: SentenceTransformerEmbedding, APIEmbedding, or zero-dependency TfidfEmbedding.',
+      },
+      {
+        name: 'top_k',
+        type: 'int',
+        required: false,
+        defaultValue: '3',
+        description: 'Number of top-ranked context document passages to retrieve for answer synthesis.',
       },
     ],
     conventions: [
       {
-        title: 'Document Ingestion',
+        title: 'Smart Markdown & Document Chunking',
         description:
-          'Place Markdown (.md) or Text (.txt) knowledge articles in data/. TextSplitter chunks them into sliding windows automatically.',
+          'SmartChunker splits documents along natural section and paragraph boundaries, retaining document title and section headings in chunk metadata.',
       },
       {
-        title: 'Required Dependencies',
-        description: 'Run `aimlite install sentence-transformers numpy` (or `pip install sentence-transformers numpy`).',
+        title: 'Pre-Defined Task System Prompts',
+        description:
+          'Standardized system prompts are built-in: PROMPT_RAG_QA (grounded QA with citations), PROMPT_QUERY_ANALYZER (intent & HyDE), PROMPT_SMART_CHUNKER (semantic summarization), and PROMPT_CONVERSATIONAL_RAG (multi-turn chat).',
       },
       {
-        title: 'Built-in Vector Store',
+        title: 'PostgreSQL & ORM Database Integration',
         description:
-          'MemoryVectorStore supports cosine similarity search and built-in save/load serialization to artifacts/rag_index.json.',
+          'PostgresVectorStore connects to any PostgreSQL database with pgvector support and provides standard ORM records (KnowledgeDocumentRecord, KnowledgeChunkRecord).',
+      },
+      {
+        title: 'Universal Chat Providers',
+        description:
+          'Supports API models (OpenAI GPT-4o, Anthropic Claude 3.5, Gemini 1.5/2.0) and local models (Ollama, HuggingFace transformers, local callables) under a unified BaseChatProvider contract.',
       },
     ],
     snippets: {
       files: RAG_FILES,
-      cli: `# 1. Install dependencies into managed .venv
-aimlite install sentence-transformers numpy
+      cli: `# 1. Install optional production dependencies
+aimlite install sentence-transformers psycopg2-binary
+# or pip install sentence-transformers psycopg2-binary
 
-# 2. Scaffold project
+# 2. Scaffold RAG project
 aimlite init support_rag
 cd support_rag
 
 # 3. Add knowledge documents to data/ (e.g. data/faq.md)
 
-# 4. Build vector index
+# 4. Build vector index & database embeddings
 aimlite train SupportDocRAG
 
 # 5. Serve knowledge API
 aimlite serve SupportDocRAG --port 8000`,
       curl: `curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
-  -d '{"query": "How does zero-path execution work?", "top_k": 3}'`,
+  -d '{"query": "How do session tokens expire?", "top_k": 3}'`,
     },
     guideSteps: RAG_GUIDE_STEPS,
-    defaultPayload: '{\n  "query": "How does zero-path execution work?",\n  "top_k": 3\n}',
+    defaultPayload: '{\n  "query": "How do session tokens expire?",\n  "top_k": 3\n}',
     defaultResponse: {
-      query: "How does zero-path execution work?",
-      answer: "Based on faq.md: AIMLite supports zero-path CLI execution by resolving conventions...",
+      query: "How do session tokens expire?",
+      answer: "Based on auth_policy.md: Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. Session tokens expire after 24 hours of inactivity...",
       sources: [
         {
-          source: "faq.md",
-          snippet: "AIMLite supports zero-path CLI execution...",
+          source: "auth_policy.md",
+          snippet: "Authentication and Security Policy: AIMLite supports API key and Bearer token authentication. Session tokens expire after 24 hours...",
           score: 0.9412,
         },
       ],

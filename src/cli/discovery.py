@@ -50,9 +50,11 @@ FRAMEWORK_CLASS_NAMES = {
     "Model",
     "AdapterModel",
     "RAGModel",
+    "KnowledgeModel",
     "Dataset",
     "BaseTrainer",
     "AdapterTrainer",
+    "RAGTrainer",
     "BaseEvaluator",
     "BaseInference",
 }

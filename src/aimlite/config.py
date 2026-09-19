@@ -15,6 +15,39 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 
+def load_dotenv(env_path: Optional[Union[str, Path]] = None, override: bool = False) -> Dict[str, str]:
+    """Pure-Python .env file parser and environment loader with zero external dependencies."""
+    loaded: Dict[str, str] = {}
+    path = Path(env_path) if env_path else Path.cwd() / ".env"
+    if not path.is_file():
+        for parent in Path.cwd().parents:
+            candidate = parent / ".env"
+            if candidate.is_file():
+                path = candidate
+                break
+    if not path.is_file():
+        return loaded
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, val = line.split("=", 1)
+                    key = key.strip()
+                    val = val.strip()
+                    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                        val = val[1:-1]
+                    loaded[key] = val
+                    if override or key not in os.environ:
+                        os.environ[key] = val
+    except Exception:
+        pass
+    return loaded
+
+
 class BaseConfig:
     """Manages project configuration parsing, directory path resolution, and hardware device discovery."""
 
@@ -32,6 +65,8 @@ class BaseConfig:
             config_path: Optional file path to the project configuration manifest.
         """
         self.config_path: Optional[Path] = Path(config_path) if config_path is not None else None
+        # Auto-load .env from root_dir or CWD
+        load_dotenv(self.root_dir / ".env" if self.config_path else None)
         self._config: Dict[str, Any] = self._load_config()
 
     @property

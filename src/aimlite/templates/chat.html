@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIMLite - Interactive Chat Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #090d16;
+      --bg-surface: #0f172a;
+      --bg-surface-elevated: #1e293b;
+      --bg-glass: rgba(15, 23, 42, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(56, 189, 248, 0.3);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-cyan: #38bdf8;
+      --accent-blue: #3b82f6;
+      --accent-purple: #818cf8;
+      --accent-emerald: #10b981;
+      --user-bubble: #1e3a8a;
+      --bot-bubble: #1e293b;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, #06b6d4, #3b82f6, #8b5cf6);
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.5px;
+    }
+
+    .model-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.1);
+      padding: 3px 10px;
+      border-radius: 9999px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background-color: var(--accent-emerald);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .nav-btn {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .nav-btn:hover {
+      color: var(--text-main);
+      background: var(--bg-surface-elevated);
+      border-color: var(--border-subtle);
+    }
+
+    .nav-btn.primary {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent-cyan);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    /* Main Container */
+    .app-layout {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 57px);
+    }
+
+    /* Sidebar Settings */
+    aside {
+      width: 280px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-main);
+    }
+
+    .control-val {
+      color: var(--accent-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 5px;
+      background: var(--bg-surface-elevated);
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      cursor: pointer;
+    }
+
+    .quick-prompts {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .prompt-chip {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      line-height: 1.4;
+    }
+
+    .prompt-chip:hover {
+      background: rgba(56, 189, 248, 0.1);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: var(--text-main);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Chat Area */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-base);
+      position: relative;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .message-row {
+      display: flex;
+      gap: 14px;
+      max-width: 820px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .message-row.user {
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .avatar.ai {
+      background: linear-gradient(135deg, #0ea5e9, #6366f1);
+      color: white;
+    }
+
+    .avatar.user {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+    }
+
+    .bubble-container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 80%;
+    }
+
+    .bubble {
+      padding: 14px 18px;
+      border-radius: var(--radius-lg);
+      font-size: 14px;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .message-row.ai .bubble {
+      background: var(--bot-bubble);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      border-top-left-radius: 4px;
+    }
+
+    .message-row.user .bubble {
+      background: var(--user-bubble);
+      color: #ffffff;
+      border-top-right-radius: 4px;
+    }
+
+    /* Sources Accordion */
+    .sources-box {
+      margin-top: 8px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      font-size: 12px;
+    }
+
+    .sources-header {
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-weight: 500;
+      user-select: none;
+    }
+
+    .sources-header:hover {
+      color: var(--accent-cyan);
+    }
+
+    .sources-content {
+      display: none;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .source-item {
+      background: var(--bg-surface);
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--accent-cyan);
+    }
+
+    .source-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .source-text {
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .meta-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    /* Input Footer */
+    .chat-input-area {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 16px 24px;
+    }
+
+    .input-box-wrapper {
+      max-width: 820px;
+      margin: 0 auto;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 8px 12px 8px 16px;
+      transition: border-color 0.2s;
+    }
+
+    .input-box-wrapper:focus-within {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+    }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      resize: none;
+      max-height: 160px;
+      min-height: 24px;
+      padding: 4px 0;
+    }
+
+    textarea::placeholder {
+      color: #64748b;
+    }
+
+    .send-btn {
+      background: var(--accent-cyan);
+      color: #041329;
+      border: none;
+      outline: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+
+    .send-btn:hover {
+      background: #7dd3fc;
+      transform: scale(1.04);
+    }
+
+    .send-btn:disabled {
+      background: #334155;
+      color: #64748b;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .input-hint {
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 8px;
+    }
+
+    /* Typing Loader */
+    .typing-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      animation: blink 1.4s infinite both;
+    }
+
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1.1); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-group">
+      <span class="logo-badge">AIMLITE</span>
+      <span class="model-title" id="headerModelName">Knowledge Engine</span>
+      <span class="status-pill">
+        <span class="status-dot"></span>
+        <span>Online</span>
+      </span>
+    </div>
+    <nav class="nav-links">
+      <a href="/docs" class="nav-btn">API Documentation</a>
+      <a href="/openapi.json" target="_blank" class="nav-btn">OpenAPI JSON</a>
+      <button class="nav-btn" onclick="clearChat()">Clear Chat</button>
+    </nav>
+  </header>
+
+  <div class="app-layout">
+    <aside>
+      <div>
+        <div class="section-label">Model Engine</div>
+        <div style="font-size: 13px; font-weight: 600; color: var(--text-main);" id="sidebarModelName">AIMLite RAG QA</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Inference endpoint: <code style="color: var(--accent-cyan);">POST /predict</code></div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-header">
+          <span>Top-K Context</span>
+          <span class="control-val" id="topKVal">3</span>
+        </div>
+        <input type="range" id="topKSlider" min="1" max="10" value="3" oninput="document.getElementById('topKVal').innerText = this.value">
+      </div>
+
+      <div>
+        <div class="section-label">Suggested Prompts</div>
+        <div class="quick-prompts">
+          <button class="prompt-chip" onclick="usePrompt('Summarize the key capabilities of this knowledge base.')">"Summarize key capabilities..."</button>
+          <button class="prompt-chip" onclick="usePrompt('How is authentication and deployment handled?')">"How is authentication handled?"</button>
+          <button class="prompt-chip" onclick="usePrompt('What are the production environment requirements?')">"Production environment requirements?"</button>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <span>Latency: <span id="lastLatency" style="color: var(--accent-cyan); font-family: monospace;">-- ms</span></span>
+        <span>v0.1.2</span>
+      </div>
+    </aside>
+
+    <main>
+      <div class="chat-messages" id="chatContainer">
+        <!-- AI Welcome Message -->
+        <div class="message-row ai">
+          <div class="avatar ai">AI</div>
+          <div class="bubble-container">
+            <div class="bubble">
+              Welcome to the <strong>AIMLite Interactive Chat Playground</strong>. Ask any question to retrieve grounded context and synthesize answers from your knowledge base.
+            </div>
+            <span class="meta-time">Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="input-box-wrapper">
+          <textarea id="userInput" placeholder="Ask a question about your knowledge documents..." rows="1" onkeydown="handleKey(event)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+        <div class="input-hint">Press <strong>Enter</strong> to send, <strong>Shift + Enter</strong> for a new line</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const chatContainer = document.getElementById("chatContainer");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const lastLatency = document.getElementById("lastLatency");
+
+    // Fetch initial model metadata
+    fetch("/health")
+      .then(r => r.json())
+      .then(data => {
+        if (data.model) {
+          document.getElementById("headerModelName").innerText = data.model;
+          document.getElementById("sidebarModelName").innerText = data.model;
+        }
+      }).catch(() => {});
+
+    function handleKey(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function usePrompt(text) {
+      userInput.value = text;
+      userInput.focus();
+      sendMessage();
+    }
+
+    function clearChat() {
+      chatContainer.innerHTML = `
+        <div class="message-row ai">
+          <div class="avatar ai">AI</div>
+          <div class="bubble-container">
+            <div class="bubble">Chat cleared. Ready for your next query.</div>
+            <span class="meta-time">Ready</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function appendMessage(role, text, sources = null, latency = null) {
+      const row = document.createElement("div");
+      row.className = `message-row ${role}`;
+
+      const avatar = document.createElement("div");
+      avatar.className = `avatar ${role}`;
+      avatar.innerText = role === "user" ? "U" : "AI";
+
+      const bubbleContainer = document.createElement("div");
+      bubbleContainer.className = "bubble-container";
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.innerText = text;
+      bubbleContainer.appendChild(bubble);
+
+      // Render retrieved knowledge sources if present
+      if (sources && Array.isArray(sources) && sources.length > 0) {
+        const sourcesBox = document.createElement("div");
+        sourcesBox.className = "sources-box";
+
+        const sourcesHeader = document.createElement("div");
+        sourcesHeader.className = "sources-header";
+        sourcesHeader.innerHTML = `<span>📚 Retrieved Knowledge Sources (${sources.length})</span> <span>▼</span>`;
+
+        const sourcesContent = document.createElement("div");
+        sourcesContent.className = "sources-content";
+        sourcesContent.style.display = "none";
+
+        sources.forEach((src, idx) => {
+          const item = document.createElement("div");
+          item.className = "source-item";
+          const srcTitle = (src.metadata && (src.metadata.title || src.metadata.source)) || `Source Document #${idx + 1}`;
+          const score = src.score ? `Score: ${(src.score * 100).toFixed(1)}%` : "";
+          item.innerHTML = `
+            <div class="source-meta">
+              <strong>${srcTitle}</strong>
+              <span>${score}</span>
+            </div>
+            <div class="source-text">${src.content || JSON.stringify(src)}</div>
+          `;
+          sourcesContent.appendChild(item);
+        });
+
+        sourcesHeader.onclick = () => {
+          const isHidden = sourcesContent.style.display === "none";
+          sourcesContent.style.display = isHidden ? "flex" : "none";
+          sourcesHeader.querySelector("span:last-child").innerText = isHidden ? "▲" : "▼";
+        };
+
+        sourcesBox.appendChild(sourcesHeader);
+        sourcesBox.appendChild(sourcesContent);
+        bubbleContainer.appendChild(sourcesBox);
+      }
+
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "meta-time";
+      timeSpan.innerText = latency ? `${latency} ms` : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      bubbleContainer.appendChild(timeSpan);
+
+      row.appendChild(avatar);
+      row.appendChild(bubbleContainer);
+      chatContainer.appendChild(row);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const query = userInput.value.trim();
+      if (!query) return;
+
+      appendMessage("user", query);
+      userInput.value = "";
+      userInput.style.height = "auto";
+      sendBtn.disabled = true;
+
+      // Show typing indicator
+      const loaderRow = document.createElement("div");
+      loaderRow.className = "message-row ai";
+      loaderRow.id = "typingIndicator";
+      loaderRow.innerHTML = `
+        <div class="avatar ai">AI</div>
+        <div class="bubble-container">
+          <div class="bubble">
+            <div class="typing-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+        </div>
+      `;
+      chatContainer.appendChild(loaderRow);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      const t0 = performance.now();
+      const topK = parseInt(document.getElementById("topKSlider").value, 10) || 3;
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: query, top_k: topK })
+        });
+
+        const data = await response.json();
+        const latency = Math.round(performance.now() - t0);
+        lastLatency.innerText = `${latency} ms`;
+
+        loaderRow.remove();
+
+        if (response.ok) {
+          let answerText = "";
+          let sourcesList = null;
+
+          if (typeof data.result === "string") {
+            answerText = data.result;
+          } else if (data.result && typeof data.result === "object") {
+            answerText = data.result.answer || data.result.text || JSON.stringify(data.result, null, 2);
+            sourcesList = data.result.sources || null;
+          } else if (data.answer) {
+            answerText = data.answer;
+            sourcesList = data.sources || null;
+          } else {
+            answerText = JSON.stringify(data, null, 2);
+          }
+
+          appendMessage("ai", answerText, sourcesList, data.latency_ms || latency);
+        } else {
+          appendMessage("ai", `Error [${response.status}]: ${data.message || data.error || "Failed to process inference query"}`);
+        }
+      } catch (err) {
+        loaderRow.remove();
+        appendMessage("ai", `Connection Error: Could not reach AIMLite server. (${err.message})`);
+      } finally {
+        sendBtn.disabled = false;
+        userInput.focus();
+      }
+    }
+  </script>
+</body>
+</html>
