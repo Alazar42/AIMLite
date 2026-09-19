@@ -486,7 +486,7 @@ class SentenceTransformerEmbedding(BaseEmbedding):
 
 
 class APIEmbedding(BaseEmbedding):
-    """API-driven embedding engine supporting OpenAI, Ollama, and generic REST endpoints."""
+    """API-driven embedding engine supporting OpenAI, Ollama, and generic REST endpoints with SDK integration."""
 
     def __init__(
         self,
@@ -508,7 +508,29 @@ class APIEmbedding(BaseEmbedding):
 
     def embed_batch(self, texts: List[str]) -> List[List[float]]:
         if self.provider == "openai":
-            url = self.endpoint_url or "https://api.openai.com/v1/embeddings"
+            if not self.api_key:
+                raise ValueError(
+                    f"OpenAI Embedding Error ({self.model}): Missing API key. "
+                    "Please set OPENAI_API_KEY in your .env file or environment."
+                )
+
+            # Try official OpenAI SDK if installed
+            try:
+                import openai  # type: ignore
+
+                client = openai.OpenAI(
+                    api_key=self.api_key,
+                    base_url=self.endpoint_url or os.environ.get("OPENAI_BASE_URL") or None,
+                )
+                resp = client.embeddings.create(input=texts, model=self.model)
+                return [item.embedding for item in resp.data]
+            except ImportError:
+                pass
+            except Exception as e:
+                raise RuntimeError(f"OpenAI SDK Embedding Error ({self.model}): {e}") from e
+
+            # Fallback to standard-library REST HTTP
+            url = self.endpoint_url or f"{(os.environ.get('OPENAI_BASE_URL') or 'https://api.openai.com/v1').rstrip('/')}/embeddings"
             payload = json.dumps({"input": texts, "model": self.model}).encode("utf-8")
             headers = {
                 "Content-Type": "application/json",
@@ -519,36 +541,84 @@ class APIEmbedding(BaseEmbedding):
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     result = json.loads(resp.read().decode("utf-8"))
                     return [item["embedding"] for item in result.get("data", [])]
-            except Exception:
-                # Fallback to local TF-IDF if API is unreachable or not configured
-                fallback = TfidfEmbedding(dim=self.dim)
-                return [fallback.embed_text(t) for t in texts]
+            except urllib.error.HTTPError as e:
+                err_body = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
+                raise RuntimeError(
+                    f"OpenAI Embedding API Error ({self.model}) [HTTP {e.code}]: {err_body}"
+                ) from e
+            except Exception as e:
+                raise ConnectionError(
+                    f"OpenAI Embedding Error ({self.model}) at '{url}': {e}"
+                ) from e
 
         elif self.provider == "ollama":
-            url = self.endpoint_url or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-            if not url.endswith("/api/embeddings"):
-                url = f"{url.rstrip('/')}/api/embeddings"
-            embeddings = []
-            for t in texts:
-                payload = json.dumps({"model": self.model, "prompt": t}).encode("utf-8")
-                req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
-                try:
-                    with urllib.request.urlopen(req, timeout=30) as resp:
-                        result = json.loads(resp.read().decode("utf-8"))
-                        embeddings.append(result.get("embedding", [0.0] * self.dim))
-                except Exception as e:
+            host = self.endpoint_url or os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+
+            # Try official Ollama SDK if installed
+            try:
+                import ollama  # type: ignore
+
+                client = ollama.Client(host=host)
+                if hasattr(client, "embed"):
+                    resp = client.embed(model=self.model, input=texts)
+                    if isinstance(resp, dict) and "embeddings" in resp:
+                        return resp["embeddings"]
+                elif hasattr(client, "embeddings"):
+                    res = []
+                    for t in texts:
+                        r = client.embeddings(model=self.model, prompt=t)
+                        res.append(r.get("embedding", [0.0] * self.dim))
+                    return res
+            except ImportError:
+                pass
+            except Exception as e:
+                raise RuntimeError(f"Ollama SDK Embedding Error ({self.model}): {e}") from e
+
+            # Fallback to REST HTTP: Try /api/embed batch endpoint first, then /api/embeddings
+            embed_url = f"{host}/api/embed"
+            payload = json.dumps({"model": self.model, "input": texts}).encode("utf-8")
+            try:
+                req = urllib.request.Request(embed_url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    result = json.loads(resp.read().decode("utf-8"))
+                    if "embeddings" in result:
+                        return result["embeddings"]
+            except urllib.error.HTTPError as e:
+                err_body = e.read().decode("utf-8", errors="ignore") if hasattr(e, "read") else str(e)
+                if e.code == 404:
+                    # Legacy Ollama fallback to /api/embeddings
+                    legacy_url = f"{host}/api/embeddings"
+                    embeddings = []
+                    for t in texts:
+                        leg_payload = json.dumps({"model": self.model, "prompt": t}).encode("utf-8")
+                        lreq = urllib.request.Request(legacy_url, data=leg_payload, headers={"Content-Type": "application/json"}, method="POST")
+                        try:
+                            with urllib.request.urlopen(lreq, timeout=30) as lresp:
+                                lresult = json.loads(lresp.read().decode("utf-8"))
+                                embeddings.append(lresult.get("embedding", [0.0] * self.dim))
+                        except urllib.error.HTTPError as he:
+                            hbody = he.read().decode("utf-8", errors="ignore") if hasattr(he, "read") else str(he)
+                            raise RuntimeError(f"Ollama API Error ({self.model}) [HTTP {he.code}]: {hbody}") from he
+                    return embeddings
+                raise RuntimeError(
+                    f"Ollama Embedding API Error ({self.model}) [HTTP {e.code}]: {err_body}"
+                ) from e
+            except Exception as e:
+                err_msg = str(e)
+                if "111" in err_msg or "Connection refused" in err_msg or "urlopen error" in err_msg:
                     raise ConnectionError(
-                        f"Ollama Embedding Error: Failed to generate embeddings at '{url}'. "
-                        f"Please ensure Ollama is running ('ollama serve') and model '{self.model}' is pulled ('ollama pull {self.model}'). "
-                        f"Original error: {e}"
+                        f"Ollama Connection Error: Could not connect to Ollama server at '{host}'. "
+                        f"Please make sure Ollama is running ('ollama serve') and model '{self.model}' is downloaded ('ollama pull {self.model}')."
                     ) from e
-            return embeddings
+                raise ConnectionError(
+                    f"Ollama Embedding Error: Failed to generate embeddings at '{embed_url}': {e}"
+                ) from e
 
         raise ValueError(f"Unsupported embedding provider '{self.provider}'. Supported: 'openai', 'ollama', 'sentence-transformers', 'tfidf'.")
 
 
 class OllamaEmbedding(BaseEmbedding):
-    """Ollama REST API embedding client with direct connection verification."""
+    """Ollama embedding client supporting official 'ollama' SDK and native REST HTTP with batching."""
 
     def __init__(
         self,
@@ -674,7 +744,7 @@ class MockChatProvider(BaseChatProvider):
 
 
 class OpenAIChatProvider(BaseChatProvider):
-    """API provider for OpenAI (GPT-4o, GPT-4o-mini, o1, o3, etc.) and OpenAI-compatible REST APIs."""
+    """API provider for OpenAI (GPT-4o, GPT-4o-mini, o1, o3, etc.) supporting official 'openai' SDK and REST API."""
 
     def __init__(
         self,
@@ -722,20 +792,41 @@ class OpenAIChatProvider(BaseChatProvider):
         if not self.api_key:
             raise ValueError(
                 f"OpenAI Authentication Error ({self.model}): Missing API key. "
-                "Please set OPENAI_API_KEY in your .env file or environment."
+                "Please set OPENAI_API_KEY in your .env file or environment, or install the SDK via 'aimlite install openai'."
             )
-
-        url = f"{self.base_url}/chat/completions"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
 
         chat_messages = []
         if system_prompt or (not any(m.get("role") == "system" for m in messages)):
             chat_messages.append({"role": "system", "content": system_prompt or self.system_prompt})
         chat_messages.extend(messages)
 
+        # 1. Try official OpenAI SDK
+        try:
+            import openai  # type: ignore
+
+            client = openai.OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url if self.base_url != "https://api.openai.com/v1" else None,
+            )
+            resp = client.chat.completions.create(
+                model=self.model,
+                messages=chat_messages,  # type: ignore
+                temperature=self.temperature if temperature is None else temperature,
+                max_tokens=self.max_tokens if max_tokens is None else max_tokens,
+                **kwargs,
+            )
+            return resp.choices[0].message.content or ""
+        except ImportError:
+            pass
+        except Exception as e:
+            raise RuntimeError(f"OpenAI SDK Error ({self.model}): {e}") from e
+
+        # 2. Fallback to standard library REST API
+        url = f"{self.base_url}/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
         payload = {
             "model": self.model,
             "messages": chat_messages,
@@ -775,7 +866,7 @@ class OpenAIChatProvider(BaseChatProvider):
 
 
 class AnthropicChatProvider(BaseChatProvider):
-    """API provider for Anthropic Claude (Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku)."""
+    """API provider for Anthropic Claude supporting official 'anthropic' SDK and REST API."""
 
     def __init__(
         self,
@@ -807,9 +898,32 @@ class AnthropicChatProvider(BaseChatProvider):
         if not self.api_key:
             raise ValueError(
                 f"Anthropic Authentication Error ({self.model}): Missing API key. "
-                "Please set ANTHROPIC_API_KEY in your .env file or environment."
+                "Please set ANTHROPIC_API_KEY in your .env file or environment, or install via 'aimlite install anthropic'."
             )
 
+        sys_p = system_prompt or self.system_prompt
+        t_val = self.temperature if temperature is None else temperature
+        m_tokens = self.max_tokens if max_tokens is None else max_tokens
+
+        # 1. Try official Anthropic SDK
+        try:
+            import anthropic  # type: ignore
+
+            client = anthropic.Anthropic(api_key=self.api_key)
+            resp = client.messages.create(
+                model=self.model,
+                system=sys_p,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=m_tokens,
+                temperature=t_val,
+            )
+            return resp.content[0].text if resp.content else ""
+        except ImportError:
+            pass
+        except Exception as e:
+            raise RuntimeError(f"Anthropic SDK Error ({self.model}): {e}") from e
+
+        # 2. Fallback to REST API
         url = "https://api.anthropic.com/v1/messages"
         headers = {
             "Content-Type": "application/json",
@@ -818,10 +932,10 @@ class AnthropicChatProvider(BaseChatProvider):
         }
         payload = {
             "model": self.model,
-            "system": system_prompt or self.system_prompt,
+            "system": sys_p,
             "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": self.max_tokens if max_tokens is None else max_tokens,
-            "temperature": self.temperature if temperature is None else temperature,
+            "max_tokens": m_tokens,
+            "temperature": t_val,
         }
         try:
             req = urllib.request.Request(
@@ -845,7 +959,7 @@ class AnthropicChatProvider(BaseChatProvider):
 
 
 class GeminiChatProvider(BaseChatProvider):
-    """API provider for Google Gemini models (gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash)."""
+    """API provider for Google Gemini models supporting official 'google-genai' SDK and REST API."""
 
     def __init__(
         self,
@@ -877,17 +991,45 @@ class GeminiChatProvider(BaseChatProvider):
         if not self.api_key:
             raise ValueError(
                 f"Gemini Authentication Error ({self.model}): Missing API key. "
-                "Please set GEMINI_API_KEY in your .env file or environment."
+                "Please set GEMINI_API_KEY in your .env file or environment, or install via 'aimlite install google-genai'."
             )
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
         sys_instruction = system_prompt or self.system_prompt
+        t_val = self.temperature if temperature is None else temperature
+        m_tokens = self.max_tokens if max_tokens is None else max_tokens
+
+        # 1. Try official Google GenAI SDK
+        try:
+            from google import genai  # type: ignore
+
+            client = genai.Client(api_key=self.api_key)
+            resp = client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config={"system_instruction": sys_instruction, "temperature": t_val, "max_output_tokens": m_tokens},
+            )
+            return resp.text or ""
+        except ImportError:
+            try:
+                import google.generativeai as legacy_genai  # type: ignore
+
+                legacy_genai.configure(api_key=self.api_key)
+                gmodel = legacy_genai.GenerativeModel(self.model, system_instruction=sys_instruction)
+                resp = gmodel.generate_content(prompt)
+                return resp.text or ""
+            except ImportError:
+                pass
+        except Exception as e:
+            raise RuntimeError(f"Gemini SDK Error ({self.model}): {e}") from e
+
+        # 2. Fallback to REST API
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "systemInstruction": {"parts": [{"text": sys_instruction}]},
             "generationConfig": {
-                "temperature": self.temperature if temperature is None else temperature,
-                "maxOutputTokens": self.max_tokens if max_tokens is None else max_tokens,
+                "temperature": t_val,
+                "maxOutputTokens": m_tokens,
             },
         }
         try:
@@ -912,7 +1054,7 @@ class GeminiChatProvider(BaseChatProvider):
 
 
 class OllamaChatProvider(BaseChatProvider):
-    """Local LLM chat provider for Ollama (Llama 3, Mistral, Qwen, DeepSeek, Gemma)."""
+    """Local LLM chat provider for Ollama supporting official 'ollama' SDK and native REST API."""
 
     def __init__(
         self,
@@ -935,14 +1077,41 @@ class OllamaChatProvider(BaseChatProvider):
         max_tokens: Optional[int] = None,
         **kwargs: Any,
     ) -> str:
+        sys_p = system_prompt or self.system_prompt
+        t_val = self.temperature if temperature is None else temperature
+
+        # 1. Try official Ollama SDK
+        try:
+            import ollama  # type: ignore
+
+            client = ollama.Client(host=self.base_url)
+            resp = client.generate(
+                model=self.model,
+                prompt=prompt,
+                system=sys_p,
+                options={"temperature": t_val},
+            )
+            return resp.get("response", "")
+        except ImportError:
+            pass
+        except Exception as e:
+            err_str = str(e)
+            if "111" in err_str or "Connection refused" in err_str:
+                raise ConnectionError(
+                    f"Ollama Connection Error: Could not connect to Ollama server at '{self.base_url}'. "
+                    f"Please make sure Ollama is running ('ollama serve') and model '{self.model}' is downloaded ('ollama pull {self.model}')."
+                ) from e
+            raise RuntimeError(f"Ollama SDK Error ({self.model}): {e}") from e
+
+        # 2. Fallback to native REST API
         url = f"{self.base_url}/api/generate"
         payload = {
             "model": self.model,
             "prompt": prompt,
-            "system": system_prompt or self.system_prompt,
+            "system": sys_p,
             "stream": False,
             "options": {
-                "temperature": self.temperature if temperature is None else temperature,
+                "temperature": t_val,
             },
         }
         try:
