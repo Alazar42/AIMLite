@@ -24,7 +24,7 @@ def get_embedding_model(
     model_name: Optional[str] = None,
 ) -> BaseEmbedding:
     """Instantiates embedding model (Dense Neural, Ollama API, OpenAI API, or Pure-Python TF-IDF)."""
-    resolved_engine = (engine or os.environ.get("EMBEDDING_ENGINE") or "ollama").lower()
+    resolved_engine = (engine or os.environ.get("EMBEDDING_ENGINE") or "tfidf").lower()
     resolved_model = model_name or os.environ.get("EMBEDDING_MODEL", "nomic-embed-text")
     ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 
@@ -60,4 +60,3 @@ def get_vector_store(
         embedding_fn=embed_fn,
         **kwargs,
     )
-

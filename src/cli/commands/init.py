@@ -225,17 +225,53 @@ def run_init(
     for d in convention_dirs:
         (dest_root / d).mkdir(parents=True, exist_ok=True)
 
-    # 5. Populate Manifest dependencies & config
-    dependencies = []
+    # 5. Populate Manifest dependencies & requirements.txt
+    dependencies: List[str] = []
     if template_type == "rag":
+        # Chat Provider SDKs
+        if chat_provider == "ollama":
+            dependencies.append("ollama")
+        elif chat_provider == "openai":
+            dependencies.append("openai")
+        elif chat_provider == "anthropic":
+            dependencies.append("anthropic")
+        elif chat_provider == "gemini":
+            dependencies.append("google-genai")
+        elif chat_provider == "local":
+            dependencies.extend(["transformers", "torch"])
+
+        # Embedding Engine dependencies
         if embedding_engine == "sentence-transformers":
-            dependencies.extend(["numpy", "sentence-transformers"])
-        elif embedding_engine == "api":
-            dependencies.append("numpy")
+            dependencies.extend(["sentence-transformers", "numpy"])
+        elif "nomic" in (default_embed_model or "").lower() or embedding_engine == "ollama":
+            if "ollama" not in dependencies:
+                dependencies.append("ollama")
+        elif embedding_engine == "openai":
+            if "openai" not in dependencies:
+                dependencies.append("openai")
+
+        # Vector Database dependencies
         if vector_db == "postgres":
             dependencies.append("psycopg2-binary")
+
     elif template_type == "fine-tuning":
-        dependencies.append("numpy")
+        dependencies.extend(["torch", "transformers", "peft", "datasets", "numpy"])
+
+    elif template_type == "scratch":
+        dependencies.extend(["numpy"])
+
+    # Ensure unique ordered dependencies
+    seen = set()
+    unique_deps = []
+    for d in dependencies:
+        if d not in seen:
+            seen.add(d)
+            unique_deps.append(d)
+    dependencies = unique_deps
+
+    # Write requirements.txt
+    req_file = dest_root / "requirements.txt"
+    req_file.write_text("\n".join(dependencies) + ("\n" if dependencies else ""), encoding="utf-8")
 
     manifest_data: Dict[str, Any] = {
         "name": project_name,
@@ -270,23 +306,19 @@ def run_init(
 
     print(f"\n  {C.DIM}Scaffolding {template_type.upper()} project in{C.RESET} {dest_root}...")
 
-    # 7. Create .venv and install aimlite
+    # 7. Create .venv, install aimlite and dependencies
     if create_venv:
-        _setup_project_venv(dest_root)
+        _setup_project_venv(dest_root, dependencies)
 
     # 8. Print next steps
     steps = []
     if dest_root != Path.cwd():
         steps.append(f"cd {project_name}")
 
-    if dependencies:
-        steps.append(f"aimlite install {' '.join(dependencies)}")
-    else:
-        steps.append("aimlite install <packages...>")
-
     steps.extend([
-        "aimlite doctor",
+        "aimlite install -r requirements.txt",
         "aimlite train",
+        "python client.py",
         "aimlite serve --port 8000",
     ])
     print(next_steps(steps))
@@ -294,8 +326,8 @@ def run_init(
     return 0
 
 
-def _setup_project_venv(dest_root: Path) -> bool:
-    """Creates an isolated virtual environment (.venv) and installs aimlite into it."""
+def _setup_project_venv(dest_root: Path, dependencies: Optional[List[str]] = None) -> bool:
+    """Creates an isolated virtual environment (.venv) and auto-installs requirements."""
     venv_dir = dest_root / ".venv"
     uv_bin = shutil.which("uv")
 
@@ -353,8 +385,24 @@ def _setup_project_venv(dest_root: Path) -> bool:
 
     if installed:
         print(f"  {check('Installed aimlite into .venv.')}")
-    else:
-        print(f"  {C.DIM}Note: aimlite will be installed into .venv once connected to PyPI.{C.RESET}")
+
+    # Auto-install project requirements from requirements.txt
+    req_file = dest_root / "requirements.txt"
+    if req_file.is_file() and req_file.stat().st_size > 0:
+        req_installed = False
+        if uv_bin:
+            res = subprocess.run([uv_bin, "pip", "install", "--python", str(venv_python), "-r", str(req_file)], cwd=str(dest_root), capture_output=True)
+            if res.returncode == 0:
+                req_installed = True
+        if not req_installed:
+            res = subprocess.run([str(venv_python), "-m", "pip", "install", "-r", str(req_file)], cwd=str(dest_root), capture_output=True)
+            if res.returncode == 0:
+                req_installed = True
+
+        if req_installed:
+            print(f"  {check('Installed dependencies from requirements.txt into .venv.')}")
+        else:
+            print(f"  {C.DIM}Run 'aimlite install -r requirements.txt' to install project dependencies.{C.RESET}")
 
     return True
 
