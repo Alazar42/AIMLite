@@ -142,21 +142,22 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
 ---
 
 ### Reference Template 2: Knowledge Base & RAG (Enterprise Knowledge Engine)
+### Reference Template 2: Knowledge Base & RAG (Enterprise Knowledge Engine)
 
-Demonstrates semantic vector retrieval, query intelligence, smart document chunking, grounded LLM synthesis, and interactive chat serving. Ingest text, Markdown, CSV, JSON, or any document source with any filename you choose.
+Demonstrates semantic vector retrieval, query intelligence, smart document chunking, and grounded LLM synthesis. Ingest text, Markdown, CSV, JSON, or any document source with any filename you choose.
 
-- **Data Formats**: Markdown (`.md`) or text (`.txt`) documents placed in `data/`.
-- **Required Dependencies**:
-  ```bash
-  aimlite install sentence-transformers numpy
-  # or
-  pip install sentence-transformers numpy
-  ```
-- **Example Files**: [`docs/examples/knowledge_rag/`](docs/examples/knowledge_rag/)
-  - `data.py`: `KnowledgeDocsDataset(Dataset)` chunking documents with `TextSplitter`.
-  - `model.py`: `SupportDocRAG(RAGModel)` binding `MemoryVectorStore` and `VectorRetriever`.
-  - `trainer.py`: `IndexBuilderTrainer(BaseTrainer)` building and persisting the vector index to `models/rag_index.json`.
-  - `inference.py`: `RAGInference(BaseInference)` querying the retriever and synthesizing grounded answers with citations.
+- **Key RAG Capabilities**:
+  - **Structure-Aware Smart Chunking (`SmartChunker`)**: Parses Markdown headers (`#`, `##`, `###`), paragraph boundaries, and lists while preserving parent document title and section hierarchies in chunk metadata.
+  - **Query Intelligence (`QueryAnalyzer` & HyDE)**: Deconstructs user queries into search intent, keyword tags, multi-query variations, and Hypothetical Document Embeddings (HyDE) for maximum semantic retrieval recall.
+  - **Universal Chat Provider Abstraction (`BaseChatProvider`)**: Native integrations for **API models** (`OpenAIChatProvider`, `AnthropicChatProvider`, `GeminiChatProvider`), **Local models** (`OllamaChatProvider`, `LocalChatProvider` with HuggingFace/custom callables), and zero-dependency `MockChatProvider`.
+  - **PostgreSQL ORM & `pgvector` (`PostgresVectorStore`)**: Production vector persistence using PostgreSQL with native `pgvector` similarity operators (`<=>` cosine / `<->` L2 distance) and declarative ORM records (`KnowledgeDocumentRecord`, `KnowledgeChunkRecord`), with seamless in-memory fallback.
+  - **Pre-defined Standard System Prompts**: Built-in prompts for grounded Q&A (`PROMPT_RAG_QA`), search analysis (`PROMPT_QUERY_ANALYZER`), semantic chunking (`PROMPT_SMART_CHUNKER`), and multi-turn conversations (`PROMPT_CONVERSATIONAL_RAG`).
+  - **High-Level Model & Trainer (`KnowledgeModel` & `RAGTrainer`)**: Enterprise domain model and lifecycle trainer automating document loading $\to$ smart chunking $\to$ vector embedding $\to$ database/artifact persistence.
+- **Example Implementation**: [`docs/examples/knowledge_rag/`](docs/examples/knowledge_rag/)
+  - `data.py`: `KnowledgeDocsDataset(Dataset)` ingesting and chunking articles using `SmartChunker`.
+  - `model.py`: `SupportDocRAG(KnowledgeModel)` coordinating `QueryAnalyzer`, `PostgresVectorStore`/`MemoryVectorStore`, and `BaseChatProvider`.
+  - `trainer.py`: `IndexBuilderTrainer(RAGTrainer)` orchestrating semantic index building and artifact/database persistence.
+  - `inference.py`: `RAGInference(BaseInference)` serving grounded Q&A with verifiable document citations and confidence scores via `POST /predict`.
 - **Workflow**:
   ```bash
   aimlite init support_rag && cd support_rag
@@ -212,19 +213,38 @@ AIMLite provides zero-path convention-over-configuration commands:
 ---
 
 ## How to Build & Package
+## How to Build & Package
 
+AIMLite supports multiple build and packaging targets:
 AIMLite supports multiple build and packaging targets:
 
 ### 1. Build Standalone CLI Executable (`build/`)
 Bundle the entire AIMLite framework and CLI into a single, portable executable using Python's native `zipapp` format (compressed bytecode, zero external binary dependencies):
+### 1. Build Standalone CLI Executable (`build/`)
+Bundle the entire AIMLite framework and CLI into a single, portable executable using Python's native `zipapp` format (compressed bytecode, zero external binary dependencies):
 ```bash
+# Compile standalone binary:
 # Compile standalone binary:
 python3 build/build_cli.py
 
-# Run directly without python invocation:
+# Test the compiled binary directly:
+./build/aimlite --help
 ./build/aimlite doctor
 ```
 
+### 2. Build Python Package (Wheel & Source Distribution)
+Build standard distribution packages using Hatchling / uv:
+```bash
+# Using uv:
+uv build
+
+# Or using standard python build:
+python3 -m pip install --upgrade build
+python3 -m build
+```
+
+### 3. Build Interactive Documentation Portal (`api_docs/`)
+Build the React/TypeScript/Vite API documentation portal:
 ### 2. Build Python Package (Wheel & Source Distribution)
 Build standard distribution packages using Hatchling / uv:
 ```bash
@@ -242,15 +262,61 @@ Build the React/TypeScript/Vite API documentation portal:
 cd api_docs
 npm install
 npm run build   # Produces optimized production bundle in api_docs/dist/
+npm run build   # Produces optimized production bundle in api_docs/dist/
 ```
 
 ---
 
-## Testing
+## How to Test
 
-AIMLite includes a comprehensive 49-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, LoRA low-rank adaptation, and end-to-end paradigm workflows:
+AIMLite includes a comprehensive 57-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, LoRA adaptation, and the RAG subsystem:
 
+### 1. Run Complete Test Suite
 ```bash
-uv run test        # Core test runner
-uv run pytest      # Full pytest runner (49/49 passing)
+# Run via unittest discovery:
+PYTHONPATH=src:. python3 -m unittest discover -s test
+
+# Or using uv / pytest:
+uv run test
+uv run pytest
 ```
+
+### 2. Run Module-Specific Test Suites
+```bash
+# RAG Subsystem (Chat providers, SmartChunker, QueryAnalyzer, PostgresVectorStore, KnowledgeModel):
+PYTHONPATH=src:. python3 -m unittest test.test_rag
+
+# Adapters & LoRA Fine-Tuning:
+PYTHONPATH=src:. python3 -m unittest test.test_adapters
+
+# Zero-Path CLI & Discovery:
+PYTHONPATH=src:. python3 -m unittest test.test_cli
+
+# End-to-End Reference Paradigms:
+PYTHONPATH=src:. python3 -m unittest test.test_examples
+
+# Pillar Headers & Core Interfaces:
+PYTHONPATH=src:. python3 -m unittest test.test_headers
+```
+
+---
+
+## Business & Enterprise
+
+AIMLite is **100% free and open-source under the Apache 2.0 license** for individual developers, students, researchers, and startups.
+
+For companies and teams seeking enterprise extensions or dedicated collaboration:
+- **Custom Data Connectors**: Direct integrations with enterprise data warehouses (Snowflake, BigQuery, PostgreSQL, Databricks).
+- **Turnkey Production Starter Kits**: Pre-built commercial templates for customer retention/churn, enterprise RAG knowledge bases, and multi-adapter LoRA specialists.
+- **Consulting & Implementation**: Architecture design, model optimization, and white-glove deployment directly with the core framework creators.
+
+For commercial inquiries, partnerships, or custom integrations:
+- **Mickyas Tesfaye**: [alazartesfaye42@gmail.com](mailto:alazartesfaye42@gmail.com)
+- **Beamlak Tadesse**: [atocodes@gmail.com](mailto:atocodes@gmail.com)
+
+---
+
+## License
+
+AIMLite is released under the [Apache 2.0 License](LICENSE). Free for commercial and non-commercial use.
+
