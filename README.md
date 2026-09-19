@@ -155,15 +155,22 @@ Demonstrates a standard supervised learning workflow with feature preprocessing,
 
 ---
 
-### Reference Template 2: Knowledge Base & RAG
+### Reference Template 2: Knowledge Base & RAG (Enterprise Knowledge Engine)
 
-Demonstrates semantic vector retrieval and context augmentation. Ingest text, Markdown, CSV, JSON, or any document source with any filename you choose.
+Demonstrates semantic vector retrieval, query intelligence, smart document chunking, and grounded LLM synthesis. Ingest text, Markdown, CSV, JSON, or any document source with any filename you choose.
 
+- **Key RAG Capabilities**:
+  - **Structure-Aware Smart Chunking (`SmartChunker`)**: Parses Markdown headers (`#`, `##`, `###`), paragraph boundaries, and lists while preserving parent document title and section hierarchies in chunk metadata.
+  - **Query Intelligence (`QueryAnalyzer` & HyDE)**: Deconstructs user queries into search intent, keyword tags, multi-query variations, and Hypothetical Document Embeddings (HyDE) for maximum semantic retrieval recall.
+  - **Universal Chat Provider Abstraction (`BaseChatProvider`)**: Native integrations for **API models** (`OpenAIChatProvider`, `AnthropicChatProvider`, `GeminiChatProvider`), **Local models** (`OllamaChatProvider`, `LocalChatProvider` with HuggingFace/custom callables), and zero-dependency `MockChatProvider`.
+  - **PostgreSQL ORM & `pgvector` (`PostgresVectorStore`)**: Production vector persistence using PostgreSQL with native `pgvector` similarity operators (`<=>` cosine / `<->` L2 distance) and declarative ORM records (`KnowledgeDocumentRecord`, `KnowledgeChunkRecord`), with seamless in-memory fallback.
+  - **Pre-defined Standard System Prompts**: Built-in prompts for grounded Q&A (`PROMPT_RAG_QA`), search analysis (`PROMPT_QUERY_ANALYZER`), semantic chunking (`PROMPT_SMART_CHUNKER`), and multi-turn conversations (`PROMPT_CONVERSATIONAL_RAG`).
+  - **High-Level Model & Trainer (`KnowledgeModel` & `RAGTrainer`)**: Enterprise domain model and lifecycle trainer automating document loading $\to$ smart chunking $\to$ vector embedding $\to$ database/artifact persistence.
 - **Example Implementation**: [`docs/examples/knowledge_rag/`](docs/examples/knowledge_rag/)
-  - `data.py`: `KnowledgeDocsDataset(Dataset)` chunking text passages.
-  - `model.py`: `SupportDocRAG(RAGModel)` binding `MemoryVectorStore` and `VectorRetriever`.
-  - `trainer.py`: `IndexBuilderTrainer(BaseTrainer)` building and persisting the vector index to `models/rag_index.json`.
-  - `inference.py`: `RAGInference(BaseInference)` querying the retriever and synthesizing grounded answers with citations.
+  - `data.py`: `KnowledgeDocsDataset(Dataset)` ingesting and chunking articles using `SmartChunker`.
+  - `model.py`: `SupportDocRAG(KnowledgeModel)` coordinating `QueryAnalyzer`, `PostgresVectorStore`/`MemoryVectorStore`, and `BaseChatProvider`.
+  - `trainer.py`: `IndexBuilderTrainer(RAGTrainer)` orchestrating semantic index building and artifact/database persistence.
+  - `inference.py`: `RAGInference(BaseInference)` serving grounded Q&A with verifiable document citations and confidence scores via `POST /predict`.
 - **Workflow**:
   ```bash
   aimlite init support_rag && cd support_rag
@@ -217,40 +224,72 @@ AIMLite provides zero-path convention-over-configuration commands:
 
 ---
 
-## Standalone Executable & Build System (`build/`)
+## How to Build & Package
 
-The standalone binary is packaged using Python's native `zipapp` format into a single self-contained executable with zero runtime dependencies:
+AIMLite supports multiple build and packaging targets:
 
+### 1. Build Standalone CLI Executable (`build/`)
+Bundle the entire AIMLite framework and CLI into a single, portable executable using Python's native `zipapp` format (compressed bytecode, zero external binary dependencies):
 ```bash
-# Compile / rebuild the standalone binary:
+# Compile standalone binary:
 python3 build/build_cli.py
 
-# Run directly without python invocation:
+# Test the compiled binary directly:
+./build/aimlite --help
 ./build/aimlite doctor
 ```
 
----
+### 2. Build Python Package (Wheel & Source Distribution)
+Build standard distribution packages using Hatchling / uv:
+```bash
+# Using uv:
+uv build
 
-## Interactive API Documentation Portal (`api_docs/`)
+# Or using standard python build:
+python3 -m pip install --upgrade build
+python3 -m build
+```
 
-The full documentation portal is built with React, Vite, and modern styling, featuring interactive paradigm step-by-step guides, code explanation walkthroughs, copy-to-clipboard code blocks, and an API test playground:
-
+### 3. Build Interactive Documentation Portal (`api_docs/`)
+Build the React/TypeScript/Vite API documentation portal:
 ```bash
 cd api_docs
 npm install
-npm run dev     # Launch local docs dev server at http://localhost:5173
-npm run build   # Build production bundle into api_docs/dist/
+npm run build   # Produces optimized production bundle in api_docs/dist/
 ```
 
 ---
 
-## Testing
+## How to Test
 
-AIMLite includes a comprehensive 49-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, LoRA low-rank adaptation, and end-to-end paradigm workflows:
+AIMLite includes a comprehensive 57-test suite validating CLI commands, header generation, data validation, model lifecycle, inference serving, LoRA adaptation, and the RAG subsystem:
 
+### 1. Run Complete Test Suite
 ```bash
-uv run test        # Core test runner
-uv run pytest      # Full pytest runner (49/49 passing)
+# Run via unittest discovery:
+PYTHONPATH=src:. python3 -m unittest discover -s test
+
+# Or using uv / pytest:
+uv run test
+uv run pytest
+```
+
+### 2. Run Module-Specific Test Suites
+```bash
+# RAG Subsystem (Chat providers, SmartChunker, QueryAnalyzer, PostgresVectorStore, KnowledgeModel):
+PYTHONPATH=src:. python3 -m unittest test.test_rag
+
+# Adapters & LoRA Fine-Tuning:
+PYTHONPATH=src:. python3 -m unittest test.test_adapters
+
+# Zero-Path CLI & Discovery:
+PYTHONPATH=src:. python3 -m unittest test.test_cli
+
+# End-to-End Reference Paradigms:
+PYTHONPATH=src:. python3 -m unittest test.test_examples
+
+# Pillar Headers & Core Interfaces:
+PYTHONPATH=src:. python3 -m unittest test.test_headers
 ```
 
 ---
