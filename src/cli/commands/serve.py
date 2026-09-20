@@ -137,11 +137,17 @@ def run_serve(
             print(f"  {C.YELLOW}! Specified frontend directory '{frontend}' not found.{C.RESET}")
     else:
         # Auto-detect common frontend build folders
-        for folder_name in ["frontend/dist", "dist", "frontend", "static", "web"]:
+        for folder_name in ["api_docs/dist", "frontend/dist", "dist", "frontend", "static", "web"]:
             cand = ctx.root_dir / folder_name
             if cand.is_dir() and (cand / "index.html").is_file():
                 resolved_frontend = cand
                 break
+
+    # 5. Extract real dataset sample if data exists (never hallucinate fake features)
+    sample_payload, dataset_info = _extract_real_data_sample(ctx)
+
+    # 6. Extract Voxide API key from project root .env if present
+    voxide_key = _extract_voxide_key(ctx.root_dir)
 
     return run_inference_server(
         model=model,
@@ -152,4 +158,154 @@ def run_serve(
         frontend_dir=resolved_frontend,
         custom_app=custom_app,
         checkpoint_path=ckpt_file,
+        sample_payload=sample_payload,
+        dataset_info=dataset_info,
+        voxide_api_key=voxide_key,
     )
+
+
+def _extract_real_data_sample(ctx) -> tuple[Optional[str], dict]:
+    """Inspects the project data directory to extract the REAL schema and sample record.
+
+    Never hallucinates or invents fake features. Returns actual records from the dataset.
+    """
+    import json
+
+    if not ctx.data_dir or not ctx.data_dir.is_dir():
+        return None, {"has_data": False, "filename": None, "columns": [], "record_count": 0}
+
+    data_files = [f for f in ctx.data_dir.iterdir() if f.is_file() and not f.name.startswith(".")]
+    if not data_files:
+        return None, {"has_data": False, "filename": None, "columns": [], "record_count": 0}
+
+    # If dataset_cls declared filename, try that first
+    target = data_files[0]
+    if ctx.dataset_cls and getattr(ctx.dataset_cls, "filename", None):
+        cand = ctx.data_dir / ctx.dataset_cls.filename
+        if cand.is_file():
+            target = cand
+    else:
+        for f in data_files:
+            if f.name.lower() in ["dataset.csv", "data.csv", "train.csv", "customers.csv"]:
+                target = f
+                break
+
+    try:
+        if target.suffix.lower() == ".csv":
+            import csv
+
+            with open(target, "r", encoding="utf-8", errors="replace") as f:
+                reader = csv.DictReader(f)
+                rows = list(reader)
+                if rows:
+                    first = rows[0]
+                    cleaned = {}
+                    for k, v in first.items():
+                        if k is None:
+                            continue
+                        k_s = k.strip().strip('"').strip("'")
+                        val_str = v.strip().strip('"').strip("'") if isinstance(v, str) else v
+                        try:
+                            if "." in str(val_str):
+                                cleaned[k_s] = float(val_str)
+                            else:
+                                cleaned[k_s] = int(val_str)
+                        except (ValueError, TypeError):
+                            cleaned[k_s] = val_str
+                    payload_str = json.dumps(cleaned, indent=2)
+                    info = {
+                        "has_data": True,
+                        "filename": target.name,
+                        "columns": list(cleaned.keys()),
+                        "record_count": len(rows),
+                    }
+                    return payload_str, info
+        elif target.suffix.lower() == ".json":
+            with open(target, "r", encoding="utf-8", errors="replace") as f:
+                data = json.load(f)
+                if isinstance(data, list) and data:
+                    sample = data[0]
+                    rows_count = len(data)
+                elif isinstance(data, dict):
+                    sample = data
+                    rows_count = 1
+                else:
+                    sample = {"data": data}
+                    rows_count = 1
+                payload_str = json.dumps(sample, indent=2)
+                info = {
+                    "has_data": True,
+                    "filename": target.name,
+                    "columns": list(sample.keys()) if isinstance(sample, dict) else [],
+                    "record_count": rows_count,
+                }
+                return payload_str, info
+    except Exception:
+        pass
+
+    return None, {"has_data": False, "filename": target.name, "columns": [], "record_count": 0}
+
+
+def _extract_voxide_key(root_dir: Optional[Path]) -> str:
+    """Reads Voxide API key from .env in project root or environment variables."""
+    import os
+
+    # 1. Process environment variables first
+    for var in [
+        "VOXIDE_API_KEY",
+        "VOXIDE_PUBLIC_KEY",
+        "VOXIDE_KEY",
+        "VITE_VOXIDE_PUBLIC_KEY",
+        "NEXT_PUBLIC_VOXIDE_KEY",
+    ]:
+        val = os.environ.get(var)
+        if val and val.strip():
+            return val.strip()
+
+    # 2. Candidate .env paths: root_dir, root_dir parents up to 4 levels, and cwd
+    candidates: list[Path] = []
+    if root_dir:
+        candidates.append(root_dir / ".env")
+        curr = root_dir.resolve()
+        for _ in range(4):
+            parent = curr.parent
+            if parent == curr:
+                break
+            candidates.append(parent / ".env")
+            curr = parent
+
+    candidates.append(Path.cwd().resolve() / ".env")
+
+    # Remove duplicates while preserving order
+    seen: set[Path] = set()
+    unique_candidates: list[Path] = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            unique_candidates.append(c)
+
+    for env_path in unique_candidates:
+        if env_path.is_file():
+            try:
+                with open(env_path, "r", encoding="utf-8", errors="replace") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith("#"):
+                            continue
+                        if "=" in line:
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            if k in [
+                                "VOXIDE_API_KEY",
+                                "VOXIDE_PUBLIC_KEY",
+                                "VOXIDE_KEY",
+                                "VITE_VOXIDE_PUBLIC_KEY",
+                                "NEXT_PUBLIC_VOXIDE_KEY",
+                            ]:
+                                cleaned_val = v.strip().strip('"').strip("'")
+                                if cleaned_val:
+                                    return cleaned_val
+            except Exception:
+                pass
+    return ""
+

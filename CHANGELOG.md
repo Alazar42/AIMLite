@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] - 2026-09-20
+
+### Added
+- **Major 1.0.0 Milestone Release**: Stabilized core architecture, inference server, and developer ergonomics across the ecosystem.
+- **Built-in Interactive Web Interfaces (`aimlite serve`)**:
+  - **Inference Playground (`/`, `/playground`)**: Real-time forward pass execution with latency telemetry and response inspector.
+  - **Chat & RAG Studio (`/chat`)**: Conversational interface for querying retrieval-augmented pipelines with chat history and message streaming.
+  - **Zero-Hallucination Dataset Inspection**: Automatically extracts actual records and schema from project datasets in `data/` (CSV, JSON), populating input payloads with real data.
+  - **Transparent Error Handling**: Unconfigured or untrained starter models explicitly raise `NotImplementedError` and report HTTP 500, preventing silent echo or fake mock predictions.
+- **Voxide AI Voice & Text Assistant Integration**:
+  - Embedded floating Voxide AI helper widget into served templates and documentation (`@voxide/react`).
+  - **Root `.env` API Key Enforcement**: Automatically searches for `VOXIDE_API_KEY` / `VOXIDE_PUBLIC_KEY` in the project root `.env` or process environment.
+  - **Graceful Error Display**: Widget remains visible on all served pages; when no API key is configured, displays a clear in-panel authentication error guiding the developer to add their key.
+  - Live voice recognition and hands-free capability execution (`/predict`, `/health`, model diagnostics).
+- **Frontend Serving & Build Pipeline**:
+  - Automatic discovery and hosting of SPA frontends (`api_docs/dist`, `frontend/dist`, `dist`, `static`).
+  - Dynamic `window.VOXIDE_PUBLIC_KEY` injection into served static HTML pages.
+  - Single standalone binary distribution via `build/aimlite`.
+
+### Changed
+- Bumped package version, CLI metadata, and documentation to `1.0.0`.
+- All 50 test suites passing (`test_adapters`, `test_cli`, `test_examples`, `test_headers`).
+
+---
+
 ## [0.1.2] - 2026-09-18
 
 ### Added

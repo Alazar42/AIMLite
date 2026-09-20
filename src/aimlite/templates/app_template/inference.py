@@ -19,11 +19,25 @@ class AppInference(BaseInference):
         return model.predict(raw_input, **kwargs)
 
     def get_routes(self) -> Dict[str, Any]:
-        """Optionally declare custom API routes (e.g. POST /predict, GET /status)."""
+        """Optionally declare custom API routes (e.g. POST /predict, GET /health).
+        
+        You can expose additional custom endpoints here. When using Voxide AI
+        (@voxide/react), you can register matching tools on the client:
+          ai.register({
+            customTool: {
+              description: "Run custom analysis",
+              params: { query: { type: "string" } },
+              handler: async ({ query }) => {
+                const res = await fetch("/api/v1/analyze", { ... });
+                return res.json();
+              }
+            }
+          });
+        """
         return {
             "POST /predict": self.run,
             "GET /health": self.health,
-            # Custom developer endpoints:
+            # Custom developer endpoints & Voxide AI agent tools:
             # "POST /api/v1/analyze": self.custom_analyze,
             # "GET /status": self.custom_status,
         }

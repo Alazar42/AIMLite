@@ -1,7 +1,7 @@
 {
   "name": "api_docs",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
+    "@voxide/react": "^0.8.0",
     "lucide-react": "^1.46.0",
     "prismjs": "^1.30.0",
     "react": "^19.2.8",

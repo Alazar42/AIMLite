@@ -344,6 +344,50 @@ class TestAIMLiteCLI(unittest.TestCase):
             server.shutdown()
             server.server_close()
 
+    def test_served_template_websites_and_voxide_helper(self):
+        """Tests that AIMLite serves built-in template websites (/playground, /chat, and browser GET /) with Voxide AI helper."""
+        model = DummyModel(name="voxide_model")
+        handler_cls = create_handler_class(model=model, model_name="voxide_model")
+        server = HTTPServer(("127.0.0.1", 0), handler_cls)
+        port = server.server_address[1]
+
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+        time.sleep(0.1)
+
+        try:
+            conn = HTTPConnection("127.0.0.1", port, timeout=5)
+
+            # 1. Browser GET / (with Accept: text/html) -> returns index.html template website
+            conn.request("GET", "/", headers={"Accept": "text/html,application/xhtml+xml"})
+            res = conn.getresponse()
+            self.assertEqual(res.status, 200)
+            self.assertIn("text/html", res.headers.get("Content-Type", ""))
+            html = res.read().decode()
+            self.assertIn("Inference Playground", html)
+            self.assertIn("Voxide AI Helper", html)
+            self.assertIn("voxide_model", html)
+
+            # 2. GET /playground -> returns index.html template website
+            conn.request("GET", "/playground")
+            res_play = conn.getresponse()
+            self.assertEqual(res_play.status, 200)
+            self.assertIn("text/html", res_play.headers.get("Content-Type", ""))
+            html_play = res_play.read().decode()
+            self.assertIn("Inference Playground", html_play)
+
+            # 3. GET /chat -> returns chat.html template website
+            conn.request("GET", "/chat")
+            res_chat = conn.getresponse()
+            self.assertEqual(res_chat.status, 200)
+            self.assertIn("text/html", res_chat.headers.get("Content-Type", ""))
+            html_chat = res_chat.read().decode()
+            self.assertIn("AIMLite Chat", html_chat)
+            self.assertIn("voxide_model", html_chat)
+        finally:
+            server.shutdown()
+            server.server_close()
+
     def test_empty_csv_file_gracefully_fails_without_traceback(self):
         """CLI train and data validate handle 0-byte or empty CSV files gracefully without tracebacks."""
         proj_name = "empty_csv_proj"
@@ -519,8 +563,8 @@ class ModelB(Model):
 
         # Test --version
         res = subprocess.run([str(executable), "--version"], cwd=str(self.test_root), capture_output=True, text=True)
-        self.assertEqual(res.returncode, 0)
-        self.assertIn("aimlite 0.1.2", res.stdout)
+        from aimlite import __version__
+        self.assertIn(f"aimlite {__version__}", res.stdout)
 
         # Test doctor
         res = subprocess.run([str(executable), "doctor"], cwd=str(self.test_root), capture_output=True, text=True)

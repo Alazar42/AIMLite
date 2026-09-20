@@ -1,6 +1,6 @@
 [project]
 name = "aimlite"
-version = "0.1.2"
+version = "1.0.1"
 description = "The Django for AI & Machine Learning — zero-configuration, zero-path execution."
 readme = "README.md"
 license = "Apache-2.0"

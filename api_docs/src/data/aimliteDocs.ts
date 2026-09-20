@@ -103,6 +103,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     items: [
       { id: 'endpoint-predict', label: 'Execute Inference', badge: 'POST', badgeVariant: 'post' },
       { id: 'endpoint-health', label: 'Server Health', badge: 'GET', badgeVariant: 'get' },
+      { id: 'endpoint-voxide', label: 'Voxide AI Helper', badge: 'AI', badgeVariant: 'post' },
       { id: 'endpoint-openapi', label: 'OpenAPI 3.0 Schema', badge: 'GET', badgeVariant: 'get' },
       { id: 'endpoint-docs', label: 'Swagger UI Docs', badge: 'GET', badgeVariant: 'get' },
     ],
@@ -798,6 +799,116 @@ console.log(data);`,
     defaultResponse: {
       status: 'rendered_html',
       template: 'aimlite/templates/swagger.html',
+    },
+  },
+
+  'endpoint-voxide': {
+    id: 'endpoint-voxide',
+    category: 'HTTP Inference Server',
+    title: 'Voxide AI Assistant & Tool Integration',
+    subtitle: 'Voice & text AI helper on the served UI with extensible developer tool calling.',
+    badge: { label: 'AI HELPER', variant: 'post' },
+    signatureOrPath: 'npm install @voxide/react@latest',
+    breadcrumbs: ['HTTP Server', 'Voxide AI'],
+    overview:
+      'AIMLite 1.0.0 integrates Voxide AI (@voxide/react) into served frontends as an interactive voice and chat helper. Out-of-the-box, the widget provides live "predict" and "health" tools. Developers can easily register additional custom tools in their frontend or inference handlers.',
+    djangoAnalogy:
+      'Like an intelligent administrative assistant wired directly into your Django REST views, able to execute actions from spoken phrases or chat prompts.',
+    parametersTitle: 'Default Tools Registered on VoxideClient',
+    parameters: [
+      {
+        name: 'predict',
+        type: 'tool (POST /predict)',
+        required: true,
+        description: 'Runs inference forward pass given feature arrays (e.g. [1.5, 2.7, 3.2, 4.0]).',
+      },
+      {
+        name: 'health',
+        type: 'tool (GET /health)',
+        required: true,
+        description: 'Queries server readiness, uptime, and loaded model status.',
+      },
+      {
+        name: 'navigate',
+        type: 'tool (UI Router)',
+        required: false,
+        description: 'Voice or text navigation between documentation sections and endpoints.',
+      },
+    ],
+    snippets: {
+      python: `"""inference.py - Add custom endpoints for Voxide AI tools"""
+from aimlite import BaseInference, Model
+
+class AppInference(BaseInference):
+    def run(self, model: Model, raw_input):
+        return model.predict(raw_input)
+
+    def custom_analyze(self, model: Model, payload):
+        # Additional custom capability callable by Voxide tool
+        return {"sentiment": "positive", "score": 0.94}
+
+    def get_routes(self):
+        return {
+            "POST /predict": self.run,
+            "GET /health": self.health,
+            "POST /api/v1/analyze": self.custom_analyze,
+        }`,
+      typescript: `import { VoxideClient, VoxideWidget } from '@voxide/react';
+
+// 1. Create client
+const ai = new VoxideClient({
+  publicKey: "vox_pub_your_key",
+});
+
+// 2. Register basic tools & custom developer tools
+ai.register({
+  predict: {
+    description: "Run model inference with input features.",
+    params: { features: { type: "array", required: true } },
+    handler: async ({ features }) => {
+      const res = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ features }),
+      });
+      return res.json();
+    },
+  },
+  health: {
+    description: "Check model server health.",
+    params: {},
+    handler: async () => {
+      const res = await fetch("/health");
+      return res.json();
+    },
+  },
+  // Developers can add custom capabilities here:
+  analyzeText: {
+    description: "Analyze sentiment using custom endpoint.",
+    params: { text: { type: "string", required: true } },
+    handler: async ({ text }) => {
+      const res = await fetch("/api/v1/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      return res.json();
+    },
+  },
+});
+
+// 3. Drop in the widget
+export default function App() {
+  return <VoxideWidget client={ai} theme="dark" accentColor="#0284c7" />;
+}`,
+      cli: 'npm install @voxide/react@latest',
+    },
+    defaultPayload: '{\n  "tool": "predict",\n  "params": {\n    "features": [1.5, 2.7, 3.2, 4.0]\n  }\n}',
+    defaultResponse: {
+      status: 'success',
+      voxide_version: '^0.8.0',
+      active_tools: ['predict', 'health', 'navigate'],
+      widget_mounted: true,
     },
   },
 

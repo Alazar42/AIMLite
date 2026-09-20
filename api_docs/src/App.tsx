@@ -6,14 +6,21 @@ import CodePlayground from './components/CodePlayground';
 import SearchModal from './components/SearchModal';
 import { DOC_SECTIONS } from './data/aimliteDocs';
 import { X } from 'lucide-react';
+import { VoxideWidget } from '@voxide/react';
+import { voxideClient, setupVoxideCapabilities } from './services/voxideClient';
 
 export default function App() {
   const [activeSectionId, setActiveSectionId] = useState<string>('pillar-data');
-  const [version, setVersion] = useState<string>('v0.1.2');
+  const [version, setVersion] = useState<string>('v1.0.1');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
   const [isMobileConsoleOpen, setIsMobileConsoleOpen] = useState<boolean>(false);
   const [hasCopiedSignature, setHasCopiedSignature] = useState<boolean>(false);
+
+  // Initialize Voxide capabilities and navigation bindings
+  useEffect(() => {
+    setupVoxideCapabilities((sectionId) => setActiveSectionId(sectionId));
+  }, []);
 
   // Global Keyboard Listener for Cmd+K / Ctrl+K
   useEffect(() => {
@@ -149,6 +156,15 @@ export default function App() {
         onSelectSection={(id) => {
           setActiveSectionId(id);
         }}
+      />
+
+      {/* Voxide AI Voice & Text Interactive Assistant */}
+      <VoxideWidget
+        client={voxideClient}
+        theme="dark"
+        accentColor="#0284c7"
+        position="bottom-right"
+        title="AIMLite Helper"
       />
     </div>
   );

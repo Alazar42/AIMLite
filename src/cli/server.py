@@ -78,7 +78,7 @@ def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None)
         "openapi": "3.0.0",
         "info": {
             "title": f"AIMLite API - {model_name}",
-            "version": "0.1.2",
+            "version": "1.0.1",
             "description": "Developer-customizable inference server and frontend host.",
         },
         "paths": paths,
@@ -104,8 +104,11 @@ def create_handler_class(
     inference: Optional[BaseInference] = None,
     model_name: str = "model",
     frontend_dir: Optional[Path] = None,
+    sample_payload: Optional[str] = None,
+    dataset_info: Optional[Dict[str, Any]] = None,
+    voxide_api_key: str = "",
 ):
-    """Creates a configured RequestHandler supporting custom routes and frontend hosting."""
+    """Creates a configured RequestHandler supporting custom routes, real data schemas, and frontend hosting."""
     active_inference = inference or DefaultInference()
 
     # Collect custom developer routes from BaseInference
@@ -115,6 +118,29 @@ def create_handler_class(
             custom_routes = active_inference.get_routes() or {}
         except Exception:
             custom_routes = {}
+
+    def _render_page(filename: str) -> bytes:
+        """Renders an HTML template injecting real project schema and variables without hallucinating."""
+        html = _load_template(filename).replace("{{model_name}}", model_name).replace("{{version}}", "1.0.1")
+        html = html.replace("{{voxide_key}}", voxide_api_key)
+        html = html.replace("{{voxide_enabled}}", "true" if voxide_api_key else "false")
+        ds = dataset_info or {}
+        if ds.get("has_data") and sample_payload:
+            html = html.replace("{{has_real_data}}", "true")
+            html = html.replace("{{dataset_filename}}", str(ds.get("filename", "dataset.csv")))
+            html = html.replace("{{dataset_columns}}", ", ".join(ds.get("columns", [])) or "None")
+            html = html.replace("{{dataset_records}}", str(ds.get("record_count", 0)))
+            html = html.replace("{{sample_payload}}", sample_payload)
+        else:
+            html = html.replace("{{has_real_data}}", "false")
+            html = html.replace("{{dataset_filename}}", "No dataset in data/")
+            html = html.replace("{{dataset_columns}}", "None")
+            html = html.replace("{{dataset_records}}", "0")
+            html = html.replace(
+                "{{sample_payload}}",
+                '{\n  "error": "No dataset found in data/ directory.",\n  "hint": "Place your dataset (e.g. data/customers.csv) in data/ directory to load real schema."\n}',
+            )
+        return html.encode("utf-8")
 
     class AIMLiteHTTPHandler(BaseHTTPRequestHandler):
         def log_message(self, format: str, *args: Any) -> None:
@@ -138,11 +164,20 @@ def create_handler_class(
             """Executes developer handler and serializes response cleanly."""
             start_t = time.perf_counter()
             try:
-                # Support both handler(model, payload) and handler(payload)
-                try:
-                    res = handler(model, payload)
-                except TypeError:
-                    res = handler(payload) if payload is not None else handler()
+                # Support handler(model), handler(model, payload), handler(payload), handler()
+                if payload is None:
+                    try:
+                        res = handler(model)
+                    except TypeError:
+                        res = handler()
+                else:
+                    try:
+                        res = handler(model, payload)
+                    except TypeError:
+                        try:
+                            res = handler(payload)
+                        except TypeError:
+                            res = handler(model)
             except Exception as e:
                 err = json.dumps({"status": "error", "message": str(e)}).encode("utf-8")
                 self.send_response(500)
@@ -179,12 +214,20 @@ def create_handler_class(
             self.wfile.write(data)
 
         def _serve_static_file(self, file_path: Path) -> bool:
-            """Serves a static file if present."""
+            """Serves a static file if present, injecting voxide configuration into HTML."""
             if file_path.is_file():
                 mime_type, _ = mimetypes.guess_type(str(file_path))
                 mime_type = mime_type or "application/octet-stream"
                 try:
                     data = file_path.read_bytes()
+                    if file_path.suffix.lower() == ".html":
+                        html_text = data.decode("utf-8", errors="replace")
+                        voxide_script = f'<script>window.VOXIDE_PUBLIC_KEY = {json.dumps(voxide_api_key)}; window.VOXIDE_API_KEY = {json.dumps(voxide_api_key)};</script>'
+                        if "<head>" in html_text:
+                            html_text = html_text.replace("<head>", f"<head>\n    {voxide_script}", 1)
+                        else:
+                            html_text = voxide_script + html_text
+                        data = html_text.encode("utf-8")
                     self.send_response(200)
                     self.send_header("Content-Type", mime_type)
                     self.send_header("Content-Length", str(len(data)))
@@ -205,10 +248,30 @@ def create_handler_class(
                 self._dispatch_handler(custom_routes[route_key])
                 return
 
-            # 2. Built-in Swagger Docs & OpenAPI
+            # 2. Built-in Swagger Docs, Chat, & OpenAPI
             if path == "/docs":
                 html = _load_template("swagger.html")
                 data = html.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self._send_cors_headers()
+                self.end_headers()
+                self.wfile.write(data)
+                return
+
+            if path == "/chat":
+                data = _render_page("chat.html")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self._send_cors_headers()
+                self.end_headers()
+                self.wfile.write(data)
+                return
+
+            if path == "/playground":
+                data = _render_page("index.html")
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(data)))
@@ -248,23 +311,33 @@ def create_handler_class(
                     if self._serve_static_file(fallback_index):
                         return
 
-            # 5. Default API root (when no custom frontend is provided)
+            # 5. Default API root / Template website (when no custom frontend is provided)
             if path in ["", "/"]:
-                endpoints = {
-                    "predict": f"POST /predict",
-                    "health": f"GET /health",
-                    "docs": f"GET /docs",
-                    "openapi": f"GET /openapi.json",
-                }
-                payload = {
-                    "name": model_name,
-                    "status": "online",
-                    "version": "0.1.2",
-                    "endpoints": endpoints,
-                }
-                data = json.dumps(payload, indent=2).encode("utf-8")
+                accept_header = self.headers.get("Accept", "")
+                # Serve HTML template website if browser requests text/html, else return JSON API metadata
+                if "text/html" in accept_header and "?format=json" not in self.path:
+                    data = _render_page("index.html")
+                    content_type = "text/html; charset=utf-8"
+                else:
+                    endpoints = {
+                        "predict": "POST /predict",
+                        "health": "GET /health",
+                        "docs": "GET /docs",
+                        "chat": "GET /chat",
+                        "playground": "GET /playground",
+                        "openapi": "GET /openapi.json",
+                    }
+                    payload = {
+                        "name": model_name,
+                        "status": "online",
+                        "version": "1.0.1",
+                        "endpoints": endpoints,
+                    }
+                    data = json.dumps(payload, indent=2).encode("utf-8")
+                    content_type = "application/json; charset=utf-8"
+
                 self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Type", content_type)
                 self.send_header("Content-Length", str(len(data)))
                 self._send_cors_headers()
                 self.end_headers()
@@ -378,6 +451,9 @@ def run_inference_server(
     frontend_dir: Optional[Path] = None,
     custom_app: Optional[Any] = None,
     checkpoint_path: Optional[Path] = None,
+    sample_payload: Optional[str] = None,
+    dataset_info: Optional[Dict[str, Any]] = None,
+    voxide_api_key: str = "",
 ) -> int:
     """Starts the HTTP inference and frontend server.
 
@@ -390,6 +466,9 @@ def run_inference_server(
         frontend_dir: Optional custom frontend directory (e.g. dist/, frontend/).
         custom_app: Optional WSGI app or custom server callable.
         checkpoint_path: Optional path to loaded model checkpoint.
+        sample_payload: Real JSON sample payload extracted from project data directory.
+        dataset_info: Metadata dictionary containing real filename, columns, and records.
+        voxide_api_key: Optional Voxide API key extracted from project root .env.
 
     Returns:
         Exit code (0 on clean shutdown, 1 on error).
@@ -423,6 +502,9 @@ def run_inference_server(
         inference=inference,
         model_name=model_name,
         frontend_dir=frontend_dir,
+        sample_payload=sample_payload,
+        dataset_info=dataset_info,
+        voxide_api_key=voxide_api_key,
     )
 
     try:
@@ -439,10 +521,15 @@ def run_inference_server(
     print(arrow("Target", model_name))
     if checkpoint_path:
         print(arrow("Checkpoint", str(checkpoint_path)))
-    print(arrow("Local API", f"http://{host}:{port}/"))
+    print(arrow("Local UI", f"http://{host}:{port}/"))
+    print(arrow("Chat UI", f"http://{host}:{port}/chat"))
     print(arrow("Inference", f"POST http://{host}:{port}/predict"))
     print(arrow("Health", f"http://{host}:{port}/health"))
     print(arrow("Docs", f"http://{host}:{port}/docs"))
+    if voxide_api_key:
+        print(arrow("Voxide AI", "Active (VOXIDE_API_KEY detected in .env)"))
+    else:
+        print(arrow("Voxide AI", "Inactive (no VOXIDE_API_KEY in .env)"))
 
     if frontend_dir and frontend_dir.is_dir():
         print(arrow("Frontend", f"{frontend_dir} (custom UI served at /)"))

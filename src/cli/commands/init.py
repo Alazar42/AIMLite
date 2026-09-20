@@ -236,7 +236,10 @@ class AppModel(Model):
     """Application model definition."""
 
     def predict(self, inputs: Any, **kwargs: Any) -> Any:
-        return inputs
+        raise NotImplementedError(
+            "Model prediction logic has not been implemented yet. "
+            "Define your forward pass in model.py or train your model with 'aimlite train'."
+        )
 ''',
         "trainer.py": '''"""AIMLite App: trainer.py"""
 from typing import Any, Dict

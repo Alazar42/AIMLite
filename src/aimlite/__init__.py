@@ -76,4 +76,7 @@ __all__ = [
     "get",
     "get_all",
     "clear_registry",
+    "__version__",
 ]
+
+__version__ = "1.0.1"
