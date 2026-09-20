@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.0] - 2026-09-20
+
+### Added
+- **Production Modular RAG & Enterprise Knowledge Base Engine (`aimlite.rag`)**:
+  - **Comprehensive Multi-Provider Chat Integrations**:
+    - `OpenAIChatProvider`: Support for GPT-4o, GPT-4o-mini, o1, and o3 with official `openai` SDK support and zero-dependency HTTP fallback.
+    - `GeminiChatProvider`: Support for Google Gemini 1.5 Flash/Pro and Gemini 2.0 with official `google-genai` / `google-generativeai` SDKs and REST fallback.
+    - `AnthropicChatProvider`: Support for Claude 3.5 Sonnet and Claude 3 Opus with official `anthropic` SDK and REST API fallback.
+    - `OllamaChatProvider`: Support for local open-weights LLMs (Llama 3.2, DeepSeek-R1, Mistral, Gemma) with official `ollama` SDK and HTTP API.
+    - `LocalChatProvider`: Direct execution of local Hugging Face pipelines, PyTorch models, or custom Python callables.
+    - `MockChatProvider`: Deterministic zero-dependency provider for fast offline unit tests and baseline verification.
+  - **Strict Pre-Flight Connection & Credential Validation**:
+    - Added `validate_connection()` across all chat providers, embeddings, and vector databases to catch network issues and authentication errors early.
+    - Automatic HTTP error body decoding with actionable terminal diagnostics (unreachable host, invalid API key, missing endpoint, offline model).
+  - **Query Intelligence & Decomposition (`QueryAnalyzer`)**:
+    - Intent decomposition, sub-question extraction, search keyword expansion, and HyDE (Hypothetical Document Embeddings) answer synthesis.
+    - Heuristic fallback analysis when external LLM synthesis is unavailable.
+  - **Structure-Aware Smart Document Chunking (`SmartChunker`)**:
+    - Heading hierarchy-aware document chunker for Markdown, Text, and structured documents to preserve context across headers and structural boundaries.
+  - **Flexible Vector Storage & Embedding Backends**:
+    - `SentenceTransformerEmbedding`: Dense neural vectors (`all-MiniLM-L6-v2`) via `sentence-transformers`.
+    - `APIEmbedding` & `OllamaEmbedding`: Direct embedding generation from remote APIs or local Ollama endpoints.
+    - `TfidfEmbedding`: Pure-Python hash-based TF-IDF vectorization with zero external dependencies.
+    - `MemoryVectorStore`: In-memory JSON-persisted vector store with pure-Python cosine similarity.
+    - `PostgresVectorStore`: PostgreSQL and `pgvector` SQL ORM integration with connection pooling and `url`/`db_url` alias support.
+  - **High-Level Orchestration Models & Workflows**:
+    - `KnowledgeModel`: High-level orchestrator connecting chat providers, embeddings, vector store, smart chunker, and query analyzer.
+    - `RAGTrainer`: Dedicated trainer workflow for building, validating, and persisting semantic vector indexes.
+    - Prompt Engineering Templates: `PROMPT_RAG_QA`, `PROMPT_QUERY_ANALYZER`, `PROMPT_SMART_CHUNKER`, and `PROMPT_CONVERSATIONAL_RAG`.
+
+- **Interactive Web Chat Playground (`aimlite serve`)**:
+  - Dedicated interactive Chat Playground served at `/chat` and `/playground` (with automatic browser detection on `/`).
+  - Dark-mode interface featuring animated responses, source context citations inspector, configurable generation parameters (temperature, top_k, system prompt), and session management.
+  - Live Swagger UI at `/docs` alongside standard JSON endpoints (`POST /predict`, `GET /health`).
+
+- **Interactive Project Scaffolding & Virtual Environment Automation (`aimlite init` / `aimlite install`)**:
+  - Interactive CLI wizard with arrow-key navigation for selecting system paradigms (RAG & Knowledge Base, LoRA Fine-Tuning, Custom/Scratch ML) and granular components (Chat Provider, Vector DB, Embedding Engine, Query Intelligence, Smart Chunking).
+  - CLI flags for non-interactive / CI automation: `--type`, `--chat-provider`, `--vector-db`, `--model`, `--embedding`, `-y` / `--non-interactive`.
+  - Automatic virtual environment (`.venv`) creation, package installation, and generation of `requirements.txt`, `.env.example`, `.gitignore`, `client.py`, and custom `README.md`.
+  - Added `aimlite install -r requirements.txt` / `--requirement` with automated virtual environment target detection.
+
+- **Zero-Dependency Dotenv Auto-Loading (`aimlite.config`)**:
+  - Pure-Python `.env` parser and environment loader (`load_dotenv()`) discovering configuration up directory trees without external dependencies.
+  - Integrated into `BaseConfig` for automatic environment resolution on initialization.
+
+### Changed
+- **Unified Root Package Exports**:
+  - Exported all core RAG classes, chat providers, embeddings, vector stores, chunkers, and prompt templates from root `aimlite` and `aimlite.rag`.
+- **Standalone Executable Builder**:
+  - Updated CLI builder (`build/build_cli.sh`) with complete support for modular RAG scaffolding and template packaging.
+
+---
+
 ## [0.1.2] - 2026-09-18
 
 ### Added
