@@ -101,7 +101,7 @@ For immediate near-term revenue without enterprise sales cycles, AIMLite referen
 ## 6. Implementation Roadmap
 
 1. **Phase 1: Hackathon & Mindshare (Now)**
-   - Launch `v0.1.2` on PyPI and GitHub with clear documentation and 49 passing tests.
+   - Launch `v1.0.3` on PyPI and GitHub with clear documentation and 49 passing tests.
    - Showcase the zero-path developer experience to win hackathon prizes and developer mindshare.
    - Establish AIMLite as the fastest way to build classical ML, RAG, and LoRA applications.
 

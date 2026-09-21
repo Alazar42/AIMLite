@@ -48,7 +48,7 @@ C = Color
 
 def vite_header(subcommand: str = "", extra: str = "") -> str:
     """Renders a Vite-style brand banner."""
-    brand = f"{C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET} {C.DIM}v1.0.0{C.RESET}"
+    brand = f"{C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET} {C.DIM}v1.0.3{C.RESET}"
     if subcommand:
         tag = f" {C.GREEN}{subcommand}{C.RESET}"
     else:

@@ -1,0 +1,17 @@
+{
+  "name": "telecom_churn",
+  "version": "0.1.0",
+  "entrypoint": "telecom_churn",
+  "dependencies": [],
+  "config": {
+    "device": "auto",
+    "batch_size": 32
+  },
+  "paths": {
+    "data": "data",
+    "models": "models",
+    "experiments": "experiments",
+    "artifacts": "artifacts",
+    "checkpoints": "checkpoints"
+  }
+}

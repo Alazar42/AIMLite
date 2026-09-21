@@ -1,0 +1,24 @@
+# Environments & Virtual Envs
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Sensitive Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# ML Artifacts & Checkpoints
+artifacts/*.json
+artifacts/*.pkl
+checkpoints/*.pt
