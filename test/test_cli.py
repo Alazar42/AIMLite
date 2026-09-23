@@ -520,7 +520,7 @@ class ModelB(Model):
         # Test --version
         res = subprocess.run([str(executable), "--version"], cwd=str(self.test_root), capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
-        self.assertIn("aimlite 1.0.4", res.stdout)
+        self.assertIn("aimlite 1.0.5", res.stdout)
 
         # Test doctor
         res = subprocess.run([str(executable), "doctor"], cwd=str(self.test_root), capture_output=True, text=True)

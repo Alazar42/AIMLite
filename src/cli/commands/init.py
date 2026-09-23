@@ -14,10 +14,12 @@ from cli.commands.install import run_install
 from cli.ui import (
     C,
     arrow,
+    big_header,
     check,
     cross,
     next_steps,
     prompt_confirm,
+    prompt_package_search,
     prompt_select,
     prompt_text,
     status_spinner,
@@ -78,7 +80,7 @@ def run_init(
         is_tty = sys.stdin.isatty() and not (project_name is not None and template_type is not None)
 
     if is_tty:
-        print(vite_header("create project"))
+        print(big_header("create project"))
 
     # 1. Project Name
     if not project_name:
@@ -207,12 +209,23 @@ def run_init(
             "base_model": "meta-llama/Llama-3.2-3B",
         }
 
-    # 4. Create standard directory structure
+    # 3b. Extra package search step
+    extra_packages: List[str] = []
+    if is_tty:
+        extra_packages = prompt_package_search(
+            "Add extra packages",
+            hint="(space-separated, e.g. pandas numpy scikit-learn — press Enter to skip)",
+            is_tty=is_tty,
+        )
+        if extra_packages:
+            print(f"  {check(f'Added {len(extra_packages)} extra package(s):', ', '.join(extra_packages))}")
+
+
     convention_dirs = ["data", "models", "experiments", "artifacts", "checkpoints"]
     for d in convention_dirs:
         (dest_root / d).mkdir(parents=True, exist_ok=True)
 
-    # 5. Populate Manifest dependencies & requirements.txt
+    # 5. Populate Manifest dependencies
     dependencies: List[str] = []
     if template_type == "rag":
         # Chat Provider SDKs
@@ -247,6 +260,10 @@ def run_init(
     elif template_type == "scratch":
         dependencies = []
 
+    # Merge extra packages added interactively via search step
+    if extra_packages:
+        dependencies.extend(extra_packages)
+
     # Ensure unique ordered dependencies
     seen = set()
     unique_deps = []
@@ -256,9 +273,6 @@ def run_init(
             unique_deps.append(d)
     dependencies = unique_deps
 
-    # Write requirements.txt
-    req_file = dest_root / "requirements.txt"
-    req_file.write_text("\n".join(dependencies) + ("\n" if dependencies else ""), encoding="utf-8")
 
     manifest_data: Dict[str, Any] = {
         "name": project_name,
@@ -308,7 +322,7 @@ def run_init(
 
     if should_install and dependencies:
         print(f"\n  {C.DIM}Installing project dependencies into .venv...{C.RESET}")
-        run_install(packages=[], requirement_file=str(req_file), project_root=dest_root)
+        run_install(packages=list(dependencies), project_root=dest_root)
 
     # 9. Print next steps
     steps = []
@@ -316,7 +330,7 @@ def run_init(
         steps.append(f"cd {project_name}")
 
     if not should_install and dependencies:
-        steps.append("aimlite install -r requirements.txt")
+        steps.append("aimlite install")
 
     steps.extend([
         "aimlite train",

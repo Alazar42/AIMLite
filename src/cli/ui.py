@@ -87,10 +87,80 @@ else:
 
 def vite_header(subcommand: str = "", extra: str = "") -> str:
     """Renders a Vite-style brand banner."""
-    brand = f"{C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET} {C.DIM}v1.0.4{C.RESET}"
+    brand = f"{C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET} {C.DIM}v1.0.5{C.RESET}"
     tag = f" {C.GREEN}{subcommand}{C.RESET}" if subcommand else ""
     details = f"  {C.DIM}{extra}{C.RESET}" if extra else ""
     return f"\n  {brand}{tag}{details}\n"
+
+
+try:
+    import pyfiglet
+    HAS_PYFIGLET = True
+except ImportError:
+    pyfiglet = None  # type: ignore
+    HAS_PYFIGLET = False
+
+
+def big_header(subcommand: str = "", tagline: str = "The Django for AI & Machine Learning") -> str:
+    """Renders a Vite-inspired large title banner using pyfiglet (slant font)."""
+    lines: List[str] = []
+    lines.append("")
+
+    if HAS_PYFIGLET:
+        raw = pyfiglet.figlet_format("AIMLITE", font="basic").rstrip()
+        for line in raw.splitlines():
+            lines.append(f"  {C.BOLD}{C.BRIGHT_CYAN}{line}{C.RESET}")
+    else:
+        # Plain fallback if pyfiglet is not installed
+        lines.append(f"  {C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET}")
+
+    lines.append("")
+    lines.append(f"  {C.DIM}v1.0.5{C.RESET}  {C.BRIGHT_CYAN}❯{C.RESET}  {C.BOLD}{tagline}{C.RESET}")
+    if subcommand:
+        lines.append(f"  {C.GREEN}{subcommand}{C.RESET}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def prompt_package_search(
+    question: str = "Add extra packages",
+    hint: str = "(space-separated, or press Enter to skip)",
+    is_tty: Optional[bool] = None,
+) -> List[str]:
+    """Interactive prompt allowing user to type/search package names to add.
+
+    Returns:
+        List of package name strings entered by the user.
+    """
+    if is_tty is None:
+        is_tty = sys.stdin.isatty()
+    if not is_tty:
+        return []
+
+    if HAS_QUESTIONARY:
+        try:
+            answer = questionary.text(
+                f"{question}  {hint}",
+                default="",
+                style=VITE_STYLE,
+                qmark="+",
+            ).ask()
+            if answer is None:
+                return []
+            return [p.strip() for p in answer.split() if p.strip()]
+        except (KeyboardInterrupt, EOFError):
+            return []
+
+    # Fallback
+    prompt_str = (
+        f"  {C.GREEN}+{C.RESET} {C.BOLD}{question}{C.RESET} "
+        f"{C.DIM}{hint}{C.RESET} » "
+    )
+    try:
+        raw = input(prompt_str).strip()
+        return [p.strip() for p in raw.split() if p.strip()]
+    except (KeyboardInterrupt, EOFError):
+        return []
 
 
 def arrow(label: str, value: str, label_width: int = 14) -> str:

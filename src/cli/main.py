@@ -7,6 +7,7 @@ import sys
 from typing import List, Optional
 
 from cli.commands import (
+    run_benchmark,
     run_data_validate,
     run_doctor,
     run_evaluate,
@@ -17,7 +18,7 @@ from cli.commands import (
 )
 from cli.ui import C, vite_header
 
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 
 def print_custom_help() -> None:
@@ -33,7 +34,8 @@ def print_custom_help() -> None:
     print(f"    {C.GREEN}train{C.RESET} [class]               {C.DIM}Execute zero-path model training for specified class{C.RESET}")
     print(f"    {C.GREEN}evaluate{C.RESET} [class]            {C.DIM}Assess model performance against held-out splits{C.RESET}")
     print(f"    {C.GREEN}serve{C.RESET} [class] [options]     {C.DIM}Launch inference server & custom frontend{C.RESET}")
-    print(f"    {C.GREEN}doctor{C.RESET}                    {C.DIM}Inspect runtime, accelerators & directory permissions{C.RESET}\n")
+    print(f"    {C.GREEN}doctor{C.RESET}                    {C.DIM}Inspect runtime, accelerators & directory permissions{C.RESET}")
+    print(f"    {C.GREEN}benchmark{C.RESET} [script] [args]  {C.DIM}Run any script with project root on PYTHONPATH (no ModuleNotFoundError){C.RESET}\n")
 
     print(f"  {C.BOLD}Options:{C.RESET}")
     print(f"    {C.DIM}-v, --version{C.RESET}               {C.DIM}Display version number{C.RESET}")
@@ -155,6 +157,11 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     serve_parser.add_argument("--frontend", default=None, help="Custom frontend build directory (e.g. dist/, frontend/)")
 
+    # benchmark
+    benchmark_parser = subparsers.add_parser("benchmark")
+    benchmark_parser.add_argument("script", nargs="?", default=None, help="Path to the Python script to run (e.g. experiments/benchmark.py)")
+    benchmark_parser.add_argument("args", nargs="*", default=[], help="Extra arguments forwarded to the script")
+
     # doctor
     subparsers.add_parser("doctor")
 
@@ -232,6 +239,12 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "doctor":
         return run_doctor()
+
+    if args.command == "benchmark":
+        return run_benchmark(
+            script=getattr(args, "script", None),
+            args=getattr(args, "args", []),
+        )
 
     print_custom_help()
     return 1

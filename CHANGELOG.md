@@ -7,7 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.5] - 2026-09-23
+
+### Added
+- **`aimlite benchmark` command**:
+  - New `benchmark` subcommand that runs any Python script with the project root automatically injected into `PYTHONPATH`, eliminating `ModuleNotFoundError: No module named '<project>'` when running experiment or benchmark scripts directly.
+  - Auto-discovers the first script in `experiments/` when no path is supplied.
+  - Uses the project `.venv` Python automatically — no manual `source .venv/bin/activate` required.
+  - All extra arguments are forwarded to the target script unchanged.
+- **Pyfiglet ASCII art banner on `aimlite init`**:
+  - Replaced hand-drawn ASCII art with [`pyfiglet`](https://pypi.org/project/pyfiglet/) for a reliable, correctly-rendered large title banner.
+  - Font selectable; ships with the `basic` font by default. Falls back gracefully to plain text if `pyfiglet` is not installed.
+  - `pyfiglet>=1.0.4` added as an explicit project dependency.
+- **Interactive package search on `aimlite init`**:
+  - New `+` prompt after template/config selection lets users type extra packages (space-separated) to add to the project during initialization.
+  - Extra packages are merged into `aimlite.json` dependencies and installed if the user chooses immediate installation.
+
+### Changed
+- **`aimlite.json` as single dependency source of truth**:
+  - Removed `requirements.txt` generation from `aimlite init`. All project dependencies are now stored exclusively in `aimlite.json`.
+  - `aimlite install` reads from `aimlite.json` when no packages are specified (no `-r` flag needed).
+  - Next-steps hint updated from `aimlite install -r requirements.txt` → `aimlite install`.
+
+---
+
 ## [1.0.4] - 2026-09-23
+
 
 ### Added
 - **Vite-Inspired Modern Terminal UI (`questionary` & `rich`)**:
