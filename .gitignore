@@ -1,0 +1,66 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Temporary / Generated Test Projects
+ui_regression/
+test_ai/
+test_proj*/
+demo_*/
+empty_*
+target_val_*
+leak_test_*
+no_data_*
+my_custom_*
+interactive_named_proj/
+non_interactive_*/
+venv_init_proj/
+
+# Model Checkpoints & Artifacts
+models/*.pkl
+models/*.pt
+models/*.bin
+models/*.safetensors
+checkpoints/
+artifacts/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# Editor & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

@@ -520,7 +520,7 @@ class ModelB(Model):
         # Test --version
         res = subprocess.run([str(executable), "--version"], cwd=str(self.test_root), capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
-        self.assertIn("aimlite 1.0.3", res.stdout)
+        self.assertIn("aimlite 1.0.4", res.stdout)
 
         # Test doctor
         res = subprocess.run([str(executable), "doctor"], cwd=str(self.test_root), capture_output=True, text=True)
@@ -787,6 +787,37 @@ class ResumeModel(Model):
         # 4. Evaluate with explicit --checkpoint
         code_eval = cli_main(["evaluate", "ResumeModel", "--checkpoint", str(custom_ckpt_dir / "resume_model.pkl")])
         self.assertEqual(code_eval, 0)
+
+    def test_init_with_project_name_allows_template_selection(self):
+        """Tests that passing project_name to init allows interactive template selection."""
+        proj_name = "interactive_named_proj"
+        proj_dir = self.test_root / proj_name
+
+        with patch("cli.commands.init.prompt_select", return_value="fine-tuning") as mock_select, \
+             patch("cli.commands.init.prompt_confirm", return_value=False):
+            code = run_init(project_name=proj_name, target_dir=str(self.test_root), interactive=True)
+            self.assertEqual(code, 0)
+            self.assertTrue(mock_select.called, "Expected prompt_select to be called for template selection")
+            manifest = load_project_manifest(proj_dir)
+            self.assertEqual(manifest["template"], "fine-tuning")
+            self.assertTrue((proj_dir / proj_name / "adapter.py").is_file())
+
+    def test_init_non_interactive_rag_and_scratch(self):
+        """Tests non-interactive init across templates with -y flags."""
+        proj_rag = self.test_root / "non_interactive_rag"
+        code_rag = run_init(project_name="non_interactive_rag", target_dir=str(self.test_root), template_type="rag", interactive=False)
+        self.assertEqual(code_rag, 0)
+        manifest_rag = load_project_manifest(proj_rag)
+        self.assertEqual(manifest_rag["template"], "rag")
+        self.assertIn("openai", manifest_rag["dependencies"])
+        self.assertTrue((proj_rag / "non_interactive_rag" / "chat_provider.py").is_file())
+
+        proj_scratch = self.test_root / "non_interactive_scratch"
+        code_scratch = run_init(project_name="non_interactive_scratch", target_dir=str(self.test_root), template_type="scratch", interactive=False)
+        self.assertEqual(code_scratch, 0)
+        manifest_scratch = load_project_manifest(proj_scratch)
+        self.assertEqual(manifest_scratch["template"], "scratch")
+        self.assertEqual(manifest_scratch["dependencies"], [])
 
 
 if __name__ == "__main__":

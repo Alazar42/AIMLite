@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.4] - 2026-09-23
+
+### Added
+- **Vite-Inspired Modern Terminal UI (`questionary` & `rich`)**:
+  - Re-architected CLI project initialization and prompts after Vite (`create-vite`) and Clack.
+  - Interactive arrow-key navigation (`↑`/`↓`), cyan pointer indicators (`❯`), styled question marks (`?`), answered checkmarks (`✔`), and dimmed contextual guidance for templates and chat providers.
+  - Rich terminal status spinners during project filesystem generation.
+  - Added `--install` CLI flag to optionally install dependencies into `.venv` immediately upon project initialization.
+- **Root `.gitignore`**:
+  - Added comprehensive repository root `.gitignore` covering Python bytecode, virtual environments (`.venv`), distribution artifacts, model checkpoints (`*.pkl`), IDE configs, test caches, and temporary project workspaces.
+
+### Fixed
+- **Project Creation Freeze/Hang on ML Templates**:
+  - Fixed an issue where `aimlite init` would hang or appear frozen after selecting `rag` or `fine-tuning` templates due to silent background `pip` downloads of multi-gigabyte machine learning dependencies (`torch`, CUDA packages, `sentence-transformers`) in `capture_output=True`.
+  - Project creation is now instantaneous (< 50ms). Heavy dependency installation is deferred by default to `aimlite install -r requirements.txt`, or prompted interactively with live progress.
+- **Template Selection on `aimlite init <project_name>`**:
+  - Fixed an argument routing bug where passing a project name positional argument inadvertently flagged the command as non-interactive, skipping template selection and defaulting to `scratch`.
+  - Supplying a project name now confirms the name and opens the interactive template selection menu.
+- **Scratch Template Dependencies**:
+  - Corrected default scratch template dependencies to `[]` so that scratch projects start with zero external dependencies.
+
+---
+
 ## [1.0.3] - 2026-09-20
 
 ### Added

@@ -1,12 +1,15 @@
 [project]
 name = "aimlite"
-version = "1.0.3"
+version = "1.0.4"
 description = "The Django for AI & Machine Learning — zero-configuration, zero-path execution."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 authors = [{ name = "Mickyas Tesfaye", email = "alazartesfaye42@gmail.com" }, { name = "Beamlak Tadesse", email = "atocodes@gmail.com" }]
-dependencies = []
+dependencies = [
+    "questionary>=2.0.0",
+    "rich>=13.0.0",
+]
 
 [project.scripts]
 aimlite = "cli.main:main"

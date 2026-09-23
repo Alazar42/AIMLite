@@ -98,7 +98,7 @@ export default function Navbar({
 
         <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400">
           <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>v1.0.3</span>
+          <span>v1.0.4</span>
         </div>
       </div>
     </header>

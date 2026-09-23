@@ -9,7 +9,7 @@ import { X } from 'lucide-react';
 
 export default function App() {
   const [activeSectionId, setActiveSectionId] = useState<string>('pillar-data');
-  const [version, setVersion] = useState<string>('v1.0.3');
+  const [version, setVersion] = useState<string>('v1.0.4');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
   const [isMobileConsoleOpen, setIsMobileConsoleOpen] = useState<boolean>(false);

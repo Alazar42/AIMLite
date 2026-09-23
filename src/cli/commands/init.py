@@ -10,59 +10,35 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from cli.ui import C, check, cross, next_steps
+from cli.commands.install import run_install
+from cli.ui import (
+    C,
+    arrow,
+    check,
+    cross,
+    next_steps,
+    prompt_confirm,
+    prompt_select,
+    prompt_text,
+    status_spinner,
+    vite_header,
+)
 
 
 def _prompt_choice(question: str, options: List[Tuple[str, str]], default_idx: int = 0) -> str:
-    """Interactively prompts the user to select from a numbered list of options."""
-    if not sys.stdin.isatty():
-        return options[default_idx][0]
-
-    print(f"\n  {C.GREEN}?{C.RESET} {C.BOLD}{question}{C.RESET}")
-    for idx, (key, label) in enumerate(options, start=1):
-        indicator = f"{C.CYAN}{idx}){C.RESET}"
-        print(f"    {indicator} {label}")
-
-    prompt_str = f"  {C.DIM}Select option [1-{len(options)}] (default {default_idx + 1}):{C.RESET} » "
-    try:
-        raw = input(prompt_str).strip()
-        if not raw:
-            return options[default_idx][0]
-        choice_num = int(raw)
-        if 1 <= choice_num <= len(options):
-            return options[choice_num - 1][0]
-    except Exception:
-        pass
-    return options[default_idx][0]
+    """Interactively prompts the user to select from a list of options with Vite UI."""
+    default_val = options[default_idx][0] if options and 0 <= default_idx < len(options) else None
+    return prompt_select(question, options, default=default_val, is_tty=sys.stdin.isatty())
 
 
 def _prompt_text(question: str, default: str) -> str:
-    """Interactively prompts the user for text input with a default value."""
-    if not sys.stdin.isatty():
-        return default
-    print(f"\n  {C.GREEN}?{C.RESET} {C.BOLD}{question}{C.RESET} {C.DIM}(default: {default}){C.RESET}")
-    prompt_str = f"  {C.DIM}»{C.RESET} "
-    try:
-        raw = input(prompt_str).strip()
-        return raw or default
-    except Exception:
-        return default
+    """Interactively prompts the user for text input with Vite UI."""
+    return prompt_text(question, default=default, is_tty=sys.stdin.isatty())
 
 
 def _prompt_confirm(question: str, default: bool = True) -> bool:
-    """Interactively prompts for a yes/no confirmation."""
-    if not sys.stdin.isatty():
-        return default
-
-    yn = "Y/n" if default else "y/N"
-    prompt_str = f"  {C.GREEN}?{C.RESET} {C.BOLD}{question}{C.RESET} {C.DIM}({yn}):{C.RESET} » "
-    try:
-        raw = input(prompt_str).strip().lower()
-        if not raw:
-            return default
-        return raw in ("y", "yes", "true", "1")
-    except Exception:
-        return default
+    """Interactively prompts for a yes/no confirmation with Vite UI."""
+    return prompt_confirm(question, default=default, is_tty=sys.stdin.isatty())
 
 
 def run_init(
@@ -75,41 +51,45 @@ def run_init(
     embedding_engine: Optional[str] = None,
     model_name: Optional[str] = None,
     interactive: Optional[bool] = None,
+    install_deps: bool = False,
 ) -> int:
     """Initializes a new AIMLite project with paradigm selection and follow-up configs.
 
     Args:
         project_name: Project name. If None, prompts interactively when interactive is True.
         target_dir: Optional custom parent target directory.
-        create_venv: Whether to automatically create .venv and install aimlite.
+        create_venv: Whether to automatically create .venv.
         template_type: Preselected template ('rag', 'fine-tuning', 'scratch').
         chat_provider: Preselected chat provider ('openai', 'anthropic', 'gemini', 'ollama', 'local', 'mock').
         vector_db: Preselected vector store ('postgres', 'memory').
         embedding_engine: Preselected embedding ('sentence-transformers', 'api', 'tfidf').
         model_name: Preselected LLM model identifier.
         interactive: Whether to prompt for options if not passed.
+        install_deps: Whether to immediately install dependencies into .venv.
 
     Returns:
         Process exit code (0 for success).
     """
-    if interactive is None:
-        # Only prompt interactively if running in a terminal without a preselected name and template
-        interactive = sys.stdin.isatty() and project_name is None and template_type is None
+    if interactive is True:
+        is_tty = True
+    elif interactive is False:
+        is_tty = False
+    else:
+        is_tty = sys.stdin.isatty() and not (project_name is not None and template_type is not None)
 
-    is_tty = sys.stdin.isatty() and interactive
+    if is_tty:
+        print(vite_header("create project"))
 
     # 1. Project Name
     if not project_name:
         if is_tty:
-            try:
-                print(f"\n  {C.BOLD}{C.BRIGHT_CYAN}AIMLite{C.RESET} {C.DIM}create project{C.RESET}")
-                prompt_str = f"  {C.GREEN}?{C.RESET} {C.BOLD}Project name:{C.RESET} {C.DIM}»{C.RESET} "
-                prompted = input(prompt_str).strip()
-                project_name = prompted or "my_ai"
-            except (EOFError, KeyboardInterrupt):
+            project_name = prompt_text("Project name", default="my_ai", is_tty=is_tty)
+            if not project_name:
                 project_name = "my_ai"
         else:
             project_name = "my_ai"
+    elif is_tty:
+        print(f"  {check('Project name', project_name)}")
 
     # Resolve target directory
     if target_dir:
@@ -124,15 +104,19 @@ def run_init(
 
     # 2. System Paradigm / Template Selection
     if not template_type and is_tty:
-        template_type = _prompt_choice(
-            "Choose a system paradigm to start with:",
+        template_type = prompt_select(
+            "Select a system paradigm template:",
             [
-                ("rag", "RAG & Knowledge Base (Semantic Search, Grounded LLM Chat, Smart Chunking)"),
-                ("fine-tuning", "Fine-Tuning & Adapters (LoRA & PEFT Low-Rank Parameter Adaptation)"),
-                ("scratch", "Custom / Scratch ML (Tabular, Supervised, Deep Learning & Classification)"),
+                ("rag", "RAG & Knowledge Base      (Semantic search, grounded LLM synthesis, smart chunking)"),
+                ("fine-tuning", "Fine-Tuning & Adapters    (LoRA & PEFT low-rank parameter adaptation)"),
+                ("scratch", "Custom / Scratch ML       (Tabular, supervised, deep learning & classification)"),
             ],
-            default_idx=0,
+            default="rag",
+            is_tty=is_tty,
         )
+    elif is_tty and template_type:
+        print(f"  {check('Template', template_type)}")
+
     template_type = (template_type or "scratch").lower()
     if template_type in ("adapter", "peft", "lora"):
         template_type = "fine-tuning"
@@ -143,17 +127,18 @@ def run_init(
     # 3. Follow-up configs for RAG
     if template_type == "rag":
         if is_tty and not chat_provider:
-            chat_provider = _prompt_choice(
+            chat_provider = prompt_select(
                 "Select Chat Provider for LLM synthesis:",
                 [
-                    ("openai", "OpenAI (GPT-4o, GPT-4o-mini, o1, o3)"),
-                    ("gemini", "Google Gemini (gemini-1.5-flash, gemini-1.5-pro, gemini-2.0)"),
+                    ("openai", "OpenAI          (GPT-4o, GPT-4o-mini, o1, o3)"),
+                    ("gemini", "Google Gemini   (gemini-1.5-flash, gemini-1.5-pro, gemini-2.0)"),
                     ("anthropic", "Anthropic Claude (claude-3-5-sonnet, claude-3-opus)"),
-                    ("ollama", "Ollama Local (llama3.2, mistral, deepseek-r1, gemma)"),
-                    ("local", "Local Hugging Face Pipeline or Custom Python Callable"),
-                    ("mock", "Mock / Baseline Provider (Zero external dependencies)"),
+                    ("ollama", "Ollama Local    (llama3.2, mistral, deepseek-r1, gemma)"),
+                    ("local", "Local Pipeline  (Hugging Face pipeline or custom callable)"),
+                    ("mock", "Mock Provider   (Zero external dependencies or API keys)"),
                 ],
-                default_idx=0,
+                default="openai",
+                is_tty=is_tty,
             )
         chat_provider = (chat_provider or "openai").lower()
 
@@ -168,30 +153,32 @@ def run_init(
         }.get(chat_provider, "gpt-4o-mini")
 
         if is_tty and not model_name:
-            model_name = _prompt_text(f"Specify model identifier for {chat_provider.upper()}:", default=default_model)
+            model_name = prompt_text(f"Model identifier for {chat_provider.upper()}", default=default_model, is_tty=is_tty)
         else:
             model_name = model_name or default_model
 
         if is_tty and not vector_db:
-            vector_db = _prompt_choice(
+            vector_db = prompt_select(
                 "Select Vector Database backend:",
                 [
                     ("memory", "In-Memory & JSON Serialized (MemoryVectorStore - zero external DB)"),
-                    ("postgres", "PostgreSQL with pgvector (PostgresVectorStore & SQL ORM)"),
+                    ("postgres", "PostgreSQL with pgvector     (PostgresVectorStore & SQL ORM)"),
                 ],
-                default_idx=0,
+                default="memory",
+                is_tty=is_tty,
             )
         vector_db = (vector_db or "memory").lower()
 
         if is_tty and not embedding_engine:
-            embedding_engine = _prompt_choice(
+            embedding_engine = prompt_select(
                 "Select Embedding Engine:",
                 [
                     ("sentence-transformers", "Dense Neural Vectors (SentenceTransformers - all-MiniLM-L6-v2)"),
                     ("api", "Chat Provider Native API Embeddings"),
                     ("tfidf", "Pure-Python Hash TF-IDF (Fast baseline, zero dependencies)"),
                 ],
-                default_idx=0,
+                default="sentence-transformers",
+                is_tty=is_tty,
             )
         embedding_engine = (embedding_engine or "sentence-transformers").lower()
 
@@ -199,8 +186,8 @@ def run_init(
             "text-embedding-3-small" if chat_provider == "openai" else ("nomic-embed-text" if chat_provider == "ollama" else "tfidf")
         )
 
-        enable_hyde = _prompt_confirm("Enable Query Intelligence (Intent decomposition, expansion & HyDE)?", default=True) if is_tty else True
-        enable_smart_chunker = _prompt_confirm("Enable Structure-Aware Smart Chunker (Markdown heading hierarchy)?", default=True) if is_tty else True
+        enable_hyde = True
+        enable_smart_chunker = True
 
         rag_config = {
             "chat_provider": chat_provider,
@@ -258,7 +245,7 @@ def run_init(
         dependencies.extend(["torch", "transformers", "peft", "datasets", "numpy"])
 
     elif template_type == "scratch":
-        dependencies.extend(["numpy"])
+        dependencies = []
 
     # Ensure unique ordered dependencies
     seen = set()
@@ -306,17 +293,32 @@ def run_init(
 
     print(f"\n  {C.DIM}Scaffolding {template_type.upper()} project in{C.RESET} {dest_root}...")
 
-    # 7. Create .venv, install aimlite and dependencies
+    # 7. Create .venv environment structure
     if create_venv:
-        _setup_project_venv(dest_root, dependencies)
+        _setup_project_venv(dest_root)
 
-    # 8. Print next steps
+    # 8. Dependency installation choice (Vite style: defer by default, or install if requested)
+    should_install = install_deps
+    if not should_install and is_tty and dependencies:
+        should_install = prompt_confirm(
+            "Install dependencies into .venv now?",
+            default=False,
+            is_tty=is_tty,
+        )
+
+    if should_install and dependencies:
+        print(f"\n  {C.DIM}Installing project dependencies into .venv...{C.RESET}")
+        run_install(packages=[], requirement_file=str(req_file), project_root=dest_root)
+
+    # 9. Print next steps
     steps = []
     if dest_root != Path.cwd():
         steps.append(f"cd {project_name}")
 
+    if not should_install and dependencies:
+        steps.append("aimlite install -r requirements.txt")
+
     steps.extend([
-        "aimlite install -r requirements.txt",
         "aimlite train",
         "python client.py",
         "aimlite serve --port 8000",
@@ -327,7 +329,7 @@ def run_init(
 
 
 def _setup_project_venv(dest_root: Path, dependencies: Optional[List[str]] = None) -> bool:
-    """Creates an isolated virtual environment (.venv) and auto-installs requirements."""
+    """Creates an isolated virtual environment (.venv) quickly without blocking."""
     venv_dir = dest_root / ".venv"
     uv_bin = shutil.which("uv")
 
@@ -359,52 +361,33 @@ def _setup_project_venv(dest_root: Path, dependencies: Optional[List[str]] = Non
         return False
 
     installed = False
-    if uv_bin:
-        res = subprocess.run([uv_bin, "pip", "install", "--python", str(venv_python), "aimlite"], cwd=str(dest_root), capture_output=True)
-        if res.returncode == 0:
-            installed = True
+    dist_dir = Path(__file__).resolve().parents[3] / "dist"
+    wheels = list(dist_dir.glob("aimlite-*.whl")) if dist_dir.is_dir() else []
+    if wheels:
+        latest_wheel = sorted(wheels)[-1]
+        if uv_bin:
+            res = subprocess.run([uv_bin, "pip", "install", "--python", str(venv_python), str(latest_wheel)], cwd=str(dest_root), capture_output=True)
+            if res.returncode == 0:
+                installed = True
+        if not installed:
+            res = subprocess.run([str(venv_python), "-m", "pip", "install", str(latest_wheel)], cwd=str(dest_root), capture_output=True)
+            if res.returncode == 0:
+                installed = True
 
     if not installed:
-        res = subprocess.run([str(venv_python), "-m", "pip", "install", "aimlite"], cwd=str(dest_root), capture_output=True)
-        if res.returncode == 0:
-            installed = True
-
-    if not installed:
-        dist_dir = Path(__file__).resolve().parents[3] / "dist"
-        wheels = list(dist_dir.glob("aimlite-*.whl")) if dist_dir.is_dir() else []
-        if wheels:
-            latest_wheel = sorted(wheels)[-1]
-            if uv_bin:
-                res = subprocess.run([uv_bin, "pip", "install", "--python", str(venv_python), str(latest_wheel)], cwd=str(dest_root), capture_output=True)
+        if uv_bin:
+            try:
+                res = subprocess.run([uv_bin, "pip", "install", "--python", str(venv_python), "aimlite"], cwd=str(dest_root), capture_output=True, timeout=5)
                 if res.returncode == 0:
                     installed = True
-            if not installed:
-                res = subprocess.run([str(venv_python), "-m", "pip", "install", str(latest_wheel)], cwd=str(dest_root), capture_output=True)
-                if res.returncode == 0:
-                    installed = True
+            except Exception:
+                pass
 
     if installed:
         print(f"  {check('Installed aimlite into .venv.')}")
 
-    # Auto-install project requirements from requirements.txt
-    req_file = dest_root / "requirements.txt"
-    if req_file.is_file() and req_file.stat().st_size > 0:
-        req_installed = False
-        if uv_bin:
-            res = subprocess.run([uv_bin, "pip", "install", "--python", str(venv_python), "-r", str(req_file)], cwd=str(dest_root), capture_output=True)
-            if res.returncode == 0:
-                req_installed = True
-        if not req_installed:
-            res = subprocess.run([str(venv_python), "-m", "pip", "install", "-r", str(req_file)], cwd=str(dest_root), capture_output=True)
-            if res.returncode == 0:
-                req_installed = True
-
-        if req_installed:
-            print(f"  {check('Installed dependencies from requirements.txt into .venv.')}")
-        else:
-            print(f"  {C.DIM}Run 'aimlite install -r requirements.txt' to install project dependencies.{C.RESET}")
-
     return True
+
 
 
 def _scaffold_paradigm_files(

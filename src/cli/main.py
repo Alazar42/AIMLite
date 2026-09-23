@@ -17,7 +17,7 @@ from cli.commands import (
 )
 from cli.ui import C, vite_header
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 
 
 def print_custom_help() -> None:
@@ -66,6 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser = subparsers.add_parser("init")
     init_parser.add_argument("name", nargs="?", default=None)
     init_parser.add_argument("--no-venv", action="store_true", help="Skip creating .venv and installing aimlite")
+    init_parser.add_argument("--install", action="store_true", help="Immediately install project dependencies into .venv")
     init_parser.add_argument(
         "--type",
         "--template",
@@ -182,7 +183,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     if args.command == "init":
-        interactive_flag = False if getattr(args, "non_interactive", False) else (True if args.name is None else None)
+        is_non_interactive = getattr(args, "non_interactive", False)
+        interactive_flag = False if is_non_interactive else sys.stdin.isatty()
         return run_init(
             project_name=args.name,
             create_venv=not getattr(args, "no_venv", False),
@@ -192,6 +194,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             embedding_engine=getattr(args, "embedding_engine", None),
             model_name=getattr(args, "model_name", None),
             interactive=interactive_flag,
+            install_deps=getattr(args, "install", False),
         )
 
     if args.command == "install":
