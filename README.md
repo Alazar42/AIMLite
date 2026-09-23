@@ -209,6 +209,7 @@ AIMLite provides zero-path convention-over-configuration commands:
 | `aimlite evaluate [ModelName] [--checkpoint <path>]` | Loads the model's checkpoint and calculates benchmark metrics on test partitions. Discovers latest checkpoint automatically or loads an explicit past checkpoint with `--checkpoint`. |
 | `aimlite serve [ModelName] [--checkpoint <path>] [--port 8000] [--frontend <dir>]` | Starts an HTTP inference server exposing `POST /predict`, `GET /health`, `GET /docs`, custom routes, and optional static frontend hosting. Supports loading a specific past checkpoint with `--checkpoint`. |
 | `aimlite doctor` | Diagnoses runtime health, virtual environment, hardware accelerator availability (`cuda`, `mps`, `cpu`), and directory permissions. |
+| `aimlite benchmark [script] [args...]` | Runs any Python script with the project root automatically injected into `PYTHONPATH`. Eliminates `ModuleNotFoundError` when running experiment or benchmark scripts. Uses the project `.venv` Python automatically. Auto-discovers scripts in `experiments/` when no path is given. |
 
 ---
 

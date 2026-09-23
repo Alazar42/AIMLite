@@ -63,7 +63,7 @@ aimlite evaluate
 python client.py
 
 # 6. Run benchmark
-python experiments/benchmark.py
+aimlite benchmark
 
 # 7. Serve HTTP API
 aimlite serve --port 8000

@@ -1097,7 +1097,7 @@ aimlite train
 python client.py
 
 # 5. Run retrieval benchmark
-python experiments/benchmark.py
+aimlite benchmark
 
 # 6. Serve HTTP API
 aimlite serve --port 8000
@@ -1455,7 +1455,7 @@ aimlite evaluate
 python client.py
 
 # 6. Run benchmark
-python experiments/benchmark.py
+aimlite benchmark
 
 # 7. Serve HTTP API
 aimlite serve --port 8000
@@ -1670,7 +1670,7 @@ aimlite evaluate
 python client.py
 
 # 6. Run benchmark
-python experiments/benchmark.py
+aimlite benchmark
 
 # 7. Serve HTTP API
 aimlite serve --port 8000
