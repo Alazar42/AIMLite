@@ -77,7 +77,7 @@ def run_init(
     elif interactive is False:
         is_tty = False
     else:
-        is_tty = sys.stdin.isatty() and not (project_name is not None and template_type is not None)
+        is_tty = sys.stdin.isatty() and (project_name is None or template_type is not None)
 
     if is_tty:
         print(big_header("create project"))
@@ -445,7 +445,7 @@ class Config(BaseConfig):
 
 
 def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_config: Dict[str, Any]) -> None:
-    """Generates RAG & Knowledge Model files with modular chat provider and storage starters."""
+    """Generates RAG & Knowledge Model files with modular chat provider, storage, and developer-editable hooks."""
     chat_p = rag_config.get("chat_provider", "openai")
     model_name = rag_config.get("model_name", "gpt-4o-mini")
     vector_db = rag_config.get("vector_db", "memory")
@@ -456,10 +456,11 @@ def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_con
     chat_provider_py = f'''"""Chat Provider & Query Intelligence: chat_provider.py
 
 Starter code for configuring LLM synthesis, system prompts, and query analysis (HyDE, intent decomposition, expansion).
+All classes, functions, and prompt templates in this file are fully editable by the developer.
 """
 
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from aimlite.rag import (
     AnthropicChatProvider,
     BaseChatProvider,
@@ -475,6 +476,29 @@ from aimlite.rag import (
     PROMPT_SMART_CHUNKER,
 )
 
+# =====================================================================
+# Developer-Editable Prompt Templates
+# =====================================================================
+
+SYSTEM_PROMPT = """You are a knowledgeable, factual, and helpful AI assistant.
+Answer the user's query strictly based on the provided context passages.
+- Cite your sources by referring to the document ID or source name (e.g. [1], [Source: filename]).
+- If the context does not contain sufficient information to answer truthfully, state clearly that the answer is not available in the provided documents.
+- Do not fabricate facts or hallucinate citations.
+"""
+
+QA_PROMPT_TEMPLATE = """Context Passages:
+{{context}}
+
+User Question:
+{{query}}
+
+Answer:"""
+
+
+# =====================================================================
+# Chat Provider Factory
+# =====================================================================
 
 def get_chat_provider(
     provider_name: str = "{chat_p}",
@@ -483,8 +507,12 @@ def get_chat_provider(
     temperature: float = 0.7,
     **kwargs: Any,
 ) -> BaseChatProvider:
-    """Instantiates and returns the configured LLM Chat Provider reading models and endpoints from environment."""
-    prompt = system_prompt or PROMPT_RAG_QA
+    """Instantiates and returns the configured LLM Chat Provider.
+    
+    Edit this function to add custom LLM providers, change default models,
+    or adjust generation parameters.
+    """
+    prompt = system_prompt or SYSTEM_PROMPT
 
     if provider_name == "openai":
         return OpenAIChatProvider(
@@ -529,13 +557,25 @@ def get_chat_provider(
         )
 
 
+# =====================================================================
+# Query Analyzer & Intelligence
+# =====================================================================
+
 def get_query_analyzer(
     chat_provider: Optional[BaseChatProvider] = None,
     enable_hyde: bool = True,
+    system_prompt: Optional[str] = None,
 ) -> QueryAnalyzer:
-    """Configures Query Intelligence for intent parsing, expansion, and hypothetical document generation."""
+    """Configures Query Intelligence for intent parsing, expansion, and hypothetical document generation (HyDE).
+    
+    Edit this function to customize the query analyzer or adjust query expansion behaviour.
+    """
     provider = chat_provider or get_chat_provider()
-    return QueryAnalyzer(chat_provider=provider, enable_hyde=enable_hyde)
+    return QueryAnalyzer(
+        chat_provider=provider,
+        enable_hyde=enable_hyde,
+        system_prompt=system_prompt or PROMPT_QUERY_ANALYZER,
+    )
 '''
     (package_dir / "chat_provider.py").write_text(chat_provider_py, encoding="utf-8")
 
@@ -543,10 +583,12 @@ def get_query_analyzer(
     store_py = f'''"""Vector Store & Database Storage: store.py
 
 Starter code for semantic vector storage, embeddings, and PostgreSQL ORM records.
+All functions and classes in this file are fully editable by the developer.
 """
 
 import os
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 from aimlite.rag import (
     APIEmbedding,
     BaseEmbedding,
@@ -561,33 +603,50 @@ from aimlite.rag import (
 )
 
 
+# =====================================================================
+# Embedding Model Factory
+# =====================================================================
+
 def get_embedding_model(
     engine: Optional[str] = None,
     model_name: Optional[str] = None,
+    **kwargs: Any,
 ) -> BaseEmbedding:
-    """Instantiates embedding model (Dense Neural, Ollama API, OpenAI API, or Pure-Python TF-IDF)."""
+    """Instantiates embedding model (Dense Neural, Ollama API, OpenAI API, or Pure-Python TF-IDF).
+    
+    Edit this function to plug in custom embedding models (e.g. HuggingFace, Cohere, OpenAI).
+    """
     resolved_engine = (engine or os.environ.get("EMBEDDING_ENGINE") or "{embed_engine}").lower()
     resolved_model = model_name or os.environ.get("EMBEDDING_MODEL", "{embed_model}")
     ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 
     if resolved_engine == "ollama" or "nomic" in resolved_model.lower():
-        return OllamaEmbedding(model=resolved_model, host=ollama_host)
+        return OllamaEmbedding(model=resolved_model, host=ollama_host, **kwargs)
     elif resolved_engine == "openai":
-        return APIEmbedding(provider="openai", model=resolved_model)
+        return APIEmbedding(provider="openai", model=resolved_model, **kwargs)
     elif resolved_engine in ("sentence-transformers", "local"):
-        return SentenceTransformerEmbedding(model_name_or_path=resolved_model)
+        return SentenceTransformerEmbedding(model_name_or_path=resolved_model, **kwargs)
     elif resolved_engine == "tfidf":
-        return TfidfEmbedding()
-    return SentenceTransformerEmbedding(model_name_or_path=resolved_model)
+        return TfidfEmbedding(**kwargs)
+    return SentenceTransformerEmbedding(model_name_or_path=resolved_model, **kwargs)
 
+
+# =====================================================================
+# Vector Store Factory
+# =====================================================================
 
 def get_vector_store(
     backend: Optional[str] = None,
     embedding_fn: Optional[BaseEmbedding] = None,
     db_url: Optional[str] = None,
+    table_name: str = "aimlite_knowledge_chunks",
     **kwargs: Any,
 ) -> BaseVectorStore:
-    """Instantiates vector storage backend (PostgreSQL pgvector ORM or MemoryVectorStore)."""
+    """Instantiates vector storage backend (PostgreSQL pgvector ORM or MemoryVectorStore).
+    
+    Edit this function to configure connection pooling, custom vector tables,
+    or connect third-party vector databases (e.g. Chroma, Qdrant, Pinecone).
+    """
     resolved_backend = (backend or os.environ.get("VECTOR_STORE") or "{vector_db}").lower()
     resolved_db = db_url or os.environ.get("DATABASE_URL")
     embed_fn = embedding_fn or get_embedding_model()
@@ -596,6 +655,7 @@ def get_vector_store(
         return PostgresVectorStore(
             db_url=resolved_db,
             embedding_fn=embed_fn,
+            table_name=table_name,
             **kwargs,
         )
     return MemoryVectorStore(
@@ -606,7 +666,11 @@ def get_vector_store(
     (package_dir / "store.py").write_text(store_py, encoding="utf-8")
 
     # 3. Data & Chunking: data.py
-    data_py = '''"""Document & Knowledge QA (RAG Paradigm): data.py"""
+    data_py = '''"""Document & Knowledge QA (RAG Paradigm): data.py
+
+Ingests documentation articles, datasets, and custom user files into chunked passages.
+All classes and functions in this file are fully editable by the developer.
+"""
 
 import json
 from pathlib import Path
@@ -640,6 +704,10 @@ class KnowledgeDocsDataset(Dataset):
             meta["title"] = title
         self.additional_documents.append(Document(content=content, metadata=meta))
 
+    def parse_custom_file(self, file_path: Path) -> List[Document]:
+        """Hook for developers to implement custom file format parsing (e.g. PDF, DOCX, XML)."""
+        return DocumentLoader.load_file(file_path)
+
     def load(self, **kwargs: Any) -> List[Dict[str, Any]]:
         docs = self.load_documents()
         return [doc.to_dict() for doc in docs]
@@ -652,12 +720,12 @@ class KnowledgeDocsDataset(Dataset):
         valid_extensions = {".md", ".txt", ".markdown", ".rst", ".json", ".csv"}
 
         if data_target.is_file():
-            raw_documents.extend(DocumentLoader.load_file(data_target))
+            raw_documents.extend(self.parse_custom_file(data_target))
         elif data_target.is_dir():
             for p in sorted(data_target.rglob("*")):
                 if p.is_file() and p.suffix.lower() in valid_extensions and not p.name.startswith("."):
                     try:
-                        raw_documents.extend(DocumentLoader.load_file(p))
+                        raw_documents.extend(self.parse_custom_file(p))
                     except Exception:
                         continue
 
@@ -672,18 +740,24 @@ class KnowledgeDocsDataset(Dataset):
     (package_dir / "data.py").write_text(data_py, encoding="utf-8")
 
     # 4. Model Architecture: model.py
-    model_py = f'''"""Document & Knowledge QA (RAG Paradigm): model.py"""
+    model_py = f'''"""Document & Knowledge QA (RAG Paradigm): model.py
 
-from typing import Any, Dict, Optional
+Enterprise Knowledge Base Model with Query Intelligence, Smart Chunking, and Grounded Chat.
+All methods and hooks in this model are fully editable and overrideable by the developer.
+"""
+
+from typing import Any, Dict, List, Optional
 from aimlite.rag import (
     BaseChatProvider,
     BaseEmbedding,
+    BaseRetriever,
     BaseVectorStore,
+    Document,
     KnowledgeModel,
     QueryAnalyzer,
     SmartChunker,
 )
-from {project_name}.chat_provider import get_chat_provider, get_query_analyzer
+from {project_name}.chat_provider import SYSTEM_PROMPT, QA_PROMPT_TEMPLATE, get_chat_provider, get_query_analyzer
 from {project_name}.store import get_embedding_model, get_vector_store
 
 
@@ -699,8 +773,11 @@ class SupportDocRAG(KnowledgeModel):
         vector_store: Optional[BaseVectorStore] = None,
         embedding_fn: Optional[BaseEmbedding] = None,
         query_analyzer: Optional[QueryAnalyzer] = None,
+        retriever: Optional[BaseRetriever] = None,
         chunk_size: int = 400,
         chunk_overlap: int = 40,
+        system_prompt: Optional[str] = None,
+        prompt_template: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         provider = chat_provider or get_chat_provider()
@@ -719,42 +796,136 @@ class SupportDocRAG(KnowledgeModel):
             vector_store=store,
             chunker=chunker,
             query_analyzer=analyzer,
+            retriever=retriever,
+            system_prompt=system_prompt or SYSTEM_PROMPT,
+            prompt_template=prompt_template or QA_PROMPT_TEMPLATE,
             top_k=top_k,
             **kwargs,
         )
+
+    # =====================================================================
+    # Developer Extension Hooks (Override any of these as needed)
+    # =====================================================================
+
+    def preprocess_query(self, query: str) -> str:
+        """Hook to rewrite, normalize, or expand queries before retrieval.
+        
+        Example:
+            cleaned = query.strip()
+            # perform query expansions, spell checks, or acronym resolution
+            return cleaned
+        """
+        return super().preprocess_query(query)
+
+    def rerank(self, query: str, documents: List[Document]) -> List[Document]:
+        """Hook to rerank, filter, or reorder retrieved passages before prompt synthesis.
+        
+        Example:
+            # plug in a cross-encoder or threshold filter:
+            # return [d for d in documents if (d.score or 0) > 0.4]
+        """
+        return super().rerank(query, documents)
+
+    def synthesize(
+        self,
+        query: str,
+        context_docs: List[Document],
+        system_prompt: Optional[str] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Hook to customize prompt formatting or answer synthesis.
+        
+        Override this to implement streaming, custom LLM templates, or multi-turn history.
+        """
+        return super().synthesize(query, context_docs, system_prompt=system_prompt, **kwargs)
+
+    def postprocess_answer(self, answer: str, context_docs: List[Document]) -> str:
+        """Hook to post-process, validate, or enrich the generated response string.
+        
+        Example:
+            # append disclaimer or format citations:
+            return answer
+        """
+        return super().postprocess_answer(answer, context_docs)
 '''
     (package_dir / "model.py").write_text(model_py, encoding="utf-8")
 
     # 5. Trainer, Evaluator, Inference
-    trainer_py = '''"""Document & Knowledge QA (RAG Paradigm): trainer.py"""
+    trainer_py = '''"""Document & Knowledge QA (RAG Paradigm): trainer.py
 
-from aimlite.rag import RAGTrainer
+Trainer orchestrator building and persisting the semantic vector index.
+All methods and hooks in this file are fully editable by the developer.
+"""
+
+from pathlib import Path
+from typing import Any, Dict, List
+from aimlite import Dataset, Model
+from aimlite.rag import Document, RAGTrainer
 
 
 class IndexBuilderTrainer(RAGTrainer):
     """Trainer orchestrator building and persisting the semantic vector index."""
-    pass
+
+    def before_index(self, documents: List[Document]) -> List[Document]:
+        """Hook called before indexing to allow document filtering or metadata enrichment."""
+        return documents
+
+    def after_index(self, model: Model, index_path: Path, count: int) -> None:
+        """Hook called after index persistence for notifications, caching, or logging."""
+        pass
 '''
     (package_dir / "trainer.py").write_text(trainer_py, encoding="utf-8")
 
-    evaluator_py = '''"""Document & Knowledge QA (RAG Paradigm): evaluator.py"""
+    evaluator_py = '''"""Document & Knowledge QA (RAG Paradigm): evaluator.py
 
-from typing import Any, Dict
+Evaluates knowledge retrieval coverage, grounded answer synthesis, and latency.
+All methods in this file are fully editable by the developer.
+"""
+
+import time
+from typing import Any, Dict, List, Optional
 from aimlite import BaseEvaluator, Model
 
 
 class RAGEvaluator(BaseEvaluator):
     """Evaluates knowledge retrieval coverage and grounded answer synthesis."""
 
-    def evaluate(self, model: Model, test_data: Any, **kwargs: Any) -> Dict[str, Any]:
+    def evaluate(self, model: Model, test_data: Any = None, **kwargs: Any) -> Dict[str, Any]:
+        """Runs evaluation queries against the model and returns performance metrics."""
+        test_queries: List[str] = test_data if isinstance(test_data, list) else [
+            "What is AIMLite?",
+            "How do authentication and session expiration work?",
+            "How to switch vector storage to PostgreSQL?",
+        ]
+
+        latencies = []
+        retrieved_counts = []
+
+        for q in test_queries:
+            t0 = time.perf_counter()
+            res = model.predict(q)
+            latencies.append((time.perf_counter() - t0) * 1000)
+            sources = res.get("sources", [])
+            retrieved_counts.append(len(sources))
+
+        avg_latency = sum(latencies) / len(latencies) if latencies else 0.0
+        avg_chunks = sum(retrieved_counts) / len(retrieved_counts) if retrieved_counts else 0.0
+
         return {
-            "retrieval_status": "ready",
             "model_name": getattr(model, "name", "rag_model"),
+            "evaluated_queries": len(test_queries),
+            "avg_latency_ms": round(avg_latency, 2),
+            "avg_retrieved_chunks": round(avg_chunks, 1),
+            "status": "ready",
         }
 '''
     (package_dir / "evaluator.py").write_text(evaluator_py, encoding="utf-8")
 
-    inference_py = '''"""Document & Knowledge QA (RAG Paradigm): inference.py"""
+    inference_py = '''"""Document & Knowledge QA (RAG Paradigm): inference.py
+
+Production inference endpoint for semantic knowledge retrieval and answer synthesis.
+All routes and handlers in this file are fully editable by the developer.
+"""
 
 from pathlib import Path
 from typing import Any, Dict
@@ -769,6 +940,7 @@ class RAGInference(BaseInference):
         self.index_path = Path("artifacts") / "rag_index.json"
 
     def run(self, model: Model, raw_input: Any, **kwargs: Any) -> Dict[str, Any]:
+        """Handles full RAG prediction requests (retrieval + synthesis)."""
         if self.index_path.is_file():
             model.load(self.index_path)
 
@@ -776,15 +948,41 @@ class RAGInference(BaseInference):
         if not query:
             return {"error": "Missing 'query' field in request body", "status": "failed"}
 
-        result = model.predict(query)
+        top_k = raw_input.get("top_k") if isinstance(raw_input, dict) else None
+        result = model.predict(query, top_k=top_k) if top_k else model.predict(query)
         return {
             **result,
             "status": "success",
         }
 
+    def search_only(self, model: Model, raw_input: Any, **kwargs: Any) -> Dict[str, Any]:
+        """Custom route for semantic retrieval search without triggering LLM answer synthesis."""
+        if self.index_path.is_file():
+            model.load(self.index_path)
+
+        query = raw_input.get("query", "") if isinstance(raw_input, dict) else str(raw_input)
+        top_k = raw_input.get("top_k", 5) if isinstance(raw_input, dict) else 5
+
+        if hasattr(model, "search"):
+            results = model.search(query, top_k=top_k)
+        elif hasattr(model, "retrieve"):
+            docs = model.retrieve(query, top_k=top_k)
+            results = [doc.to_dict() for doc in docs]
+        else:
+            results = []
+
+        return {
+            "query": query,
+            "results": results,
+            "count": len(results),
+            "status": "success",
+        }
+
     def get_routes(self) -> Dict[str, Any]:
+        """Defines HTTP route mapping for AIMLite serve server."""
         return {
             "POST /predict": self.run,
+            "POST /search": self.search_only,
             "GET /health": self.health,
         }
 '''
@@ -822,7 +1020,10 @@ Edit `chat_provider.py` to change prompt templates or pass custom instructions d
     (dest_root / "data" / "faq.md").write_text(faq_md, encoding="utf-8")
 
     # 7. Experiments benchmark starter script
-    benchmark_py = f'''"""Benchmark and evaluation experiment script for {project_name} RAG Knowledge Base."""
+    benchmark_py = f'''"""Benchmark and evaluation experiment script for {project_name} RAG Knowledge Base.
+
+All test queries and benchmark logic in this file are fully editable by the developer.
+"""
 
 import time
 from {project_name}.data import KnowledgeDocsDataset

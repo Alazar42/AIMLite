@@ -706,10 +706,11 @@ class MockChatProvider(BaseChatProvider):
         model: str = "mock-gpt",
         system_prompt: Optional[str] = None,
         custom_responder: Optional[Callable[[str, Optional[str]], str]] = None,
+        fixed_response: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(model=model, system_prompt=system_prompt, **kwargs)
-        self.custom_responder = custom_responder
+        self.custom_responder = custom_responder or ((lambda p, s: fixed_response) if fixed_response else None)
         self.call_history: List[Dict[str, Any]] = []
 
     def generate(
@@ -1670,6 +1671,8 @@ class RAGModel(Model):
 
     Extends AIMLite's core Model to enable seamless integration with the
     AIMLite lifecycle: predict(), save(), load(), get_dataset(), and CLI serve/train.
+    Provides modular, overrideable hooks for query preprocessing, retrieval, reranking,
+    prompt synthesis, and answer postprocessing.
     """
 
     retriever: Optional[BaseRetriever] = None
@@ -1689,6 +1692,8 @@ class RAGModel(Model):
         query_analyzer: Optional[QueryAnalyzer] = None,
         generator_fn: Optional[Callable[[str, List[Document]], str]] = None,
         system_prompt: Optional[str] = None,
+        prompt_template: Optional[str] = None,
+        top_k: int = 4,
         **kwargs: Any,
     ) -> None:
         super().__init__(name=name, config=config, **kwargs)
@@ -1697,6 +1702,23 @@ class RAGModel(Model):
         self.query_analyzer = query_analyzer
         self.generator_fn = generator_fn
         self.system_prompt = system_prompt or PROMPT_RAG_QA
+        self.prompt_template = prompt_template
+        self.top_k = top_k
+
+    def preprocess_query(self, query: str) -> str:
+        """Hook for developers to rewrite, normalize, or expand user queries before retrieval."""
+        return query.strip()
+
+    def retrieve(self, query: str, top_k: Optional[int] = None, filters: Optional[Dict[str, Any]] = None) -> List[Document]:
+        """Hook for retrieving candidate documents for a given query."""
+        if self.retriever is not None:
+            k = top_k if top_k is not None else self.top_k
+            return self.retriever.retrieve(query, top_k=k, filters=filters)
+        return []
+
+    def rerank(self, query: str, documents: List[Document]) -> List[Document]:
+        """Hook for developers to rerank, filter, or reorder retrieved passages."""
+        return documents
 
     def build_context(self, documents: List[Document]) -> str:
         """Formats retrieved documents into a consolidated context string with citations."""
@@ -1707,47 +1729,96 @@ class RAGModel(Model):
             parts.append(f"[{idx}] (Source: {source}{section})\n{doc.content}")
         return "\n\n".join(parts)
 
-    def default_generator(self, query: str, context_docs: List[Document]) -> str:
+    def format_prompt(self, query: str, context_docs: List[Document]) -> str:
+        """Formats the synthesis prompt with the retrieved context and query."""
+        context_str = self.build_context(context_docs)
+        if self.prompt_template:
+            try:
+                return self.prompt_template.format(context=context_str, query=query, question=query)
+            except Exception:
+                pass
+        return f"Context Passages:\n{context_str}\n\nUser Question:\n{query}\n\nAnswer:"
+
+    def default_generator(
+        self,
+        query: str,
+        context_docs: List[Document],
+        system_prompt: Optional[str] = None,
+        **kwargs: Any,
+    ) -> str:
         """Synthesizes grounded response via ChatProvider or baseline context snippet."""
         if not context_docs:
             return "No relevant context documents found to answer the query."
 
-        context_str = self.build_context(context_docs)
-        prompt = f"Context Passages:\n{context_str}\n\nUser Question:\n{query}\n\nAnswer:"
-        return self.chat_provider.generate(prompt, system_prompt=self.system_prompt)
+        prompt = self.format_prompt(query, context_docs)
+        sys_prompt = system_prompt or self.system_prompt
+        return self.chat_provider.generate(prompt, system_prompt=sys_prompt, **kwargs)
 
-    def predict(self, inputs: Any, top_k: int = 4, **kwargs: Any) -> Dict[str, Any]:
-        """Executes forward RAG inference: Retrieval -> Grounded Generation -> Citations.
+    def synthesize(
+        self,
+        query: str,
+        context_docs: List[Document],
+        system_prompt: Optional[str] = None,
+        **kwargs: Any,
+    ) -> str:
+        """Hook for developers to customize response generation and synthesis."""
+        if self.generator_fn is not None:
+            return self.generator_fn(query, context_docs)
+        return self.default_generator(query, context_docs, system_prompt=system_prompt, **kwargs)
+
+    def postprocess_answer(self, answer: str, context_docs: List[Document]) -> str:
+        """Hook for developers to post-process, validate, or enrich the final answer string."""
+        return answer
+
+    def predict(
+        self,
+        inputs: Any,
+        top_k: Optional[int] = None,
+        filters: Optional[Dict[str, Any]] = None,
+        system_prompt: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Dict[str, Any]:
+        """Executes forward RAG inference: Preprocess -> Retrieval -> Rerank -> Grounded Generation -> Postprocess.
 
         Args:
             inputs: User query text string or dictionary payload.
-            top_k: Number of context chunks to retrieve.
+            top_k: Optional number of context chunks to retrieve.
+            filters: Optional metadata filters for retrieval.
+            system_prompt: Optional runtime override for LLM system prompt.
+            **kwargs: Extra parameters forwarded to ChatProvider generation.
 
         Returns:
             Dictionary containing 'query', 'answer', and 'sources' list.
         """
         query_str = inputs.get("query", str(inputs)) if isinstance(inputs, dict) else str(inputs)
-        retrieved_docs: List[Document] = []
 
-        if self.retriever is not None:
-            retrieved_docs = self.retriever.retrieve(query_str, top_k=top_k)
+        # 1. Preprocess query
+        processed_query = self.preprocess_query(query_str)
 
-        if self.generator_fn is not None:
-            answer = self.generator_fn(query_str, retrieved_docs)
-        else:
-            answer = self.default_generator(query_str, retrieved_docs)
+        # 2. Retrieve documents
+        k = top_k if top_k is not None else self.top_k
+        retrieved_docs = self.retrieve(processed_query, top_k=k, filters=filters)
+
+        # 3. Rerank / filter documents
+        ranked_docs = self.rerank(processed_query, retrieved_docs)
+
+        # 4. Synthesize answer
+        answer = self.synthesize(processed_query, ranked_docs, system_prompt=system_prompt, **kwargs)
+
+        # 5. Postprocess answer
+        final_answer = self.postprocess_answer(answer, ranked_docs)
 
         return {
             "query": query_str,
-            "answer": answer,
-            "sources": [doc.to_dict() for doc in retrieved_docs],
+            "answer": final_answer,
+            "sources": [doc.to_dict() for doc in ranked_docs],
         }
 
 
 class KnowledgeModel(RAGModel):
     """Enterprise Knowledge Base model integrating PostgreSQL ORM, SmartChunker,
 
-    Embedders, QueryAnalyzer, and ChatProviders into an autonomous knowledge engine.
+    Embedders, QueryAnalyzer, and ChatProviders into an autonomous, developer-editable knowledge engine.
     """
 
     def __init__(
@@ -1759,6 +1830,10 @@ class KnowledgeModel(RAGModel):
         vector_store: Optional[BaseVectorStore] = None,
         chunker: Optional[SmartChunker] = None,
         query_analyzer: Optional[QueryAnalyzer] = None,
+        retriever: Optional[BaseRetriever] = None,
+        generator_fn: Optional[Callable[[str, List[Document]], str]] = None,
+        system_prompt: Optional[str] = None,
+        prompt_template: Optional[str] = None,
         top_k: int = 3,
         **kwargs: Any,
     ) -> None:
@@ -1767,7 +1842,8 @@ class KnowledgeModel(RAGModel):
         self.chunker = chunker or SmartChunker()
         self.chat_provider = chat_provider or MockChatProvider()
         self.query_analyzer = query_analyzer or QueryAnalyzer(chat_provider=self.chat_provider)
-        self.retriever = VectorRetriever(
+
+        custom_retriever = retriever or VectorRetriever(
             vector_store=self.vector_store,
             embedding_fn=self.embedding_fn,
             query_analyzer=self.query_analyzer,
@@ -1776,14 +1852,21 @@ class KnowledgeModel(RAGModel):
         super().__init__(
             name=name,
             config=config,
-            retriever=self.retriever,
+            retriever=custom_retriever,
             chat_provider=self.chat_provider,
             query_analyzer=self.query_analyzer,
+            generator_fn=generator_fn,
+            system_prompt=system_prompt,
+            prompt_template=prompt_template,
+            top_k=top_k,
             **kwargs,
         )
-        self.top_k = top_k
 
-    def index_documents(self, documents: Sequence[Union[Document, str, Dict[str, Any]]]) -> int:
+    def chunk_documents(self, documents: Sequence[Document]) -> List[Document]:
+        """Hook for developers to customize document splitting and chunking."""
+        return self.chunker.split_documents(documents)
+
+    def index_documents(self, documents: Sequence[Union[Document, str, Dict[str, Any]]], **kwargs: Any) -> int:
         """Processes, chunks, embeds, and stores documents into the vector database."""
         raw_docs: List[Document] = []
         for item in documents:
@@ -1794,12 +1877,31 @@ class KnowledgeModel(RAGModel):
             else:
                 raw_docs.append(Document(content=str(item)))
 
-        # 1. Apply SmartChunker
-        chunked = self.chunker.split_documents(raw_docs)
+        # 1. Apply SmartChunker / custom chunking hook
+        chunked = self.chunk_documents(raw_docs)
 
         # 2. Add to VectorStore (Postgres or Memory)
         self.vector_store.add_documents(chunked)
         return len(chunked)
+
+    def add_document(self, content: str, title: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None) -> int:
+        """Convenience method to index a single document text into the knowledge base."""
+        meta = metadata or {}
+        if title:
+            meta["title"] = title
+        doc = Document(content=content, metadata=meta)
+        return self.index_documents([doc])
+
+    def add_documents(self, documents: Sequence[Union[Document, str, Dict[str, Any]]], **kwargs: Any) -> int:
+        """Alias for index_documents."""
+        return self.index_documents(documents, **kwargs)
+
+    def search(self, query: str, top_k: Optional[int] = None, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Performs semantic similarity search directly and returns ranked document dicts."""
+        k = top_k if top_k is not None else self.top_k
+        docs = self.retrieve(query, top_k=k, filters=filters)
+        ranked = self.rerank(query, docs)
+        return [doc.to_dict() for doc in ranked]
 
     def save(self, destination: Union[str, Path], **kwargs: Any) -> None:
         """Persists vector store state to file or database checkpoint."""
@@ -1828,6 +1930,14 @@ class RAGTrainer(BaseTrainer):
     embedding generation, and vector index persistence into experiments/artifacts.
     """
 
+    def before_index(self, documents: List[Document]) -> List[Document]:
+        """Hook for pre-processing or filtering documents before indexing."""
+        return documents
+
+    def after_index(self, model: Model, index_path: Path, count: int) -> None:
+        """Hook called after index persistence for notifications, caching, or logging."""
+        pass
+
     def fit(self, model: Model, dataset: Dataset, **kwargs: Any) -> Dict[str, Any]:
         """Builds semantic vector index from dataset documents."""
         if hasattr(dataset, "load_documents"):
@@ -1844,6 +1954,8 @@ class RAGTrainer(BaseTrainer):
         if not documents:
             return {"status": "failed", "error": "No documents found to index in dataset."}
 
+        documents = self.before_index(documents)
+
         indexed_count = 0
         if hasattr(model, "index_documents"):
             indexed_count = model.index_documents(documents)
@@ -1856,6 +1968,8 @@ class RAGTrainer(BaseTrainer):
         artifacts_dir.mkdir(parents=True, exist_ok=True)
         index_path = artifacts_dir / "rag_index.json"
         model.save(index_path)
+
+        self.after_index(model, index_path, indexed_count)
 
         return {
             "status": "completed",

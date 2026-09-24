@@ -87,7 +87,7 @@ else:
 
 def vite_header(subcommand: str = "", extra: str = "") -> str:
     """Renders a Vite-style brand banner."""
-    brand = f"{C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET} {C.DIM}v1.0.5{C.RESET}"
+    brand = f"{C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET} {C.DIM}v1.0.6{C.RESET}"
     tag = f" {C.GREEN}{subcommand}{C.RESET}" if subcommand else ""
     details = f"  {C.DIM}{extra}{C.RESET}" if extra else ""
     return f"\n  {brand}{tag}{details}\n"
@@ -115,7 +115,7 @@ def big_header(subcommand: str = "", tagline: str = "The Django for AI & Machine
         lines.append(f"  {C.BOLD}{C.BRIGHT_CYAN}AIMLITE{C.RESET}")
 
     lines.append("")
-    lines.append(f"  {C.DIM}v1.0.5{C.RESET}  {C.BRIGHT_CYAN}❯{C.RESET}  {C.BOLD}{tagline}{C.RESET}")
+    lines.append(f"  {C.DIM}v1.0.6{C.RESET}  {C.BRIGHT_CYAN}❯{C.RESET}  {C.BOLD}{tagline}{C.RESET}")
     if subcommand:
         lines.append(f"  {C.GREEN}{subcommand}{C.RESET}")
     lines.append("")
