@@ -1,25 +1,22 @@
-# AIMLite
-# AIMLite
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo_white.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/logo.png">
+    <img src="docs/logo.png" alt="AIMLite Logo" width="460" />
+  </picture>
+</p>
 
-**The Django for AI & Machine Learning** — an opinionated, convention-over-configuration Python framework with zero-path CLI execution.
+<h1 align="center">AIMLite</h1>
 
----
+<p align="center">
+  <strong>The Django for AI & Machine Learning</strong> — an opinionated, convention-over-configuration Python framework with zero-path CLI execution.
+</p>
 
-## PyPI Installation
-
-```bash
-pip install aimlite
-```
-
-Or with [`uv`](https://docs.astral.sh/uv/):
-```bash
-uv add aimlite
-```
-
-```python
-from aimlite import Model, Dataset, BaseTrainer, BaseConfig, BaseEvaluator, BaseInference
-```
-**The Django for AI & Machine Learning** — an opinionated, convention-over-configuration Python framework with zero-path CLI execution.
+<p align="center">
+  <a href="https://pypi.org/project/aimlite/"><img src="https://img.shields.io/pypi/v/aimlite.svg?color=black" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/aimlite/"><img src="https://img.shields.io/pypi/pyversions/aimlite.svg?color=black" alt="Python versions"></a>
+  <a href="https://github.com/Alazar42/AIMLite/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-black.svg" alt="License"></a>
+</p>
 
 ---
 
@@ -48,9 +45,7 @@ from aimlite import Model, Dataset, BaseTrainer, BaseConfig, BaseEvaluator, Base
 ---
 
 ## Why AIMLite?
-## Why AIMLite?
 
-Traditional AI and machine learning projects suffer from repetitive boilerplate: scattered scripts, brittle path configurations, unstandardized train/test splits, hardcoded checkpoint paths, and ad-hoc serving code.
 Traditional AI and machine learning projects suffer from repetitive boilerplate: scattered scripts, brittle path configurations, unstandardized train/test splits, hardcoded checkpoint paths, and ad-hoc serving code.
 
 AIMLite provides a standardized, convention-based structure inspired by modern web frameworks like Django and Vite:

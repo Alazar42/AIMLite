@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Search, ArrowRight, CornerDownLeft, X, Zap, Terminal, Server, Settings, Database } from 'lucide-react';
+import { Search, ArrowRight, CornerDownLeft, X, Boxes, Terminal, Server, Settings, Database } from 'lucide-react';
 import { NAVIGATION_CATEGORIES, DOC_SECTIONS, type NavItem } from '../data/aimliteDocs';
 
 interface SearchModalProps {
@@ -73,21 +73,22 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
   if (!isOpen) return null;
 
   const getItemIcon = (category: string) => {
-    if (category.includes('Pillar')) return <Zap size={13} className="text-sky-400 shrink-0" />;
-    if (category.includes('CLI')) return <Terminal size={13} className="text-amber-400 shrink-0" />;
-    if (category.includes('HTTP')) return <Server size={13} className="text-emerald-400 shrink-0" />;
-    if (category.includes('Foundations')) return <Settings size={13} className="text-purple-400 shrink-0" />;
-    return <Database size={13} className="text-zinc-400 shrink-0" />;
+    const iconClass = "text-zinc-500 dark:text-zinc-400 shrink-0";
+    if (category.includes('Pillar')) return <Boxes size={13} className={iconClass} />;
+    if (category.includes('CLI')) return <Terminal size={13} className={iconClass} />;
+    if (category.includes('HTTP')) return <Server size={13} className={iconClass} />;
+    if (category.includes('Foundations')) return <Settings size={13} className={iconClass} />;
+    return <Database size={13} className={iconClass} />;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-zinc-950/75 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 sm:pt-20 px-3 sm:px-4 bg-zinc-950/60 backdrop-blur-sm">
       <div
-        className="w-full max-w-xl bg-[#0f1017] border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-xl bg-white dark:bg-[#0f1017] border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-800 bg-zinc-900/50">
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
           <Search size={18} className="text-zinc-400 shrink-0" />
           <input
             ref={inputRef}
@@ -98,17 +99,17 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
               setSelectedIndex(0);
             }}
             placeholder="Search AIMLite (e.g. Data, Model, CSV, Django analogy, CLI)..."
-            className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none font-sans"
+            className="w-full bg-transparent text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none font-sans"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="text-zinc-500 hover:text-zinc-300 p-1 rounded"
+              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 rounded"
             >
               <X size={14} />
             </button>
           )}
-          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-800 border border-zinc-700 text-zinc-400 rounded">
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 rounded">
             ESC
           </kbd>
         </div>
@@ -131,17 +132,19 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
                   }}
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs transition-colors ${
-                    isSelected ? 'bg-zinc-800/90 text-sky-400' : 'text-zinc-300 hover:bg-zinc-900'
+                    isSelected
+                      ? 'bg-zinc-100 dark:bg-zinc-800/90 text-zinc-900 dark:text-white font-medium'
+                      : 'text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 overflow-hidden flex-1 min-w-0 pr-2">
                     {getItemIcon(category)}
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase shrink-0">
+                    <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500 uppercase shrink-0">
                       {category.split(' ')[0]}
                     </span>
-                    <ArrowRight size={11} className="text-zinc-600 shrink-0" />
+                    <ArrowRight size={11} className="text-zinc-400 dark:text-zinc-600 shrink-0" />
                     <div className="truncate">
-                      <span className="font-semibold text-zinc-100">{item.label}</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100">{item.label}</span>
                       {subtitle && (
                         <span className="text-zinc-500 text-[11px] ml-2 truncate hidden sm:inline">
                           — {subtitle}
@@ -152,7 +155,7 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
 
                   {item.badge && (
                     <span
-                      className="shrink-0 px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase rounded border border-zinc-700 bg-zinc-900 text-zinc-400"
+                      className="shrink-0 px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400"
                     >
                       {item.badge}
                     </span>
@@ -164,26 +167,26 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
         </div>
 
         {/* Modal Footer Hotkeys Bar */}
-        <div className="px-4 py-2.5 bg-zinc-950/60 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500">
+        <div className="px-4 py-2.5 bg-zinc-50 dark:bg-zinc-950/60 border-t border-zinc-200 dark:border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-500">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-zinc-900 border border-zinc-800 rounded font-mono text-[9px]">
+              <kbd className="px-1 py-0.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded font-mono text-[9px]">
                 ↑
               </kbd>
-              <kbd className="px-1 py-0.5 bg-zinc-900 border border-zinc-800 rounded font-mono text-[9px]">
+              <kbd className="px-1 py-0.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded font-mono text-[9px]">
                 ↓
               </kbd>
               <span>Navigate</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 bg-zinc-900 border border-zinc-800 rounded font-mono text-[9px]">
+              <kbd className="px-1 py-0.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded font-mono text-[9px]">
                 <CornerDownLeft size={9} />
               </kbd>
               <span>Select</span>
             </span>
           </div>
 
-          <span className="font-mono text-[10px] text-zinc-500">AIMLite Quick Index</span>
+          <span className="font-mono text-[10px] text-zinc-400 dark:text-zinc-500">AIMLite Quick Index</span>
         </div>
       </div>
     </div>

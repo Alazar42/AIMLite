@@ -67,16 +67,22 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     name: 'The 3 AI Paradigms',
     items: [
       { id: 'paradigm-scratch', label: '1. Scratch (Customer Churn)', badge: 'TRAIN', badgeVariant: 'pillar' },
-      { id: 'paradigm-rag', label: '2. RAG (Knowledge QA)', badge: 'RAG', badgeVariant: 'pillar' },
+      { id: 'paradigm-rag', label: '2. RAG (Knowledge QA)', badge: 'v1.0.6', badgeVariant: 'pillar' },
       { id: 'paradigm-adapters', label: '3. Adapters (LoRA & PEFT)', badge: 'PEFT', badgeVariant: 'pillar' },
     ],
   },
   {
     name: 'The 3 Pillars of AIMLite',
     items: [
-      { id: 'pillar-data', label: '1. Data Pillar', badge: 'PILLAR', badgeVariant: 'pillar' },
-      { id: 'pillar-model', label: '2. Model Pillar', badge: 'PILLAR', badgeVariant: 'pillar' },
-      { id: 'pillar-lifecycle', label: '3. Lifecycle Pillar', badge: 'PILLAR', badgeVariant: 'pillar' },
+      { id: 'pillar-data', label: '1. Data Pillar (Dataset)', badge: 'PILLAR', badgeVariant: 'pillar' },
+      { id: 'pillar-model', label: '2. Model Pillar (Model)', badge: 'PILLAR', badgeVariant: 'pillar' },
+      { id: 'pillar-lifecycle', label: '3. Lifecycle Pillar (Trainer)', badge: 'PILLAR', badgeVariant: 'pillar' },
+    ],
+  },
+  {
+    name: 'AIMLite RAG Deep Dive',
+    items: [
+      { id: 'rag-hooks', label: 'KnowledgeModel & Lifecycle Hooks', badge: 'v1.0.6', badgeVariant: 'pillar' },
     ],
   },
   {
@@ -91,20 +97,29 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     items: [
       { id: 'cli-init', label: 'aimlite init', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-install', label: 'aimlite install', badge: 'CLI', badgeVariant: 'cli' },
-      { id: 'cli-data', label: 'aimlite data validate', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-train', label: 'aimlite train', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-evaluate', label: 'aimlite evaluate', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-serve', label: 'aimlite serve', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-benchmark', label: 'aimlite benchmark', badge: 'NEW', badgeVariant: 'cli' },
+      { id: 'cli-data', label: 'aimlite data validate', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-doctor', label: 'aimlite doctor', badge: 'CLI', badgeVariant: 'cli' },
     ],
   },
   {
     name: 'HTTP Inference Server',
     items: [
-      { id: 'endpoint-predict', label: 'Execute Inference', badge: 'POST', badgeVariant: 'post' },
-      { id: 'endpoint-health', label: 'Server Health', badge: 'GET', badgeVariant: 'get' },
+      { id: 'endpoint-predict', label: 'Execute Inference (/predict)', badge: 'POST', badgeVariant: 'post' },
+      { id: 'endpoint-search', label: 'Execute Search (/search)', badge: 'POST', badgeVariant: 'post' },
+      { id: 'endpoint-health', label: 'Server Health (/health)', badge: 'GET', badgeVariant: 'get' },
+      { id: 'endpoint-chat', label: 'Chat Playground (/chat)', badge: 'WEB', badgeVariant: 'get' },
       { id: 'endpoint-openapi', label: 'OpenAPI 3.0 Schema', badge: 'GET', badgeVariant: 'get' },
       { id: 'endpoint-docs', label: 'Swagger UI Docs', badge: 'GET', badgeVariant: 'get' },
+    ],
+  },
+  {
+    name: 'Releases & Changelog',
+    items: [
+      { id: 'changelog', label: 'Version Changelog', badge: 'v1.0.6', badgeVariant: 'util' },
     ],
   },
 ];
@@ -475,30 +490,85 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     id: 'cli-init',
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
-    subtitle: 'Scaffolds a new project directory or initializes inside the current folder.',
-    badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'aimlite init [project_name | .]',
+    subtitle: 'Vite-inspired interactive wizard scaffolding modular AI projects in <50ms.',
+    badge: { label: 'CLI v1.0.6', variant: 'cli' },
+    signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapters>] [--install] [-y]',
     breadcrumbs: ['CLI', 'init'],
     overview:
-      'Scaffolds a new project directory with convention layout: data/ (strictly empty), models/, experiments/, artifacts/, checkpoints/, and starter package files. Supports both new directory creation (aimlite init my_ai) and in-place current folder initialization (aimlite init .).',
+      'Scaffolds a new project directory with Vite-inspired terminal prompts powered by questionary and rich, rendered with a pyfiglet ASCII banner. Generates standard layout: data/ (strictly clean), artifacts/, experiments/, and modular starter files. Features an interactive package search prompt (+) to select additional dependencies, instantaneous (<50ms) project generation (heavy downloads are deferred), and generates aimlite.json as the single source of truth.',
     djangoAnalogy:
-      'Direct equivalent of django-admin startproject <name> or npm init. Generates clean boilerplate with instructional contracts.',
+      'Direct equivalent of create-vite or django-admin startproject <name>. Scaffolds 100% developer-editable code with zero hidden boilerplate.',
+    parametersTitle: 'CLI Flags & Options',
+    parameters: [
+      {
+        name: 'project_name | .',
+        type: 'string (positional)',
+        required: false,
+        defaultValue: 'interactive prompt',
+        description: 'Directory name for the new project, or . to scaffold into the current folder.',
+      },
+      {
+        name: '--type, -t',
+        type: 'scratch | rag | adapters',
+        required: false,
+        description: 'Selects the AI paradigm template directly without opening the interactive menu.',
+      },
+      {
+        name: '--chat-provider',
+        type: 'openai | gemini | anthropic | ollama | local | mock',
+        required: false,
+        defaultValue: 'openai',
+        description: 'RAG paradigm: Configures LLM chat provider for synthesis.',
+      },
+      {
+        name: '--vector-db',
+        type: 'memory | postgres',
+        required: false,
+        defaultValue: 'memory',
+        description: 'RAG paradigm: Configures vector database storage engine.',
+      },
+      {
+        name: '--install',
+        type: 'boolean flag',
+        required: false,
+        defaultValue: 'false',
+        description: 'Automatically creates .venv and installs dependencies immediately during scaffolding.',
+      },
+      {
+        name: '-y, --non-interactive',
+        type: 'boolean flag',
+        required: false,
+        description: 'Skips interactive prompts and applies standard defaults (ideal for CI/CD).',
+      },
+    ],
     snippets: {
-      cli: `# Option 1: Create a new project directory
-aimlite init my_ai
-cd my_ai
+      cli: `# Interactive Vite-style wizard (recommended):
+aimlite init my_rag
 
-# Option 2: Initialize directly inside current folder with parent folder name
-aimlite init .`,
+# Non-interactive CLI flag setup for RAG:
+aimlite init my_rag --type rag --chat-provider gemini --vector-db memory
+
+# Scaffold in current directory with immediate dependency install:
+aimlite init . --type adapters --install`,
     },
-    defaultPayload: '{\n  "command": "aimlite init",\n  "project": "."\n}',
+    defaultPayload: '{\n  "command": "aimlite init my_rag",\n  "type": "rag",\n  "chat_provider": "openai"\n}',
     defaultResponse: {
       status: 'success',
-      output: [
-        "[OK] Successfully initialized AIMLite project 'my_ai'",
-        'Package files: data.py, model.py, trainer.py, evaluator.py, inference.py, config.py',
-        'Directory data/ created empty (ready for your dataset files)',
+      project: 'my_rag',
+      paradigm: 'rag',
+      files_generated: [
+        'my_rag/chat_provider.py',
+        'my_rag/store.py',
+        'my_rag/data.py',
+        'my_rag/model.py',
+        'my_rag/trainer.py',
+        'my_rag/evaluator.py',
+        'my_rag/inference.py',
+        'experiments/benchmark.py',
+        'client.py',
+        'aimlite.json',
       ],
+      elapsed_time: '42ms',
     },
   },
 
@@ -506,29 +576,52 @@ aimlite init .`,
     id: 'cli-install',
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
-    subtitle: 'Installs libraries safely into project .venv using uv (preferred) or pip.',
-    badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'aimlite install <package_name ...> [--upgrade]',
+    subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
+    badge: { label: 'CLI v1.0.6', variant: 'cli' },
+    signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
-      'Manages your project virtual environment (.venv). If .venv does not exist, automatically creates it. Uses uv pip install --python <venv> for lightning fast, conflict-free dependency installation.',
+      'Manages your project virtual environment (.venv) using uv (preferred) or pip. When run without arguments (aimlite install), it reads dependencies directly from aimlite.json as the single source of truth — no -r requirements.txt needed. Automatically creates the .venv if it does not exist.',
     djangoAnalogy:
-      'Eliminates environment mismatches and global package collisions automatically.',
+      'Like npm install or poetry install — automatically synchronizes your virtual environment with your project manifest (aimlite.json).',
+    parametersTitle: 'Arguments & Options',
+    parameters: [
+      {
+        name: 'package_name ...',
+        type: 'string[] (optional)',
+        required: false,
+        description: 'One or more packages to install and automatically add to aimlite.json dependencies.',
+      },
+      {
+        name: '-r, --requirement',
+        type: 'Path (optional)',
+        required: false,
+        description: 'Path to a legacy requirements.txt file to install packages from.',
+      },
+      {
+        name: '--upgrade',
+        type: 'boolean flag',
+        required: false,
+        defaultValue: 'false',
+        description: 'Upgrades installed packages to their latest versions.',
+      },
+    ],
     snippets: {
-      cli: `# Paradigm 1 (Scratch):
-aimlite install scikit-learn pandas
+      cli: `# Install all project dependencies defined in aimlite.json (default):
+aimlite install
 
-# Paradigm 2 (RAG):
-aimlite install sentence-transformers numpy
+# Install specific packages into the active project .venv:
+aimlite install sentence-transformers psycopg2-binary
 
-# Paradigm 3 (Adapters):
-aimlite install torch peft`,
+# Install with package upgrade:
+aimlite install --upgrade`,
     },
-    defaultPayload: '{\n  "packages": ["scikit-learn", "pandas"],\n  "upgrade": false\n}',
+    defaultPayload: '{\n  "command": "aimlite install",\n  "source": "aimlite.json"\n}',
     defaultResponse: {
       status: 'success',
       venv_path: '.venv',
-      installed: ['scikit-learn', 'pandas'],
+      manifest: 'aimlite.json',
+      installed: ['sentence-transformers', 'psycopg2-binary'],
       backend: 'uv pip install',
     },
   },
@@ -570,34 +663,119 @@ aimlite train ChurnClassifier`,
     id: 'cli-serve',
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
-    subtitle: 'Headless JSON inference API server with optional custom frontend hosting.',
-    badge: { label: 'CLI', variant: 'cli' },
-    signatureOrPath: 'aimlite serve [ModelName] [--port 8000] [--frontend <dir>]',
+    subtitle: 'High-performance inference API server with live Swagger UI and interactive Web Chat Playground.',
+    badge: { label: 'CLI v1.0.6', variant: 'cli' },
+    signatureOrPath: 'aimlite serve [ModelName] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
-      'Starts a high-performance, headless JSON inference server on port 8000. Serves API root metadata at GET /, prediction endpoint at POST /predict, server health at GET /health, Swagger UI at GET /docs, and OpenAPI specification at GET /openapi.json. When you build a custom frontend (e.g. React/Vite in frontend/dist/), pass --frontend frontend/dist to host it directly alongside the API.',
+      'Starts a high-performance JSON inference server on port 8000. Features built-in Swagger UI at GET /docs, interactive dark-mode Chat Playground at GET /chat and /playground (with auto-browser redirect on /), prediction endpoint at POST /predict, direct semantic search at POST /search, and server health checks at GET /health. Also supports hosting production frontend builds (e.g. React/Vite) via --frontend.',
     djangoAnalogy:
-      'Direct equivalent of python manage.py runserver 8000, with Swagger UI and developer-customizable endpoints.',
+      'Direct equivalent of python manage.py runserver, bundled with Swagger UI and an interactive testing console.',
+    parametersTitle: 'Server Arguments & Flags',
+    parameters: [
+      {
+        name: 'ModelName',
+        type: 'string (optional)',
+        required: false,
+        defaultValue: 'auto-discover default model',
+        description: 'Target model class name to serve. Prompts for selection if multiple models exist in model.py.',
+      },
+      {
+        name: '--port',
+        type: 'integer',
+        required: false,
+        defaultValue: '8000',
+        description: 'TCP port number to bind the server.',
+      },
+      {
+        name: '--host',
+        type: 'string',
+        required: false,
+        defaultValue: '127.0.0.1',
+        description: 'Network interface IP address to listen on (e.g. 0.0.0.0 for external/container access).',
+      },
+      {
+        name: '--frontend',
+        type: 'Path (optional)',
+        required: false,
+        description: 'Path to a pre-built static directory (e.g. frontend/dist) to serve alongside API routes.',
+      },
+    ],
     snippets: {
-      cli: `# Run pure headless JSON API server
-aimlite serve --port 8000
+      cli: `# Serve active model with Swagger docs and Chat Playground on port 8000:
+aimlite serve
 
-# Serve targeted model class
-aimlite serve ChurnClassifier --port 8000
+# Serve on all network interfaces for container deployment:
+aimlite serve --host 0.0.0.0 --port 8080
 
-# Serve custom frontend bundle alongside API
+# Serve with custom React frontend bundle:
 aimlite serve --frontend ./frontend/dist`,
     },
-    defaultPayload: '{\n  "port": 8000,\n  "target_model": "ChurnClassifier"\n}',
+    defaultPayload: '{\n  "port": 8000,\n  "target_model": "SupportDocRAG"\n}',
     defaultResponse: {
       status: 'server_active',
       endpoints: {
-        'GET /': 'AIMLite API Root & Metadata',
-        'GET /docs': 'Swagger UI Documentation',
+        'GET /': 'Interactive Chat Playground (browser) or API Root (JSON)',
+        'GET /chat': 'Interactive RAG Chat Playground',
+        'GET /docs': 'Interactive Swagger UI Documentation',
         'GET /openapi.json': 'OpenAPI 3.0 Schema',
-        'POST /predict': 'Inference API',
-        'GET /health': 'Health Status',
+        'POST /predict': 'Forward Inference & Answer Synthesis',
+        'POST /search': 'Semantic Search & Document Retrieval',
+        'GET /health': 'Server Health Status',
       },
+    },
+  },
+
+  'cli-benchmark': {
+    id: 'cli-benchmark',
+    category: 'Zero-Path CLI Commands',
+    title: 'aimlite benchmark',
+    subtitle: 'Runs experiment and benchmark scripts with the project root automatically injected into sys.path.',
+    badge: { label: 'NEW v1.0.5', variant: 'cli' },
+    signatureOrPath: 'aimlite benchmark [script.py] [args...]',
+    breadcrumbs: ['CLI', 'benchmark'],
+    overview:
+      'Eliminates the common ModuleNotFoundError: No module named <project> error when running benchmark or experiment scripts directly from subdirectories. Discovers the project root via aimlite.json, extends PYTHONPATH, resolves the project .venv Python interpreter, and executes the target script. If no script path is provided, automatically discovers the first script in experiments/. Extra arguments are forwarded to the script unchanged.',
+    djangoAnalogy:
+      'Like python manage.py test or running custom management commands where Django automatically configures sys.path and settings without manual environment setup.',
+    parametersTitle: 'Command Arguments & Options',
+    parameters: [
+      {
+        name: 'script.py',
+        type: 'Path (optional)',
+        required: false,
+        defaultValue: 'auto-discover in experiments/*.py',
+        description: 'Path to benchmark or experiment script (e.g. experiments/benchmark.py). Auto-discovers first script in experiments/ if omitted.',
+      },
+      {
+        name: 'args...',
+        type: 'string[] (optional)',
+        required: false,
+        description: 'Extra arguments forwarded directly to the benchmark script.',
+      },
+    ],
+    snippets: {
+      cli: `# Run default auto-discovered benchmark in experiments/:
+aimlite benchmark
+
+# Run specific experiment script:
+aimlite benchmark experiments/benchmark.py
+
+# Forward arguments to the benchmark script:
+aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
+    },
+    defaultPayload: '{\n  "command": "aimlite benchmark",\n  "script": "experiments/benchmark.py"\n}',
+    defaultResponse: {
+      status: 'success',
+      root: '/workspace/support_rag',
+      script: 'experiments/benchmark.py',
+      python: '.venv/bin/python',
+      output: [
+        'Running 3 benchmark queries:',
+        "  Query: 'What are the 3 pillars...' -> 24.2ms (sources: 3)",
+        'Benchmark Results: Average Latency = 26.14ms',
+        'Benchmark completed successfully.',
+      ],
     },
   },
 
@@ -721,6 +899,78 @@ console.log(data);`,
     },
   },
 
+  'endpoint-search': {
+    id: 'endpoint-search',
+    category: 'HTTP Inference Server',
+    title: 'Execute Semantic Search (POST /search)',
+    subtitle: 'Direct vector similarity retrieval returning ranked document passages without LLM synthesis.',
+    badge: { label: 'POST v1.0.6', variant: 'post' },
+    signatureOrPath: 'POST http://127.0.0.1:8000/search',
+    breadcrumbs: ['HTTP Server', 'POST /search'],
+    overview:
+      'Direct semantic vector search endpoint added in v1.0.6. Queries the underlying vector store (PostgreSQL pgvector or MemoryVectorStore) and returns ranked passage snippets, scores, and metadata without triggering generative LLM synthesis. Ideal for custom UI search inputs, citation lookups, and multi-agent retrieval pipelines.',
+    djangoAnalogy:
+      'Like querying an API endpoint that performs a database filter or full-text query and returns raw serialized model records without template rendering.',
+    parametersTitle: 'JSON Request Body Schema',
+    parameters: [
+      {
+        name: 'query',
+        type: 'string',
+        required: true,
+        description: 'Natural language search query string to embed and match against stored knowledge chunks.',
+      },
+      {
+        name: 'top_k',
+        type: 'integer',
+        required: false,
+        defaultValue: '5',
+        description: 'Maximum number of most relevant document passages to return.',
+      },
+      {
+        name: 'filters',
+        type: 'object',
+        required: false,
+        description: 'Metadata key-value filters to narrow search scope (e.g. {"category": "billing"}).',
+      },
+    ],
+    snippets: {
+      curl: `curl -X POST http://127.0.0.1:8000/search \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "authentication policy and session expiration", "top_k": 3}'`,
+      python: `import urllib.request
+import json
+
+payload = {"query": "authentication policy and session expiration", "top_k": 3}
+req = urllib.request.Request(
+    "http://127.0.0.1:8000/search",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={"Content-Type": "application/json"}
+)
+with urllib.request.urlopen(req) as resp:
+    print(json.loads(resp.read().decode()))`,
+    },
+    defaultPayload: '{\n  "query": "authentication policy and session expiration",\n  "top_k": 3\n}',
+    defaultResponse: {
+      query: 'authentication policy and session expiration',
+      count: 2,
+      results: [
+        {
+          id: 'auth-01',
+          content: 'AIMLite supports API key and Bearer token authentication. Session tokens expire after 24 hours of inactivity.',
+          score: 0.9412,
+          metadata: { source: 'auth_policy.md', section: 'Authentication' },
+        },
+        {
+          id: 'auth-02',
+          content: 'Multi-factor authentication (MFA) is required for administrative access to production endpoints.',
+          score: 0.8875,
+          metadata: { source: 'auth_policy.md', section: 'Multi-Factor' },
+        },
+      ],
+      status: 'success',
+    },
+  },
+
   'endpoint-health': {
     id: 'endpoint-health',
     category: 'HTTP Inference Server',
@@ -739,14 +989,51 @@ console.log(data);`,
     defaultPayload: '{}',
     defaultResponse: {
       status: 'healthy',
-      model: 'my_ai',
+      model: 'SupportDocRAG',
       endpoints: {
         'GET /': 'Interactive web playground',
+        'GET /chat': 'Interactive RAG chat interface',
         'GET /docs': 'Swagger API documentation',
         'GET /openapi.json': 'OpenAPI 3.0 schema',
         'POST /predict': 'Submit prediction request',
+        'POST /search': 'Semantic document search',
         'GET /health': 'Server health status',
       },
+    },
+  },
+
+  'endpoint-chat': {
+    id: 'endpoint-chat',
+    category: 'HTTP Inference Server',
+    title: 'Chat Playground (GET /chat)',
+    subtitle: 'Embedded web chat interface served directly by aimlite serve for testing knowledge models.',
+    badge: { label: 'WEB UI', variant: 'get' },
+    signatureOrPath: 'GET http://127.0.0.1:8000/chat',
+    breadcrumbs: ['HTTP Server', 'GET /chat'],
+    overview:
+      'AIMLite serve ships with a built-in, production-grade interactive Chat Playground available at /chat or /playground (with automatic browser redirect on /). Features dark theme, animated response streaming, source context citation inspector, temperature and top_k sliders, system prompt editor, and multi-turn session testing.',
+    djangoAnalogy:
+      'Like Django admin or Django debug toolbar — a built-in graphical interface ready out-of-the-box with zero frontend setup required.',
+    snippets: {
+      cli: `# Start server with embedded playground:
+aimlite serve SupportDocRAG --port 8000
+
+# Open in browser:
+# http://localhost:8000/chat
+# http://localhost:8000/docs (Swagger UI)`,
+    },
+    defaultPayload: '{\n  "browser_url": "http://127.0.0.1:8000/chat",\n  "method": "GET"\n}',
+    defaultResponse: {
+      endpoint: '/chat',
+      ui_type: 'Interactive RAG Chat Playground',
+      features: [
+        'Real-time answer streaming',
+        'Source citations & snippet inspector',
+        'Top-K & temperature parameter sliders',
+        'System prompt customizer',
+        'Session history clearing',
+      ],
+      status: 'active',
     },
   },
 
@@ -1136,6 +1423,230 @@ aimlite serve LoRAInstructionModel --port 8000`,
       response: "[LoRA-Adapted Llama-3-8B (r=8)]: Completed successfully.",
       adapter_rank: 8,
       status: "success",
+    },
+  },
+
+  'rag-hooks': {
+    id: 'rag-hooks',
+    category: 'AIMLite RAG Deep Dive',
+    title: 'KnowledgeModel & RAG Lifecycle Hooks',
+    subtitle: 'Complete guide to modular extension hooks in aimlite.rag introduced in v1.0.6.',
+    badge: { label: 'v1.0.6', variant: 'pillar' },
+    signatureOrPath: 'from aimlite.rag import KnowledgeModel, RAGModel, RAGTrainer, Document',
+    breadcrumbs: ['RAG Deep Dive', 'Extension Hooks'],
+    overview:
+      'In AIMLite v1.0.6, KnowledgeModel, RAGModel, and RAGTrainer were completely re-architected with modular, developer-editable lifecycle extension hooks. Instead of a rigid black-box pipeline, developers can cleanly override, extend, or replace every stage of query processing, candidate retrieval, cross-encoder reranking, prompt synthesis, answer post-processing, and index caching.',
+    djangoAnalogy:
+      'Like Django signals, custom QuerySet managers, or middleware — hook into the exact lifecycle events without hacking core framework internals.',
+    whyCode: [
+      {
+        component: 'preprocess_query(query) -> str',
+        reason: 'Rewrites user queries before vector embedding. Perfect for acronym expansion (e.g. MFA -> Multi-Factor Authentication), spell-checking, or query normalization.',
+      },
+      {
+        component: 'retrieve(query, top_k, filters) -> List[Document]',
+        reason: 'Direct candidate retrieval hook. Customize vector database search, hybrid sparse/dense retrieval, or dynamic metadata filtering.',
+      },
+      {
+        component: 'rerank(query, documents) -> List[Document]',
+        reason: 'Plug in cross-encoders (e.g. bge-reranker), Reciprocal Rank Fusion (RRF), or custom relevance thresholds to eliminate false positives.',
+      },
+      {
+        component: 'format_prompt(query, context_docs) -> str',
+        reason: 'Formats retrieved passages and user questions into the final synthesis prompt with configurable template support.',
+      },
+      {
+        component: 'synthesize(query, context_docs, system_prompt, **kwargs) -> str',
+        reason: 'Customizes LLM response generation, multi-turn conversational context, streaming generators, or fallback heuristics.',
+      },
+      {
+        component: 'postprocess_answer(answer, context_docs) -> str',
+        reason: 'Sanitizes LLM outputs, appends automated citation links/disclaimers, or runs safety guardrails before returning to the client.',
+      },
+      {
+        component: 'search(query, top_k, filters) -> List[Dict[str, Any]]',
+        reason: 'Direct semantic vector search returning ranked document dictionaries without invoking LLM synthesis (used by POST /search).',
+      },
+      {
+        component: 'RAGTrainer.before_index & after_index',
+        reason: 'Pre-filtering documents before embedding calculation and executing post-indexing cache invalidations, notifications, or logs.',
+      },
+    ],
+    parametersTitle: 'Developer-Editable Hooks & Signatures',
+    parameters: [
+      {
+        name: 'preprocess_query(self, query: str) -> str',
+        type: 'method hook',
+        required: false,
+        defaultValue: 'query.strip()',
+        description: 'Hook to clean, rewrite, expand, or spell-check user queries before retrieval.',
+      },
+      {
+        name: 'retrieve(self, query: str, top_k=None, filters=None) -> List[Document]',
+        type: 'method hook',
+        required: false,
+        description: 'Hook for candidate document retrieval from vector stores or hybrid search engines.',
+      },
+      {
+        name: 'rerank(self, query: str, documents: List[Document]) -> List[Document]',
+        type: 'method hook',
+        required: false,
+        description: 'Pluggable reranking hook for cross-encoders, reciprocal rank fusion, or score threshold filtering.',
+      },
+      {
+        name: 'format_prompt(self, query: str, context_docs: List[Document]) -> str',
+        type: 'method hook',
+        required: false,
+        description: 'Hook to assemble the prompt passed to LLM synthesis, supporting custom prompt_template.',
+      },
+      {
+        name: 'synthesize(self, query, context_docs, system_prompt=None, **kwargs) -> str',
+        type: 'method hook',
+        required: false,
+        description: 'Hook for generative LLM response synthesis. Override for streaming, custom prompts, or agent routing.',
+      },
+      {
+        name: 'postprocess_answer(self, answer: str, context_docs: List[Document]) -> str',
+        type: 'method hook',
+        required: false,
+        description: 'Hook for output sanitization, citation formatting, disclaimer appending, or guardrail validation.',
+      },
+      {
+        name: 'chunk_documents(self, documents: Sequence[Document]) -> List[Document]',
+        type: 'method hook',
+        required: false,
+        description: 'Override to implement custom document chunking or recursive splitting.',
+      },
+      {
+        name: 'search(self, query, top_k=None, filters=None) -> List[Dict[str, Any]]',
+        type: 'method hook',
+        required: false,
+        description: 'Direct semantic vector search returning ranked document dictionaries without LLM synthesis.',
+      },
+      {
+        name: 'add_document(self, content: str, title=None, metadata=None) -> int',
+        type: 'convenience method',
+        required: false,
+        description: 'Convenience method to dynamically index ad-hoc text records into the active knowledge store.',
+      },
+      {
+        name: 'before_index(self, documents: List[Document]) -> List[Document]',
+        type: 'trainer hook',
+        required: false,
+        description: 'RAGTrainer lifecycle hook called before indexing for pre-filtering or enrichment.',
+      },
+      {
+        name: 'after_index(self, model, index_path, count: int) -> None',
+        type: 'trainer hook',
+        required: false,
+        description: 'RAGTrainer lifecycle hook called after index serialization for notifications, logging, or caching.',
+      },
+    ],
+    snippets: {
+      python: `from typing import Any, Dict, List, Optional
+from aimlite.rag import Document, KnowledgeModel, SmartChunker
+
+class CustomSupportRAG(KnowledgeModel):
+    """Production Knowledge Base with customized extension hooks."""
+
+    def preprocess_query(self, query: str) -> str:
+        # 1. Acronym expansion and query normalization
+        cleaned = query.strip()
+        replacements = {"mfa": "multi-factor authentication", "sla": "service level agreement"}
+        for k, v in replacements.items():
+            cleaned = cleaned.replace(k, v)
+        return cleaned
+
+    def rerank(self, query: str, documents: List[Document]) -> List[Document]:
+        # 2. Strict score thresholding: drop passages below 0.4 similarity
+        filtered = [doc for doc in documents if (doc.score or 0.0) >= 0.4]
+        # Return top 3 highest scoring passages
+        return sorted(filtered, key=lambda d: d.score or 0.0, reverse=True)[:3]
+
+    def postprocess_answer(self, answer: str, context_docs: List[Document]) -> str:
+        # 3. Append verified citations footer
+        sources = {d.metadata.get("source") for d in context_docs if "source" in d.metadata}
+        citations = ", ".join(sources) if sources else "Knowledge Base"
+        return f"{answer}\\n\\n---\\n[Grounded Sources: {citations}]"`,
+    },
+    defaultPayload: '{\n  "query": "How do session tokens expire?",\n  "top_k": 3\n}',
+    defaultResponse: {
+      query: 'How do session tokens expire?',
+      answer: 'Session tokens expire after 24 hours of inactivity.\n\n---\n[Grounded Sources: auth_policy.md]',
+      sources: [
+        {
+          source: 'auth_policy.md',
+          snippet: 'Session tokens expire after 24 hours of inactivity.',
+          score: 0.9412,
+        },
+      ],
+      status: 'success',
+    },
+  },
+
+  'changelog': {
+    id: 'changelog',
+    category: 'Releases & Changelog',
+    title: 'Framework Changelog & Releases',
+    subtitle: 'Release history and upgrade guide for AIMLite (v1.0.6 latest).',
+    badge: { label: 'v1.0.6', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==1.0.6',
+    breadcrumbs: ['Releases', 'v1.0.6'],
+    overview:
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v1.0.6, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+    djangoAnalogy:
+      'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
+    conventions: [
+      {
+        title: 'Release [1.0.6] - 2026-09-24',
+        description: 'Developer-Editable KnowledgeModel & RAGModel architecture (preprocess_query, retrieve, rerank, format_prompt, synthesize, postprocess_answer, chunk_documents, search, add_document). before_index & after_index hooks on RAGTrainer. Modular scaffolded RAG codebase. POST /search endpoint.',
+      },
+      {
+        title: 'Release [1.0.5] - 2026-09-23',
+        description: 'aimlite benchmark command: Auto-injects project root into PYTHONPATH, resolves .venv Python, eliminates ModuleNotFoundError. pyfiglet ASCII art banner. Interactive + package search prompt. aimlite.json as single dependency source of truth.',
+      },
+      {
+        title: 'Release [1.0.4] - 2026-09-23',
+        description: 'Vite-inspired modern terminal UI (questionary & rich) with interactive arrows and spinners. Instant (<50ms) project initialization. --install CLI flag. Root .gitignore. Fixed ML template background pip freeze bug.',
+      },
+      {
+        title: 'Release [1.0.3] - 2026-09-20',
+        description: 'Production Modular RAG & Enterprise Knowledge Base engine (aimlite.rag). Multi-provider chat integrations (OpenAI, Gemini, Anthropic, Ollama, Local, Mock). SmartChunker, QueryAnalyzer (HyDE), PostgresVectorStore (pgvector ORM). Interactive Web Chat Playground at /chat.',
+      },
+      {
+        title: 'Release [0.1.2] - 2026-09-18',
+        description: 'Production-Grade LoRA & PEFT Adaptation Engine (aimlite.adapters). Mathematical low-rank decomposition, zero-latency weight merging (merge_weights), MultiAdapterManager hot-swapping, parameter efficiency diagnostics (<50MB vs 14GB).',
+      },
+      {
+        title: 'Release [0.1.1] - 2026-09-18',
+        description: 'Developer freedom for arbitrary data formats (CSV, Parquet, JSON, JSONL, TSV) and filenames. Reference template flexibility across all ML frameworks.',
+      },
+      {
+        title: 'Release [0.1.0] - 2026-09-18',
+        description: 'Initial release. Ecosystem rebranded to AIMLite. 3 AI paradigms (Scratch, LoRA Adapters, RAG). Zero-path execution, aimlite doctor, aimlite serve.',
+      },
+    ],
+    snippets: {
+      cli: `# Upgrade to latest AIMLite release:
+pip install --upgrade aimlite
+
+# Verify installation & diagnostic health:
+aimlite doctor`,
+    },
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "1.0.6",\n  "channel": "pypi"\n}',
+    defaultResponse: {
+      package: 'aimlite',
+      installed_version: '1.0.6',
+      latest_pypi_version: '1.0.6',
+      release_date: '2026-09-24',
+      status: 'up_to_date',
+      highlights: [
+        'Modular developer extension hooks on KnowledgeModel & RAGModel',
+        'RAGTrainer before_index and after_index lifecycle hooks',
+        'aimlite benchmark command with auto sys.path injection',
+        'Direct semantic search endpoint at POST /search',
+        'Interactive dark-mode Chat Playground at /chat',
+      ],
     },
   },
 };
