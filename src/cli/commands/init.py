@@ -54,6 +54,7 @@ def run_init(
     model_name: Optional[str] = None,
     interactive: Optional[bool] = None,
     install_deps: bool = False,
+    clean: bool = False,
 ) -> int:
     """Initializes a new AIMLite project with paradigm selection and follow-up configs.
 
@@ -68,6 +69,7 @@ def run_init(
         model_name: Preselected LLM model identifier.
         interactive: Whether to prompt for options if not passed.
         install_deps: Whether to immediately install dependencies into .venv.
+        clean: If True, scaffolds a clean scratch project with no sample code or dummy datasets (only guiding comments and class contracts).
 
     Returns:
         Process exit code (0 for success).
@@ -77,7 +79,7 @@ def run_init(
     elif interactive is False:
         is_tty = False
     else:
-        is_tty = sys.stdin.isatty() and (project_name is None or template_type is not None)
+        is_tty = sys.stdin.isatty() and (project_name is None or template_type is not None or clean)
 
     if is_tty:
         print(big_header("create project"))
@@ -105,30 +107,47 @@ def run_init(
     dest_root.mkdir(parents=True, exist_ok=True)
 
     # 2. System Paradigm / Template Selection
-    if not template_type and is_tty:
+    if clean and not template_type:
+        template_type = "scratch"
+        if is_tty:
+            print(f"  {check('Template', 'Clean Scratch (comments & contracts only, zero sample code)')}")
+    elif clean and template_type:
+        template_type = template_type.lower()
+        if template_type in ("adapter", "peft", "lora"):
+            template_type = "fine-tuning"
+        if is_tty:
+            print(f"  {check('Template', f'Clean {template_type.title()} (comments & contracts only, zero sample code)')}")
+    elif not template_type and is_tty:
         template_type = prompt_select(
             "Select a system paradigm template:",
             [
                 ("rag", "RAG & Knowledge Base      (Semantic search, grounded LLM synthesis, smart chunking)"),
                 ("fine-tuning", "Fine-Tuning & Adapters    (LoRA & PEFT low-rank parameter adaptation)"),
                 ("scratch", "Custom / Scratch ML       (Tabular, supervised, deep learning & classification)"),
+                ("clean", "Clean Scratch Project     (Zero sample code, clean skeletons with guiding comments)"),
             ],
             default="rag",
             is_tty=is_tty,
         )
+        if template_type == "clean":
+            clean = True
+            template_type = "scratch"
     elif is_tty and template_type:
         print(f"  {check('Template', template_type)}")
 
     template_type = (template_type or "scratch").lower()
     if template_type in ("adapter", "peft", "lora"):
         template_type = "fine-tuning"
+    elif template_type == "clean":
+        clean = True
+        template_type = "scratch"
 
     rag_config: Dict[str, Any] = {}
     adapter_config: Dict[str, Any] = {}
 
     # 3. Follow-up configs for RAG
     if template_type == "rag":
-        if is_tty and not chat_provider:
+        if is_tty and not clean and not chat_provider:
             chat_provider = prompt_select(
                 "Select Chat Provider for LLM synthesis:",
                 [
@@ -154,12 +173,12 @@ def run_init(
             "mock": "mock-gpt",
         }.get(chat_provider, "gpt-4o-mini")
 
-        if is_tty and not model_name:
+        if is_tty and not clean and not model_name:
             model_name = prompt_text(f"Model identifier for {chat_provider.upper()}", default=default_model, is_tty=is_tty)
         else:
             model_name = model_name or default_model
 
-        if is_tty and not vector_db:
+        if is_tty and not clean and not vector_db:
             vector_db = prompt_select(
                 "Select Vector Database backend:",
                 [
@@ -171,7 +190,7 @@ def run_init(
             )
         vector_db = (vector_db or "memory").lower()
 
-        if is_tty and not embedding_engine:
+        if is_tty and not clean and not embedding_engine:
             embedding_engine = prompt_select(
                 "Select Embedding Engine:",
                 [
@@ -211,7 +230,7 @@ def run_init(
 
     # 3b. Extra package search step
     extra_packages: List[str] = []
-    if is_tty:
+    if is_tty and not clean:
         extra_packages = prompt_package_search(
             "Add extra packages",
             hint="(space-separated, e.g. pandas numpy scikit-learn — press Enter to skip)",
@@ -279,6 +298,7 @@ def run_init(
         "version": "0.1.0",
         "entrypoint": project_name,
         "template": template_type,
+        "clean": clean,
         "dependencies": dependencies,
         "config": {
             "device": "auto",
@@ -303,9 +323,10 @@ def run_init(
     package_dir = dest_root / project_name
     package_dir.mkdir(parents=True, exist_ok=True)
 
-    _scaffold_paradigm_files(package_dir, dest_root, project_name, template_type, rag_config, adapter_config)
+    _scaffold_paradigm_files(package_dir, dest_root, project_name, template_type, rag_config, adapter_config, clean=clean)
 
-    print(f"\n  {C.DIM}Scaffolding {template_type.upper()} project in{C.RESET} {dest_root}...")
+    mode_label = "CLEAN SCRATCH" if clean else template_type.upper()
+    print(f"\n  {C.DIM}Scaffolding {mode_label} project in{C.RESET} {dest_root}...")
 
     # 7. Create .venv environment structure
     if create_venv:
@@ -411,6 +432,7 @@ def _scaffold_paradigm_files(
     template_type: str,
     rag_config: Dict[str, Any],
     adapter_config: Dict[str, Any],
+    clean: bool = False,
 ) -> None:
     """Generates customized Python source files and starter datasets according to the paradigm."""
     config_content = f'''"""AIMLite App Configuration: config.py"""
@@ -434,17 +456,21 @@ class Config(BaseConfig):
     batch_size: int = 32
 '''
     (package_dir / "config.py").write_text(config_content, encoding="utf-8")
-    (package_dir / "__init__.py").write_text('"""AIMLite Package."""\n', encoding="utf-8")
+    (package_dir / "__init__.py").write_text(f'"""{project_name} AIMLite Package."""\n', encoding="utf-8")
 
-    if template_type == "rag":
-        _scaffold_rag(package_dir, dest_root, project_name, rag_config)
+    if clean and template_type == "scratch":
+        _scaffold_clean_scratch(package_dir, dest_root, project_name)
+    elif template_type == "rag":
+        _scaffold_rag(package_dir, dest_root, project_name, rag_config, clean=clean)
     elif template_type == "fine-tuning":
-        _scaffold_fine_tuning(package_dir, dest_root, project_name, adapter_config)
+        _scaffold_fine_tuning(package_dir, dest_root, project_name, adapter_config, clean=clean)
+    elif clean:
+        _scaffold_clean_scratch(package_dir, dest_root, project_name)
     else:
         _scaffold_scratch(package_dir, dest_root, project_name)
 
 
-def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_config: Dict[str, Any]) -> None:
+def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_config: Dict[str, Any], clean: bool = False) -> None:
     """Generates RAG & Knowledge Model files with modular chat provider, storage, and developer-editable hooks."""
     chat_p = rag_config.get("chat_provider", "openai")
     model_name = rag_config.get("model_name", "gpt-4o-mini")
@@ -1004,20 +1030,11 @@ All project directories (`data/`, `models/`, `experiments/`, `artifacts/`) are a
 AIMLite models are served via `aimlite serve --port 8000`.
 For production deployments, containerize with Docker and scale horizontally with Kubernetes.
 """
-    (dest_root / "data" / "knowledge_base.md").write_text(sample_md, encoding="utf-8")
-
-    faq_md = """# Frequently Asked Questions (FAQ)
-
-## How does AIMLite manage model checkpoints?
-AIMLite automatically persists model weights, optimizer states, and configuration metadata into the `checkpoints/` directory.
-
-## Can I switch from SQLite/Memory to PostgreSQL in production?
-Yes! Simply configure `PostgresVectorStore(db_url="postgresql://user:pass@localhost:5432/rag_db")` in `store.py`.
-
-## How do I customize LLM System Prompts?
-Edit `chat_provider.py` to change prompt templates or pass custom instructions directly to `get_chat_provider()`.
-"""
-    (dest_root / "data" / "faq.md").write_text(faq_md, encoding="utf-8")
+    if not clean:
+        (dest_root / "data" / "knowledge_base.md").write_text(sample_md, encoding="utf-8")
+        (dest_root / "data" / "faq.md").write_text(faq_md, encoding="utf-8")
+    else:
+        (dest_root / "data" / ".gitkeep").write_text("", encoding="utf-8")
 
     # 7. Experiments benchmark starter script
     benchmark_py = f'''"""Benchmark and evaluation experiment script for {project_name} RAG Knowledge Base.
@@ -1307,7 +1324,7 @@ aimlite serve --port 8000
     (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
 
 
-def _scaffold_fine_tuning(package_dir: Path, dest_root: Path, project_name: str, adapter_config: Dict[str, Any]) -> None:
+def _scaffold_fine_tuning(package_dir: Path, dest_root: Path, project_name: str, adapter_config: Dict[str, Any], clean: bool = False) -> None:
     """Generates Fine-Tuning & LoRA Adapter files."""
     # 1. Adapter Configuration Starter: adapter.py
     adapter_py = f'''"""Fine-Tuning & Adapter Configuration: adapter.py
@@ -1457,7 +1474,10 @@ class AdapterInference(BaseInference):
 {"instruction": "How does LoRA reduce checkpoint size?", "response": "LoRA freezes foundation parameters and trains low-rank delta matrices, reducing weights from 14GB down to under 50MB."}
 {"instruction": "How do you evaluate adapter models in AIMLite?", "response": "Run aimlite evaluate to compute parameter efficiency, rank sparsity, and loss convergence."}
 """
-    (dest_root / "data" / "instructions.jsonl").write_text(sample_jsonl, encoding="utf-8")
+    if not clean:
+        (dest_root / "data" / "instructions.jsonl").write_text(sample_jsonl, encoding="utf-8")
+    else:
+        (dest_root / "data" / ".gitkeep").write_text("", encoding="utf-8")
 
     # 6. Experiments benchmark script
     benchmark_py = f'''"""Benchmark script evaluating parameter efficiency and latency for {project_name} LoRA Adapter."""
@@ -1661,6 +1681,274 @@ aimlite benchmark
 # 7. Serve HTTP API
 aimlite serve --port 8000
 ```
+"""
+def _scaffold_clean_scratch(package_dir: Path, dest_root: Path, project_name: str) -> None:
+    """Generates a clean scratch ML project with zero sample code or dummy datasets.
+
+    All starter files contain only class skeletons, type annotations, and guiding comments
+    explaining each component of the lifecycle.
+    """
+    data_py = '''"""AIMLite Data Ingestion & Dataset Schema: data.py
+
+Define your dataset classes here.
+Inherit from aimlite.Dataset to gain automated zero-path data loading,
+validation contracts, and partition splitting.
+"""
+
+from typing import Any, Dict, Optional
+from aimlite import Dataset
+
+
+class AppDataset(Dataset):
+    """Application dataset definition.
+
+    Declare your primary data filename or source path within data/ (e.g. data/my_data.csv).
+    Override prepare() for feature transformations or custom train/val/test splits.
+    """
+
+    # Primary data source file located in data/ directory
+    # filename: Optional[str] = "my_dataset.csv"
+
+    def prepare(self) -> None:
+        """Load and transform raw records before training or evaluation."""
+        # Add your custom data loading, cleaning, or feature engineering here
+        pass
+'''
+    (package_dir / "data.py").write_text(data_py, encoding="utf-8")
+
+    model_py = '''"""AIMLite Model Architecture: model.py
+
+Define your machine learning or neural network architecture here.
+Inherit from aimlite.Model to enable automated checkpointing, registry discovery,
+and HTTP inference serving.
+"""
+
+from typing import Any, Dict
+from aimlite import Model
+
+
+class AppModel(Model):
+    """Application model definition."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        # Initialize your PyTorch module, Scikit-Learn estimator, or custom model layers here
+        pass
+
+    def predict(self, inputs: Any, **kwargs: Any) -> Any:
+        """Execute forward inference for the given input payload."""
+        # Implement your forward pass / prediction logic here
+        # Return predictions as dictionary, list, or tensor
+        raise NotImplementedError("Implement predict() for your model architecture.")
+'''
+    (package_dir / "model.py").write_text(model_py, encoding="utf-8")
+
+    trainer_py = '''"""AIMLite Training Orchestrator: trainer.py
+
+Implement your training loops, optimization routines, and checkpoint saving here.
+Inherit from aimlite.BaseTrainer to enable 'aimlite train' CLI execution and metric logging.
+"""
+
+from typing import Any, Dict
+from aimlite import BaseTrainer, Dataset, Model
+
+
+class AppTrainer(BaseTrainer):
+    """Application training orchestrator."""
+
+    def fit(self, model: Model, dataset: Dataset, **kwargs: Any) -> Dict[str, Any]:
+        """Execute model training loop over the provided dataset."""
+        # 1. Access dataset partitions or records: dataset.get_partition("train")
+        # 2. Run your optimization loop and loss computation
+        # 3. Save weights or checkpoint via model.save()
+        # 4. Return summary metrics dictionary (e.g. {"loss": 0.05, "epochs": 10})
+        raise NotImplementedError("Implement fit() to orchestrate training for your model.")
+'''
+    (package_dir / "trainer.py").write_text(trainer_py, encoding="utf-8")
+
+    evaluator_py = '''"""AIMLite Evaluation Benchmark: evaluator.py
+
+Define validation and benchmark metrics (accuracy, F1, latency, perplexity) here.
+Inherit from aimlite.BaseEvaluator to enable 'aimlite evaluate' CLI benchmark assessments.
+"""
+
+from typing import Any, Dict
+from aimlite import BaseEvaluator, Model
+
+
+class AppEvaluator(BaseEvaluator):
+    """Application evaluation benchmark."""
+
+    def evaluate(self, model: Model, test_data: Any, **kwargs: Any) -> Dict[str, Any]:
+        """Assess model performance against held-out test data."""
+        # 1. Compute evaluation metrics (e.g. accuracy, precision, recall, MAE)
+        # 2. Return metrics dictionary (e.g. {"accuracy": 0.94, "loss": 0.12})
+        raise NotImplementedError("Implement evaluate() to assess model performance.")
+'''
+    (package_dir / "evaluator.py").write_text(evaluator_py, encoding="utf-8")
+
+    inference_py = '''"""AIMLite Inference & Route Handler: inference.py
+
+Define input validation, preprocessing, batch prediction, and custom HTTP endpoints here.
+Inherit from aimlite.BaseInference to power 'aimlite serve'.
+"""
+
+from typing import Any, Dict
+from aimlite import BaseInference, Model
+
+
+class AppInference(BaseInference):
+    """Application inference and HTTP routing handler."""
+
+    def run(self, model: Model, raw_input: Any, **kwargs: Any) -> Dict[str, Any]:
+        """Preprocess incoming payload, execute model inference, and format JSON response."""
+        # Preprocess raw_input as required by your model
+        # Return structured inference response dictionary
+        return {"result": model.predict(raw_input)}
+
+    def get_routes(self) -> Dict[str, Any]:
+        """Declare custom HTTP route handlers exposed by the inference server."""
+        return {
+            "POST /predict": self.run,
+            "GET /health": self.health,
+        }
+'''
+    (package_dir / "inference.py").write_text(inference_py, encoding="utf-8")
+
+    # Experiments benchmark skeleton
+    benchmark_py = f'''"""Benchmark script evaluating latency, memory, and throughput for {project_name}."""
+
+import time
+
+# from {project_name}.model import AppModel
+
+
+def run_benchmark() -> None:
+    """Execute model latency and throughput benchmark."""
+    print("=" * 60)
+    print("  AIMLite Benchmark: {project_name}")
+    print("=" * 60)
+
+    # Initialize your model and execute latency trials
+    # model = AppModel()
+    # sample_payload = {{}}
+    # ...
+
+
+if __name__ == "__main__":
+    run_benchmark()
+'''
+    (dest_root / "experiments" / "benchmark.py").write_text(benchmark_py, encoding="utf-8")
+
+    # Client template
+    client_py = f'''"""Client test script for {project_name} HTTP Inference Server."""
+
+import json
+import urllib.request
+
+URL = "http://127.0.0.1:8000/predict"
+
+
+def query_model(payload: dict) -> dict:
+    req = urllib.request.Request(
+        URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={{"Content-Type": "application/json"}},
+    )
+    with urllib.request.urlopen(req) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+if __name__ == "__main__":
+    print(f"Connecting to {{URL}}...")
+    # response = query_model({{"inputs": ...}})
+    # print("Response:", response)
+'''
+    (dest_root / "client.py").write_text(client_py, encoding="utf-8")
+
+    # Gitkeep files for clean project directories (NO dummy CSV!)
+    for d in ["data", "models", "artifacts", "checkpoints"]:
+        (dest_root / d / ".gitkeep").write_text("", encoding="utf-8")
+
+    gitignore_content = """# Environments & Virtual Envs
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+
+# Sensitive Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+
+# ML Artifacts & Checkpoints
+artifacts/*.json
+artifacts/*.pkl
+checkpoints/*.pt
+"""
+    (dest_root / ".gitignore").write_text(gitignore_content, encoding="utf-8")
+
+    env_example = """# ==============================================================================
+# AIMLite Clean Project: Environment Variables & Secrets
+# ==============================================================================
+# Copy this file to .env and fill in your actual credentials:
+#   cp .env.example .env
+# Never commit your .env file containing private keys to version control!
+# ==============================================================================
+
+AIMLITE_DEVICE=auto
+AIMLITE_PORT=8000
+"""
+    (dest_root / ".env.example").write_text(env_example, encoding="utf-8")
+
+    readme_md = f"""# {project_name}
+
+An AIMLite machine learning project scaffolded in clean scratch mode (zero sample code, comments & contracts only).
+
+## Project Structure
+
+```
+{project_name}/
+├── {project_name}/
+│   ├── __init__.py
+│   ├── config.py       # BaseConfig paths and hardware device settings
+│   ├── data.py         # Dataset schema and ingestion contracts
+│   ├── model.py        # Model architecture and forward inference
+│   ├── trainer.py      # BaseTrainer fit and optimization loop
+│   ├── evaluator.py    # BaseEvaluator benchmark assessment
+│   └── inference.py    # BaseInference HTTP routing and prediction handler
+├── data/               # Raw and processed datasets (clean)
+├── models/             # Saved model checkpoints and weights (.pkl)
+├── experiments/        # Benchmark and experiment evaluation scripts
+├── artifacts/          # Generated indices, metrics, and tokenizers
+├── checkpoints/        # Training snapshots
+├── client.py           # HTTP test client
+├── aimlite.json        # Project manifest
+└── README.md
+```
+
+## Quick Start
+
+1. Add your raw data file to `data/` and declare `filename` in `{project_name}/data.py`.
+2. Implement your model architecture in `{project_name}/model.py`.
+3. Implement your training loop in `{project_name}/trainer.py`.
+4. Train your model:
+   ```bash
+   aimlite train
+   ```
+5. Serve your HTTP inference API & Web App:
+   ```bash
+   aimlite serve --port 8000
+   ```
 """
     (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
 

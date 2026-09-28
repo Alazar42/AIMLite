@@ -50,6 +50,7 @@ models/*.bin
 models/*.safetensors
 checkpoints/
 artifacts/
+examples/
 
 # Environment Variables & Secrets
 .env

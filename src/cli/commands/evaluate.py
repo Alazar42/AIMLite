@@ -136,18 +136,23 @@ def _discover_checkpoint(
 
     # 1. Look for per-model named checkpoint first (highest priority)
     if model_cls is not None:
+        import re
+        snake = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", model_cls.__name__).lower()
         try:
             tmp_instance = object.__new__(model_cls)
             tmp_instance.name = "_"
             weights_name = _model_weights_filename(tmp_instance)
         except Exception:
-            # Fallback: derive name from class name directly
-            import re
-            snake = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", model_cls.__name__).lower()
             weights_name = f"{snake}.pkl"
 
         for cdir in candidate_dirs:
             if cdir.is_dir():
+                # Check direct match with snake name and various extensions
+                for ext in [".pkl", ".pt", ".pth", ".joblib", ".bin", ".safetensors", ".json"]:
+                    cand_named = cdir / f"{snake}{ext}"
+                    if cand_named.is_file():
+                        return cand_named
+
                 candidate = cdir / weights_name
                 if candidate.is_file():
                     return candidate
@@ -171,10 +176,10 @@ def _discover_checkpoint(
             if pkls:
                 return pkls[0]
 
-    # 3. Other ML checkpoint extensions
+    # 3. Other ML & RAG checkpoint extensions
     for cdir in candidate_dirs:
         if cdir.is_dir():
-            for ext in ["*.pt", "*.pth", "*.joblib", "*.bin"]:
+            for ext in ["*.pt", "*.pth", "*.joblib", "*.bin", "*.safetensors", "rag_index.json", "*_index.json"]:
                 matches = sorted(
                     cdir.glob(f"**/{ext}"),
                     key=lambda p: p.stat().st_mtime,

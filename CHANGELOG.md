@@ -5,6 +5,33 @@ All notable changes to the AIMLite framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7] - 2026-09-28
+
+### Added
+- **Zero-Path Multi-Model Serving & Inventory Architecture (`aimlite serve`)**:
+  - Automatically scans `model.py` and registers all trained model classes across any paradigm (Classical ML, RAG Knowledge, and LoRA Fine-Tuning) in a unified server model inventory.
+  - Added class-specific targeting: `aimlite serve [ModelName]` (e.g. `aimlite serve ChurnClassifier`) to serve only that class exclusively.
+  - Added Model Inventory API endpoint `GET /models` returning model metadata, active status, discovered features, and per-model prediction endpoints (`POST /models/{name}/predict`).
+  - Added per-model inference dispatch: `POST /predict` accepts optional `"model": "<name>"` payload, and `POST /models/{name}/predict` directly executes the target model.
+- **Paradigm-Adaptive Web Application (`src/aimlite/templates/app.html`)**:
+  - Replaced static chat interface with an adaptive, monochromatic, responsive web application that tailors its layout to the active model's paradigm:
+    - **Classical & Deep ML (`Model`)**: Renders an interactive Feature Form with auto-discovered dataset columns, 1-click Preset Buttons (`Sample 1`, `Sample 2`, `Zero Vector`, `Randomize`), Form vs JSON mode switcher, live prediction decision cards, confidence meters, and execution latency gauges.
+    - **RAG & Knowledge Retrieval (`KnowledgeModel`, `RAGModel`)**: Renders a conversational chat assistant with grounded context citations, similarity percentages, expandable chunks, Top-K context slider, and query suggestion chips.
+    - **LoRA Fine-Tuning (`AdapterModel`)**: Renders a prompt completion playground with temperature, max token controls, and token generation stream view.
+  - **Dynamic Model Switcher**: Top navbar dropdown enables instant switching between all registered models and their dedicated paradigm controls on the fly without page reloads.
+- **Clean Scratch Scaffolding (`aimlite init --clean`)**:
+  - Added `--clean` flag and interactive "Clean Scratch Project" option to scaffold pristine machine learning projects with zero sample code or dummy datasets.
+  - Generates clean class contracts (`Dataset`, `Model`, `BaseTrainer`, `BaseEvaluator`, `BaseInference`) with `NotImplementedError` and structured docstrings/comments guiding custom implementations.
+  - Keeps `data/` strictly clean (zero dummy CSV records), includes clean `.env.example`, `experiments/benchmark.py`, and `client.py` templates.
+- **Headless REST API Mode (`--api`)**:
+  - Added `--api` flag to `aimlite serve` to disable HTML web interfaces and run as a lightweight, headless JSON REST microservice, ideal for containerized Docker and Kubernetes deployments.
+- **Full Developer Control & Customization Priority**:
+  - Added template priority loader: placing `app.html` or `index.html` inside `<project_root>/templates/` automatically overrides the built-in package templates.
+  - Added SPA client-side routing fallback to `--frontend <dir>`: non-asset routes automatically resolve to `index.html`, supporting React Router, Vue Router, Next.js static exports, and SvelteKit without 404s.
+  - Zero-CORS single-port deployment: custom frontend bundles and REST APIs share the exact same port.
+
+---
+
 ## [1.0.6] - 2026-09-24
 
 ### Added

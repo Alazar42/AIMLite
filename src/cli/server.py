@@ -8,15 +8,27 @@ import os
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from cli.ui import C, arrow, cross, vite_header
 from aimlite.lifecycle import BaseInference
 from aimlite.models import Model
 
 
-def _load_template(filename: str) -> str:
-    """Loads HTML template from aimlite package or fallback directory."""
+def _load_template(filename: str, template_dir: Optional[Path] = None) -> str:
+    """Loads HTML template with developer project override priority."""
+    # 1. Developer's project templates directory (<project_root>/templates/<filename>)
+    if template_dir is not None and template_dir.is_dir():
+        custom_file = template_dir / filename
+        if custom_file.is_file():
+            return custom_file.read_text(encoding="utf-8")
+        # Allow templates/index.html to satisfy app.html
+        if filename in ("app.html", "chat.html"):
+            index_custom = template_dir / "index.html"
+            if index_custom.is_file():
+                return index_custom.read_text(encoding="utf-8")
+
+    # 2. Package resources
     try:
         from importlib import resources
 
@@ -24,20 +36,31 @@ def _load_template(filename: str) -> str:
     except Exception:
         pass
 
+    # 3. Direct relative path fallback
     fallback_path = Path(__file__).resolve().parent.parent / "aimlite" / "templates" / filename
     if fallback_path.is_file():
         return fallback_path.read_text(encoding="utf-8")
 
+    # 4. Secondary fallback: if app.html requested but not found, try chat.html
+    if filename == "app.html":
+        chat_fallback = Path(__file__).resolve().parent.parent / "aimlite" / "templates" / "chat.html"
+        if chat_fallback.is_file():
+            return chat_fallback.read_text(encoding="utf-8")
+
     return f"<html><body><h1>AIMLite Server</h1><p>Template {filename} not found.</p></body></html>"
 
 
-def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """Generates OpenAPI 3.0 schema dynamically reflecting standard and custom endpoints."""
+def get_openapi_schema(
+    models: Dict[str, Dict[str, Any]],
+    active_model_name: str,
+    routes: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Generates OpenAPI 3.0 schema dynamically reflecting registered models and endpoints."""
     paths: Dict[str, Any] = {
         "/predict": {
             "post": {
-                "summary": "Execute Model Inference",
-                "description": "Submits input features to execute live model predictions.",
+                "summary": f"Execute Default Model Inference ({active_model_name})",
+                "description": "Submits input payload to the active default model.",
                 "requestBody": {
                     "required": True,
                     "content": {
@@ -53,6 +76,13 @@ def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None)
                 },
             },
         },
+        "/models": {
+            "get": {
+                "summary": "List Registered Models",
+                "description": "Returns metadata and endpoints for all registered and trained model classes.",
+                "responses": {"200": {"description": "Model inventory list"}},
+            },
+        },
         "/health": {
             "get": {
                 "summary": "Server Health Check",
@@ -60,6 +90,38 @@ def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None)
             },
         },
     }
+
+    # Add per-model endpoints
+    for m_name, m_info in models.items():
+        m_type = m_info.get("type", "ml")
+        example_payload = (
+            {"query": "Sample question for knowledge search", "top_k": 3}
+            if m_type == "rag"
+            else (
+                {"prompt": "Generate response", "max_tokens": 128}
+                if m_type == "adapter"
+                else {"features": [1.0, 2.0, 3.0]}
+            )
+        )
+        paths[f"/models/{m_name}/predict"] = {
+            "post": {
+                "summary": f"Inference for {m_name} ({m_type.upper()})",
+                "description": m_info.get("description", f"Executes inference using model class {m_name}."),
+                "requestBody": {
+                    "required": True,
+                    "content": {
+                        "application/json": {
+                            "schema": {"type": "object"},
+                            "example": example_payload,
+                        },
+                    },
+                },
+                "responses": {
+                    "200": {"description": "Inference success"},
+                    "404": {"description": "Model not found"},
+                },
+            },
+        }
 
     # Add custom endpoints from developer routes
     if routes:
@@ -77,9 +139,9 @@ def get_openapi_schema(model_name: str, routes: Optional[Dict[str, Any]] = None)
     return {
         "openapi": "3.0.0",
         "info": {
-            "title": f"AIMLite API - {model_name}",
-            "version": "1.0.6",
-            "description": "Developer-customizable inference server and frontend host.",
+            "title": f"AIMLite API — {active_model_name}",
+            "version": "1.0.7",
+            "description": "Developer-customizable zero-path multi-model inference server.",
         },
         "paths": paths,
     }
@@ -104,9 +166,25 @@ def create_handler_class(
     inference: Optional[BaseInference] = None,
     model_name: str = "model",
     frontend_dir: Optional[Path] = None,
+    template_dir: Optional[Path] = None,
+    registered_models: Optional[Dict[str, Dict[str, Any]]] = None,
+    active_model_name: Optional[str] = None,
+    api_only: bool = False,
 ):
-    """Creates a configured RequestHandler supporting custom routes and frontend hosting."""
+    """Creates a configured RequestHandler supporting multi-model routing, custom routes and frontend hosting."""
     active_inference = inference or DefaultInference()
+    models_dict = registered_models or {
+        model_name: {
+            "class": type(model),
+            "instance": model,
+            "type": "ml",
+            "description": type(model).__doc__ or f"{model_name} model",
+            "checkpoint": None,
+            "features": [],
+            "inference": active_inference,
+        }
+    }
+    primary_name = active_model_name or model_name
 
     # Collect custom developer routes from BaseInference
     custom_routes: Dict[str, Callable] = {}
@@ -116,10 +194,37 @@ def create_handler_class(
         except Exception:
             custom_routes = {}
 
+    def get_model_entry(name: Optional[str]) -> Optional[Dict[str, Any]]:
+        if not name:
+            return models_dict.get(primary_name)
+        if name in models_dict:
+            return models_dict[name]
+        # Case-insensitive search
+        name_lower = name.lower()
+        for k, v in models_dict.items():
+            if k.lower() == name_lower or k.lower().replace("model", "") == name_lower:
+                return v
+        return None
+
+    def execute_model_inference(m_entry: Dict[str, Any], payload: Any) -> Any:
+        m_inst = m_entry["instance"]
+        m_inf = m_entry.get("inference") or active_inference
+        # Allow inference handler or direct model predict
+        if hasattr(m_inf, "run"):
+            return m_inf.run(m_inst, payload)
+        # Direct fallback
+        if isinstance(payload, dict) and "features" in payload:
+            return m_inst.predict(payload["features"])
+        return m_inst.predict(payload)
+
     class AIMLiteHTTPHandler(BaseHTTPRequestHandler):
         def log_message(self, format: str, *args: Any) -> None:
             code = args[1] if len(args) > 1 else "200"
-            code_color = C.GREEN if str(code).startswith("2") else (C.RED if str(code).startswith("4") or str(code).startswith("5") else C.YELLOW)
+            code_color = (
+                C.GREEN
+                if str(code).startswith("2")
+                else (C.RED if str(code).startswith("4") or str(code).startswith("5") else C.YELLOW)
+            )
             method = args[0].split()[0] if len(args) > 0 and " " in str(args[0]) else "REQ"
             url = args[0].split()[1] if len(args) > 0 and len(str(args[0]).split()) > 1 else ""
             print(f"  {C.DIM}[{self.log_date_time_string()}]{C.RESET} {C.CYAN}{method:<4}{C.RESET} {code_color}{code}{C.RESET} {url}")
@@ -134,49 +239,59 @@ def create_handler_class(
             self._send_cors_headers()
             self.end_headers()
 
+        def _send_json(self, status_code: int, data_obj: Any) -> None:
+            data = json.dumps(data_obj, indent=2 if status_code == 200 else None).encode("utf-8")
+            self.send_response(status_code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self._send_cors_headers()
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _send_html(self, html_content: str, status_code: int = 200) -> None:
+            data = html_content.encode("utf-8")
+            self.send_response(status_code)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self._send_cors_headers()
+            self.end_headers()
+            self.wfile.write(data)
+
         def _dispatch_handler(self, handler: Callable, payload: Any = None) -> None:
             """Executes developer handler and serializes response cleanly."""
-            start_t = time.perf_counter()
             try:
-                # Support both handler(model, payload) and handler(payload)
                 try:
                     res = handler(model, payload)
                 except TypeError:
                     res = handler(payload) if payload is not None else handler()
             except Exception as e:
-                err = json.dumps({"status": "error", "message": str(e)}).encode("utf-8")
-                self.send_response(500)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(err)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(err)
+                self._send_json(500, {"status": "error", "message": str(e)})
                 return
 
             status_code = 200
             if isinstance(res, tuple) and len(res) == 2:
                 res, status_code = res
 
-            # Serialize output
             if isinstance(res, (dict, list)):
-                data = json.dumps(res).encode("utf-8")
-                content_type = "application/json; charset=utf-8"
+                self._send_json(status_code, res)
             elif isinstance(res, str):
-                data = res.encode("utf-8")
                 content_type = "text/html; charset=utf-8" if "<html" in res.lower() else "text/plain; charset=utf-8"
+                data = res.encode("utf-8")
+                self.send_response(status_code)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(data)))
+                self._send_cors_headers()
+                self.end_headers()
+                self.wfile.write(data)
             elif isinstance(res, bytes):
-                data = res
-                content_type = "application/octet-stream"
+                self.send_response(status_code)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Length", str(len(res)))
+                self._send_cors_headers()
+                self.end_headers()
+                self.wfile.write(res)
             else:
-                data = json.dumps({"result": res}).encode("utf-8")
-                content_type = "application/json; charset=utf-8"
-
-            self.send_response(status_code)
-            self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(len(data)))
-            self._send_cors_headers()
-            self.end_headers()
-            self.wfile.write(data)
+                self._send_json(status_code, {"result": res})
 
         def _serve_static_file(self, file_path: Path) -> bool:
             """Serves a static file if present."""
@@ -200,53 +315,107 @@ def create_handler_class(
             path = self.path.split("?")[0]
             route_key = f"GET {path}"
 
-            # 1. Check custom developer route
+            # 1. Custom developer route
             if route_key in custom_routes:
                 self._dispatch_handler(custom_routes[route_key])
                 return
 
-            # 2. Built-in Interactive Chat Playground
-            if path in ["/chat", "/playground"]:
-                html = _load_template("chat.html")
-                data = html.encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(data)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(data)
+            # 2. Multi-model list endpoint: GET /models
+            if path == "/models":
+                models_list = []
+                for name, info in models_dict.items():
+                    models_list.append({
+                        "name": name,
+                        "type": info.get("type", "ml"),
+                        "description": info.get("description", ""),
+                        "checkpoint": info.get("checkpoint"),
+                        "features": info.get("features", []),
+                        "active": (name == primary_name),
+                    })
+                self._send_json(200, models_list)
                 return
 
-            # 3. Built-in Swagger Docs & OpenAPI
+            # 2b. Specific model metadata: GET /models/<name>
+            if path.startswith("/models/") and len(path.split("/")) == 3:
+                req_model = path.split("/")[2]
+                entry = get_model_entry(req_model)
+                if entry:
+                    self._send_json(200, {
+                        "name": req_model,
+                        "type": entry.get("type", "ml"),
+                        "description": entry.get("description", ""),
+                        "checkpoint": entry.get("checkpoint"),
+                        "features": entry.get("features", []),
+                        "active": (req_model == primary_name),
+                    })
+                    return
+                self._send_json(404, {"error": f"Model '{req_model}' not found"})
+                return
+
+            # 3. Headless API Mode: if --api is enabled, disallow web UI
+            if api_only:
+                if path in ["/chat", "/playground", "/app"]:
+                    self._send_json(403, {
+                        "status": "headless",
+                        "message": "Web UI is disabled in headless --api mode. Use REST API endpoints.",
+                        "endpoints": {
+                            "models": "GET /models",
+                            "predict": "POST /predict",
+                            "health": "GET /health",
+                            "docs": "GET /docs",
+                            "openapi": "GET /openapi.json",
+                        },
+                    })
+                    return
+
+                if path in ["", "/"]:
+                    payload = {
+                        "name": "AIMLite Server",
+                        "status": "online",
+                        "mode": "headless_api",
+                        "active_model": primary_name,
+                        "models": list(models_dict.keys()),
+                        "endpoints": {
+                            "models": "GET /models",
+                            "predict": "POST /predict",
+                            "health": "GET /health",
+                            "docs": "GET /docs",
+                            "openapi": "GET /openapi.json",
+                        },
+                    }
+                    self._send_json(200, payload)
+                    return
+
+            # 4. Built-in or Overridden Web Application: GET /chat, /app, /playground
+            if path in ["/chat", "/playground", "/app"]:
+                html = _load_template("app.html", template_dir=template_dir)
+                self._send_html(html)
+                return
+
+            # 5. Built-in Swagger Docs & OpenAPI
             if path == "/docs":
-                html = _load_template("swagger.html")
-                data = html.encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(data)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(data)
+                html = _load_template("swagger.html", template_dir=template_dir)
+                self._send_html(html)
                 return
 
             if path == "/openapi.json":
-                schema = get_openapi_schema(model_name, custom_routes)
-                data = json.dumps(schema, indent=2).encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(data)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(data)
+                schema = get_openapi_schema(models_dict, primary_name, custom_routes)
+                self._send_json(200, schema)
                 return
 
-            # 4. Default Health probe
+            # 6. Default Health probe
             if path == "/health":
-                payload = {"status": "healthy", "model": model_name}
-                self._dispatch_handler(lambda: payload)
+                payload = {
+                    "status": "healthy",
+                    "model": primary_name,
+                    "type": models_dict.get(primary_name, {}).get("type", "ml"),
+                    "models": list(models_dict.keys()),
+                    "api_only": api_only,
+                }
+                self._send_json(200, payload)
                 return
 
-            # 5. Custom Frontend Serving (if configured)
+            # 7. Custom Frontend Serving (if configured by developer)
             if frontend_dir and frontend_dir.is_dir():
                 rel_path = path.lstrip("/")
                 target_file = frontend_dir / rel_path if rel_path else frontend_dir / "index.html"
@@ -260,41 +429,33 @@ def create_handler_class(
                     if self._serve_static_file(fallback_index):
                         return
 
-            # 6. Default API root (when no custom frontend is provided)
+            # 8. Root URL (GET /)
             if path in ["", "/"]:
                 accept_header = self.headers.get("Accept", "")
-                # If accessed via a web browser, serve the interactive Chat Playground
+                # If accessed via a browser, serve the adaptive web app
                 if "text/html" in accept_header:
-                    html = _load_template("chat.html")
-                    data = html.encode("utf-8")
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.send_header("Content-Length", str(len(data)))
-                    self._send_cors_headers()
-                    self.end_headers()
-                    self.wfile.write(data)
+                    html = _load_template("app.html", template_dir=template_dir)
+                    self._send_html(html)
                     return
 
+                # If requested via curl/json API client, return service directory
                 endpoints = {
-                    "chat": f"GET /chat (Interactive Web Playground)",
-                    "predict": f"POST /predict",
-                    "health": f"GET /health",
-                    "docs": f"GET /docs",
-                    "openapi": f"GET /openapi.json",
+                    "app": "GET /app (Interactive Web Interface)",
+                    "models": "GET /models (Registered Models Inventory)",
+                    "predict": "POST /predict",
+                    "health": "GET /health",
+                    "docs": "GET /docs",
+                    "openapi": "GET /openapi.json",
                 }
                 payload = {
-                    "name": model_name,
+                    "name": primary_name,
                     "status": "online",
-                    "version": "1.0.6",
+                    "version": "1.0.7",
+                    "active_model": primary_name,
+                    "models": list(models_dict.keys()),
                     "endpoints": endpoints,
                 }
-                data = json.dumps(payload, indent=2).encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(data)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(data)
+                self._send_json(200, payload)
                 return
 
             if path == "/predict":
@@ -303,23 +464,11 @@ def create_handler_class(
                     "description": "Submit a POST request with JSON payload to execute live model inference.",
                     "method": "POST",
                 }
-                data = json.dumps(payload, indent=2).encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(data)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(data)
+                self._send_json(200, payload)
                 return
 
             # 404
-            msg = json.dumps({"error": f"Endpoint '{path}' not found"}).encode("utf-8")
-            self.send_response(404)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(msg)))
-            self._send_cors_headers()
-            self.end_headers()
-            self.wfile.write(msg)
+            self._send_json(404, {"error": f"Endpoint '{path}' not found"})
 
         def do_POST(self) -> None:
             path = self.path.split("?")[0]
@@ -334,13 +483,7 @@ def create_handler_class(
                 try:
                     payload = json.loads(raw_body.decode("utf-8")) if raw_body else {}
                 except json.JSONDecodeError as e:
-                    err = json.dumps({"error": f"Malformed JSON: {e}"}).encode("utf-8")
-                    self.send_response(400)
-                    self.send_header("Content-Type", "application/json; charset=utf-8")
-                    self.send_header("Content-Length", str(len(err)))
-                    self._send_cors_headers()
-                    self.end_headers()
-                    self.wfile.write(err)
+                    self._send_json(400, {"error": f"Malformed JSON: {e}"})
                     return
             else:
                 try:
@@ -353,44 +496,63 @@ def create_handler_class(
                 self._dispatch_handler(custom_routes[route_key], payload)
                 return
 
-            # 2. Standard /predict endpoint
+            # 2. Specific Model Inference: POST /models/<model_name>/predict
+            if path.startswith("/models/") and path.endswith("/predict"):
+                parts = path.strip("/").split("/")
+                if len(parts) == 3:
+                    target_model_name = parts[1]
+                    m_entry = get_model_entry(target_model_name)
+                    if not m_entry:
+                        self._send_json(404, {"error": f"Model '{target_model_name}' not found"})
+                        return
+
+                    start_t = time.perf_counter()
+                    try:
+                        result = execute_model_inference(m_entry, payload)
+                    except Exception as e:
+                        self._send_json(500, {"status": "error", "model": target_model_name, "message": str(e)})
+                        return
+
+                    latency = round((time.perf_counter() - start_t) * 1000, 2)
+                    self._send_json(200, {
+                        "status": "success",
+                        "model": target_model_name,
+                        "type": m_entry.get("type", "ml"),
+                        "latency_ms": latency,
+                        "result": result,
+                    })
+                    return
+
+            # 3. Standard /predict endpoint (dispatches to target model or default model)
             if path == "/predict":
+                # Check if specific model was requested in body payload: {"model": "...", ...}
+                target_m_name = primary_name
+                if isinstance(payload, dict) and "model" in payload and payload["model"] in models_dict:
+                    target_m_name = payload["model"]
+
+                m_entry = get_model_entry(target_m_name)
+                if not m_entry:
+                    self._send_json(404, {"error": f"Target model '{target_m_name}' not found"})
+                    return
+
                 start_t = time.perf_counter()
                 try:
-                    result = active_inference.run(model, payload)
+                    result = execute_model_inference(m_entry, payload)
                 except Exception as e:
-                    err = json.dumps({"status": "error", "message": str(e)}).encode("utf-8")
-                    self.send_response(500)
-                    self.send_header("Content-Type", "application/json; charset=utf-8")
-                    self.send_header("Content-Length", str(len(err)))
-                    self._send_cors_headers()
-                    self.end_headers()
-                    self.wfile.write(err)
+                    self._send_json(500, {"status": "error", "model": target_m_name, "message": str(e)})
                     return
 
                 latency = round((time.perf_counter() - start_t) * 1000, 2)
-                response_payload = {
+                self._send_json(200, {
                     "status": "success",
-                    "model": model_name,
+                    "model": target_m_name,
+                    "type": m_entry.get("type", "ml"),
                     "latency_ms": latency,
                     "result": result,
-                }
-                data = json.dumps(response_payload).encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(data)))
-                self._send_cors_headers()
-                self.end_headers()
-                self.wfile.write(data)
+                })
                 return
 
-            msg = json.dumps({"error": f"Endpoint '{path}' not found"}).encode("utf-8")
-            self.send_response(404)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(msg)))
-            self._send_cors_headers()
-            self.end_headers()
-            self.wfile.write(msg)
+            self._send_json(404, {"error": f"Endpoint '{path}' not found"})
 
     return AIMLiteHTTPHandler
 
@@ -402,8 +564,12 @@ def run_inference_server(
     host: str = "127.0.0.1",
     port: int = 8000,
     frontend_dir: Optional[Path] = None,
+    template_dir: Optional[Path] = None,
     custom_app: Optional[Any] = None,
     checkpoint_path: Optional[Path] = None,
+    registered_models: Optional[Dict[str, Dict[str, Any]]] = None,
+    active_model_name: Optional[str] = None,
+    api_only: bool = False,
 ) -> int:
     """Starts the HTTP inference and frontend server.
 
@@ -414,8 +580,12 @@ def run_inference_server(
         host: Listening host.
         port: Listening port.
         frontend_dir: Optional custom frontend directory (e.g. dist/, frontend/).
+        template_dir: Optional custom templates directory (<project_root>/templates/).
         custom_app: Optional WSGI app or custom server callable.
         checkpoint_path: Optional path to loaded model checkpoint.
+        registered_models: Dictionary of all ready model entries.
+        active_model_name: Name of the primary active model.
+        api_only: If True, operates in headless mode without HTML pages.
 
     Returns:
         Exit code (0 on clean shutdown, 1 on error).
@@ -429,7 +599,6 @@ def run_inference_server(
             except Exception:
                 pass
 
-        # If WSGI app (e.g. Flask or FastAPI/Starlette WSGI adapter)
         if callable(custom_app):
             try:
                 from wsgiref.simple_server import make_server
@@ -444,11 +613,28 @@ def run_inference_server(
             except Exception as e:
                 print(f"  {C.YELLOW}! Could not launch custom WSGI app ({e}); falling back to AIMLite server.{C.RESET}")
 
+    all_models = registered_models or {
+        model_name: {
+            "class": type(model),
+            "instance": model,
+            "type": "ml",
+            "description": type(model).__doc__ or f"{model_name} model",
+            "checkpoint": str(checkpoint_path) if checkpoint_path else None,
+            "features": [],
+            "inference": inference,
+        }
+    }
+    primary_name = active_model_name or model_name
+
     handler_cls = create_handler_class(
         model=model,
         inference=inference,
         model_name=model_name,
         frontend_dir=frontend_dir,
+        template_dir=template_dir,
+        registered_models=all_models,
+        active_model_name=primary_name,
+        api_only=api_only,
     )
 
     try:
@@ -461,18 +647,33 @@ def run_inference_server(
         print(f"\n{cross(f'Failed to bind server to http://{host}:{port}: {e}')}\n")
         return 1
 
-    print(vite_header("serve"))
-    print(arrow("Target", model_name))
+    header_title = "serve (api only)" if api_only else "serve"
+    print(vite_header(header_title))
+    print(arrow("Primary Model", f"{primary_name} ({all_models.get(primary_name, {}).get('type', 'ml').upper()})"))
+
+    if len(all_models) > 1:
+        model_summary = ", ".join(f"{k} [{v.get('type', 'ml')}]" for k, v in all_models.items())
+        print(arrow("Registered", model_summary))
+
     if checkpoint_path:
         print(arrow("Checkpoint", str(checkpoint_path)))
-    print(arrow("Local API", f"http://{host}:{port}/"))
-    print(arrow("Chat UI", f"http://{host}:{port}/chat"))
-    print(arrow("Inference", f"POST http://{host}:{port}/predict"))
-    print(arrow("Health", f"http://{host}:{port}/health"))
-    print(arrow("Docs", f"http://{host}:{port}/docs"))
+
+    if api_only:
+        print(arrow("Mode", "Headless REST API (--api)"))
+        print(arrow("API Directory", f"http://{host}:{port}/"))
+        print(arrow("Models List", f"http://{host}:{port}/models"))
+        print(arrow("Inference", f"POST http://{host}:{port}/predict"))
+    else:
+        print(arrow("Web App", f"http://{host}:{port}/"))
+        print(arrow("Models API", f"http://{host}:{port}/models"))
+        print(arrow("Inference", f"POST http://{host}:{port}/predict"))
+        print(arrow("Docs", f"http://{host}:{port}/docs"))
+
+    if template_dir and template_dir.is_dir():
+        print(arrow("Custom Templates", f"{template_dir} (active overrides)"))
 
     if frontend_dir and frontend_dir.is_dir():
-        print(arrow("Frontend", f"{frontend_dir} (custom UI served at /)"))
+        print(arrow("Custom Frontend", f"{frontend_dir} (served at /)"))
 
     # Display custom developer routes if any
     if inference and hasattr(inference, "get_routes"):
@@ -481,7 +682,7 @@ def run_inference_server(
             if custom_routes:
                 for sig in custom_routes:
                     if sig not in ["POST /predict", "POST /", "GET /health", "GET /info"]:
-                        print(arrow("Custom API", sig))
+                        print(arrow("Custom Route", sig))
         except Exception:
             pass
 

@@ -1,122 +1,84 @@
-# RAG Architecture Overhaul: Chat Providers, PostgreSQL ORM, Smart Chunker, Query Analyzer & Knowledge Model
+# Multi-Model Serving, Type-Adaptive Web Application & Headless --api Architecture
 
-This plan upgrades AIMLite's Retrieval-Augmented Generation (RAG) architecture to provide enterprise-grade, modular RAG components while preserving zero-dependency runtime resilience.
+This document records the major overhaul to AIMLite's CLI and runtime server (`aimlite serve`), introducing dynamic multi-model discovery, model-type-driven web interfaces, full developer customization, and headless REST mode.
 
-## Overview of Enhancements
+## 1. Overview of Changes
 
-1. **Chat Provider Abstraction (`BaseChatProvider` & Implementations)**:
-   - Modular interface supporting any LLM: API-based (OpenAI, Anthropic, Gemini, Groq, custom REST) and Local-based (Ollama, local HuggingFace / llama.cpp / callable, mock baseline).
-   - Built-in embedding integration (`embed_text`, `embed_batch`).
-   - Standardized pre-defined system prompts for all RAG tasks.
+1. **Zero-Path Multi-Model Discovery & Registration**:
+   - In `model.py`, projects can declare multiple classes inheriting from `aimlite.models.Model` (e.g. `ChurnClassifier`, `FraudDetector`, `SupportKnowledgeModel`).
+   - `aimlite serve` automatically scans `model.py`, discovers all trained model classes, loads their weights, and registers them in a unified server model inventory.
+   - Positional target argument `aimlite serve [ModelName]` allows serving a specific class exclusively.
 
-2. **Pre-defined System Prompts**:
-   - `PROMPT_RAG_QA`: Grounded answer synthesis citing document IDs and metadata.
-   - `PROMPT_QUERY_ANALYZER`: Query decomposition, intent extraction, sub-query rewriting, and Hypothetical Document Embeddings (HyDE).
-   - `PROMPT_SMART_CHUNKER`: Contextual summary extraction and semantic boundary optimization.
-   - `PROMPT_CONVERSATIONAL_RAG`: Multi-turn conversational RAG with chat history context.
+2. **The 3 Paradigm Extended Classes & Their Tailored Web Interfaces**:
+   Every model in AIMLite belongs to one of 3 primary paradigms, and the served website (`src/aimlite/templates/app.html`) renders its own specialized frontend controls:
+   - **`Model` (Classical / Deep ML)**:
+     - Renders an interactive **Feature Form Playground**.
+     - Auto-discovers feature column names from `dataset.py` or CSV headers (e.g. `AccountWeeks`, `ContractRenewal`, `MonthlyCharge`).
+     - Includes 1-click **Preset Buttons** (`Sample 1`, `Sample 2`, `Zero Vector`, `Randomize`).
+     - Toggles between visual **Form Mode** and raw **JSON Mode**.
+     - Live **Results Panel** showing predicted class decisions, confidence meters, latency gauges, and raw JSON response.
+   - **`KnowledgeModel` / `RAGModel` (Retrieval-Augmented Generation)**:
+     - Renders an **AI Conversational Playground**.
+     - Real-time chat stream with user and AI message bubbles.
+     - **Source Citations Accordion**: displays document titles, cosine similarity percentages, and expandable chunk text.
+     - **Top-K Slider** (1 to 10) to adjust context density on the fly.
+     - Suggested query chips.
+   - **`AdapterModel` (Fine-Tuned LoRA Models)**:
+     - Renders a **LoRA Generation Playground**.
+     - Prompt text editor with temperature (0.0–1.5) and max tokens sliders.
+     - Token generation stream and real-time generation output inspection.
+   - **Dynamic Model Switcher**:
+     - When `model.py` contains multiple models (even across different paradigms!), the top navigation bar displays an interactive **Model Switcher**.
+     - Selecting any model instantly switches the UI controls and endpoints without page reload or port changes.
 
-3. **Query Analyzer (`QueryAnalyzer`)**:
-   - Analyzes incoming user queries before retrieval.
-   - Generates intent tags, expanded/sub-queries for multi-angle retrieval, and hypothetical answer passages (HyDE) for better embedding alignment.
-   - Modular: works with any `BaseChatProvider` or built-in heuristic/regex fallback.
+3. **Using `--frontend` with ANY Frontend Framework**:
+   Developers have 100% control over the user interface and can connect any frontend framework (React, Vue, Next.js, SvelteKit, Angular, or Vanilla JS):
+   - **How `--frontend <dir>` works under the hood**:
+     - Mounts the static build directory as the root web server.
+     - Serves static assets (`.js`, `.css`, `.png`, `.svg`) with proper MIME types and CORS headers.
+     - **SPA Client-Side Routing**: Automatically falls back non-asset paths to `index.html`, allowing React Router, Vue Router, or TanStack Router to work seamlessly without 404 errors.
+     - **Unified Port & Zero CORS**: Keeps all backend REST endpoints (`/predict`, `/models`, `/models/{name}/predict`, `/health`, `/docs`) running on the exact same port! No reverse proxy (Nginx) or CORS setup is required.
+   - **Integration Workflow (3 Steps)**:
+     1. **Build your frontend**:
+        - React / Vite: `npm run build` (outputs to `dist/` or `frontend/dist/`).
+        - Next.js (Static Export): Add `output: 'export'` to `next.config.js`, then `npm run build` (outputs to `out/`).
+        - Vue 3 / Nuxt: `npm run build` or `npx nuxt generate` (outputs to `dist/`).
+        - SvelteKit: Use `@sveltejs/adapter-static`, then `npm run build` (outputs to `build/`).
+     2. **Call AIMLite APIs via relative paths**:
+        ```javascript
+        // Fetch all registered models
+        const models = await fetch('/models').then(r => r.json());
 
-4. **Smart Chunker (`SmartChunker` / `SemanticChunker`)**:
-   - Structure-aware text splitter (handles Markdown headers, code blocks, lists, paragraphs).
-   - Semantic boundary preservation and contextual chunk enrichment (injects parent headers/document titles).
+        // Submit ML or RAG inference
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ features: [128.0, 1.0, 2.7, ...] })
+        }).then(r => r.json());
+        ```
+     3. **Launch with AIMLite**:
+        - Run `aimlite serve --frontend ./frontend/dist`
+        - Or if inside the project directory you have `frontend/dist` or `dist/`, simply running `aimlite serve` auto-detects it!
 
-5. **PostgreSQL & ORM Database Integration**:
-   - Declarative ORM models (`KnowledgeDocument`, `KnowledgeChunk`, `ChatSession`, `ChatMessage`).
-   - `PostgresVectorStore`: Native PostgreSQL storage with `pgvector` support (`<=>` cosine / `<->` L2 distance) and SQL/ORM query fallback.
-   - `SQLAlchemyKnowledgeStore`: Unified database manager for document lifecycle, chunks, and metadata.
-   - SQLite / In-memory zero-dependency fallback for development and local testing.
+4. **Developer Template Overrides**:
+   - For customization without a separate build step, create `<project_root>/templates/app.html` or `<project_root>/templates/index.html`. AIMLite prioritizes your project templates over the package default.
 
-6. **Basic Knowledge Model (`KnowledgeModel` & `RAGModel` Extensions)**:
-   - High-level domain model extending `Model` for knowledge management, query routing, semantic retrieval, and conversational QA.
-   - Integrates seamlessly with `QueryAnalyzer`, `SmartChunker`, `PostgresVectorStore`, and `ChatProvider`.
+5. **Headless Mode (`--api`)**:
+   - CLI flag `aimlite serve --api` launches a pure JSON REST server without HTML web pages, ideal for Kubernetes, Docker, and microservice architectures.
 
-7. **Trainer Orchestration (`RAGTrainer` / `KnowledgeTrainer`)**:
-   - Coordinates dataset loading -> smart chunking -> embedding generation -> database / vector index persistence.
-   - Fully compatible with `aimlite train` and standard AIMLite lifecycle.
+6. **Documentation & API Reference in `api_docs`**:
+   - Updated `api_docs` with:
+     - `cli-serve`: Multi-model options, `--api`, and type-adaptive UI details.
+     - `endpoint-models`: Documentation for `GET /models` and `POST /models/{name}/predict`.
+     - `endpoint-chat`: Details on the type-adaptive web playground at `/app` and `/chat`.
+     - `guide-serving`: Comprehensive step-by-step developer guide on serving, multi-model workflows, `--frontend` framework integration, and template overrides.
 
----
+## 2. Modified & Created Files
 
-## Proposed Changes
-
-### Core Library: `src/aimlite/rag.py` & `src/aimlite/`
-
-#### [MODIFY] [rag.py](file:///home/atocodes/Projects/ModelKit/src/aimlite/rag.py)
-- **Predefined System Prompts**:
-  - `PROMPT_RAG_QA`, `PROMPT_QUERY_ANALYZER`, `PROMPT_SMART_CHUNKER`, `PROMPT_CONVERSATIONAL_RAG`.
-- **Chat Provider Abstraction**:
-  - `BaseChatProvider`, `OpenAIChatProvider`, `AnthropicChatProvider`, `GeminiChatProvider`, `OllamaChatProvider`, `LocalChatProvider`, `MockChatProvider`.
-- **Query Analyzer**:
-  - `QueryAnalysisResult` dataclass (`original_query`, `expanded_queries`, `hypothetical_document`, `keywords`, `intent`).
-  - `QueryAnalyzer` class supporting LLM-based and heuristic-based query refinement.
-- **Smart Chunker**:
-  - `SmartChunker` (Markdown-aware, hierarchical splitting with heading metadata preservation).
-- **Embedder Extensions**:
-  - `BaseEmbedding`, `TfidfEmbedding`, `SentenceTransformerEmbedding`, `APIEmbedding`.
-- **PostgreSQL & ORM Database Layer**:
-  - `KnowledgeDocument`, `KnowledgeChunk` schemas (SQLAlchemy declarative models when available, standard dataclasses/records fallback).
-  - `PostgresVectorStore`: PostgreSQL + pgvector / relational cosine similarity backend.
-  - `DatabaseVectorStore`: Generic SQL/PostgreSQL/SQLite vector store.
-- **Knowledge Model & RAG Model**:
-  - `KnowledgeModel`: Full-featured knowledge management model combining analyzer, embedder, database store, and chat provider.
-  - `RAGModel`: Updated to accept `chat_provider` and `query_analyzer`.
-- **Lifecycle & Trainer**:
-  - `RAGTrainer` / `KnowledgeTrainer` extending `BaseTrainer`.
-
-#### [MODIFY] [__init__.py](file:///home/atocodes/Projects/ModelKit/src/aimlite/__init__.py)
-- Re-export all new RAG abstractions, chat providers, prompts, query analyzers, chunkers, and database stores.
-
----
-
-### Examples & Documentation: `docs/examples/knowledge_rag/`
-
-#### [MODIFY] [data.py](file:///home/atocodes/Projects/ModelKit/docs/examples/knowledge_rag/data.py)
-- Update dataset to showcase `SmartChunker` with markdown sections and metadata.
-
-#### [MODIFY] [model.py](file:///home/atocodes/Projects/ModelKit/docs/examples/knowledge_rag/model.py)
-- Showcase `KnowledgeModel` / `RAGModel` configured with `QueryAnalyzer`, `ChatProvider`, and vector store.
-
-#### [MODIFY] [trainer.py](file:///home/atocodes/Projects/ModelKit/docs/examples/knowledge_rag/trainer.py)
-- Demonstrate `RAGTrainer` indexing workflow.
-
----
-
-### Testing Suite
-
-#### [NEW] [test_rag.py](file:///home/atocodes/Projects/ModelKit/test/test_rag.py)
-- Comprehensive test suite covering:
-  - Chat providers (mock, custom, local, API configurations).
-  - Predefined system prompts verification.
-  - Query Analyzer (expansion, HyDE, keywords, fallback).
-  - Smart Chunker (markdown splitting, context metadata, hierarchy).
-  - Vector stores: MemoryVectorStore and PostgreSQL/Database vector store operations.
-  - KnowledgeModel and RAGModel end-to-end question answering and chat.
-  - RAGTrainer pipeline execution.
-
-#### [MODIFY] [test_headers.py](file:///home/atocodes/Projects/ModelKit/test/test_headers.py) & [test_examples.py](file:///home/atocodes/Projects/ModelKit/test/test_examples.py)
-- Ensure all existing tests continue passing without regression.
-
----
-
-## Verification Plan
-
-### Automated Tests
-- Run all unit tests:
-  ```bash
-  PYTHONPATH=src:. python3 -m unittest discover -s test
-  ```
-- Run specialized RAG tests:
-  ```bash
-  PYTHONPATH=src:. python3 -m unittest test.test_rag
-  PYTHONPATH=src:. python3 -m unittest test.test_examples
-  PYTHONPATH=src:. python3 -m unittest test.test_headers
-  ```
-
-### Manual / Integration Verification
-- Test local chat provider inference with mock payloads.
-- Test query analysis expansion and HyDE document synthesis.
-- Test Markdown smart chunking preserving header hierarchies.
-- Test SQLite / PostgreSQL database vector store persistence and retrieval.
+- `src/cli/main.py`: Added `--api` argument to `serve_parser` and forwarded `api_only` to `run_serve`.
+- `src/cli/commands/evaluate.py`: Enhanced `_discover_checkpoint` to find multi-format checkpoints, RAG indexes, and fixed variable scope.
+- `src/cli/commands/serve.py`: Added `detect_model_type`, `discover_feature_names`, multi-model candidate scanning, and template path discovery.
+- `src/cli/server.py`: Added `GET /models`, `POST /models/{name}/predict`, template override priority loader, and headless mode routing.
+- `src/aimlite/templates/app.html`: Built responsive, monochromatic, self-contained adaptive web playground supporting ML, RAG, and Adapter models.
+- `api_docs/src/data/aimliteDocs.ts`: Added documentation for `/models`, adaptive `/app`, and developer serving guide.
+- `test/test_serve_multimodel.py`: Added automated test suite verifying type detection, endpoints, and headless mode.

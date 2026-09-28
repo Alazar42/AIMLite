@@ -18,7 +18,7 @@ from cli.commands import (
 )
 from cli.ui import C, vite_header
 
-VERSION = "1.0.6"
+VERSION = "1.0.7"
 
 
 def print_custom_help() -> None:
@@ -106,6 +106,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Embedding engine for vector generation",
     )
+    init_parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Generate clean scratch project with no sample code or dummy datasets (only guiding comments and class contracts)",
+    )
     init_parser.add_argument("-y", "--yes", "--non-interactive", dest="non_interactive", action="store_true", help="Non-interactive mode")
 
     # install
@@ -156,6 +161,12 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--port", type=int, default=8000, help="Port to listen on (default: 8000)")
     serve_parser.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
     serve_parser.add_argument("--frontend", default=None, help="Custom frontend build directory (e.g. dist/, frontend/)")
+    serve_parser.add_argument(
+        "--api",
+        action="store_true",
+        default=False,
+        help="Run in headless API-only mode without serving web interfaces",
+    )
 
     # benchmark
     benchmark_parser = subparsers.add_parser("benchmark")
@@ -202,6 +213,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             model_name=getattr(args, "model_name", None),
             interactive=interactive_flag,
             install_deps=getattr(args, "install", False),
+            clean=getattr(args, "clean", False),
         )
 
     if args.command == "install":
@@ -235,6 +247,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             host=args.host,
             frontend=args.frontend,
             checkpoint=getattr(args, "checkpoint", None),
+            api_only=getattr(args, "api", False),
         )
 
     if args.command == "doctor":

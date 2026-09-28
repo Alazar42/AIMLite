@@ -67,7 +67,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     name: 'The 3 AI Paradigms',
     items: [
       { id: 'paradigm-scratch', label: '1. Scratch (Customer Churn)', badge: 'TRAIN', badgeVariant: 'pillar' },
-      { id: 'paradigm-rag', label: '2. RAG (Knowledge QA)', badge: 'v1.0.6', badgeVariant: 'pillar' },
+      { id: 'paradigm-rag', label: '2. RAG (Knowledge QA)', badge: 'RAG', badgeVariant: 'pillar' },
       { id: 'paradigm-adapters', label: '3. Adapters (LoRA & PEFT)', badge: 'PEFT', badgeVariant: 'pillar' },
     ],
   },
@@ -82,7 +82,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'AIMLite RAG Deep Dive',
     items: [
-      { id: 'rag-hooks', label: 'KnowledgeModel & Lifecycle Hooks', badge: 'v1.0.6', badgeVariant: 'pillar' },
+      { id: 'rag-hooks', label: 'KnowledgeModel & Lifecycle Hooks', badge: 'HOOKS', badgeVariant: 'pillar' },
     ],
   },
   {
@@ -109,17 +109,19 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     name: 'HTTP Inference Server',
     items: [
       { id: 'endpoint-predict', label: 'Execute Inference (/predict)', badge: 'POST', badgeVariant: 'post' },
+      { id: 'endpoint-models', label: 'Models Inventory (/models)', badge: 'GET', badgeVariant: 'get' },
+      { id: 'endpoint-chat', label: 'Adaptive Web App (/app)', badge: 'WEB', badgeVariant: 'get' },
       { id: 'endpoint-search', label: 'Execute Search (/search)', badge: 'POST', badgeVariant: 'post' },
       { id: 'endpoint-health', label: 'Server Health (/health)', badge: 'GET', badgeVariant: 'get' },
-      { id: 'endpoint-chat', label: 'Chat Playground (/chat)', badge: 'WEB', badgeVariant: 'get' },
       { id: 'endpoint-openapi', label: 'OpenAPI 3.0 Schema', badge: 'GET', badgeVariant: 'get' },
       { id: 'endpoint-docs', label: 'Swagger UI Docs', badge: 'GET', badgeVariant: 'get' },
+      { id: 'guide-serving', label: 'Serving & Customization', badge: 'GUIDE', badgeVariant: 'cli' },
     ],
   },
   {
     name: 'Releases & Changelog',
     items: [
-      { id: 'changelog', label: 'Version Changelog', badge: 'v1.0.6', badgeVariant: 'util' },
+      { id: 'changelog', label: 'Version Changelog', badge: 'v1.0.7', badgeVariant: 'util' },
     ],
   },
 ];
@@ -491,11 +493,11 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
     subtitle: 'Vite-inspired interactive wizard scaffolding modular AI projects in <50ms.',
-    badge: { label: 'CLI v1.0.6', variant: 'cli' },
-    signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapters>] [--install] [-y]',
+    badge: { label: 'CLI v1.0.7', variant: 'cli' },
+    signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapters>] [--clean] [--install] [-y]',
     breadcrumbs: ['CLI', 'init'],
     overview:
-      'Scaffolds a new project directory with Vite-inspired terminal prompts powered by questionary and rich, rendered with a pyfiglet ASCII banner. Generates standard layout: data/ (strictly clean), artifacts/, experiments/, and modular starter files. Features an interactive package search prompt (+) to select additional dependencies, instantaneous (<50ms) project generation (heavy downloads are deferred), and generates aimlite.json as the single source of truth.',
+      'Scaffolds a new project directory with Vite-inspired terminal prompts powered by questionary and rich, rendered with a pyfiglet ASCII banner. Generates standard layout: data/ (strictly clean), artifacts/, experiments/, and modular starter files. Supports --clean to generate a pure scratch project with zero sample code or dummy datasets (only class skeletons, contracts, and guiding comments). Features an interactive package search prompt (+) to select additional dependencies, instantaneous (<50ms) project generation (heavy downloads are deferred), and generates aimlite.json as the single source of truth.',
     djangoAnalogy:
       'Direct equivalent of create-vite or django-admin startproject <name>. Scaffolds 100% developer-editable code with zero hidden boilerplate.',
     parametersTitle: 'CLI Flags & Options',
@@ -512,6 +514,13 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
         type: 'scratch | rag | adapters',
         required: false,
         description: 'Selects the AI paradigm template directly without opening the interactive menu.',
+      },
+      {
+        name: '--clean',
+        type: 'boolean flag',
+        required: false,
+        defaultValue: 'false',
+        description: 'Generates a pure scratch project with zero sample code or dummy datasets (only class contracts and guiding comments).',
       },
       {
         name: '--chat-provider',
@@ -542,7 +551,10 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
       },
     ],
     snippets: {
-      cli: `# Interactive Vite-style wizard (recommended):
+      cli: `# Clean scratch project (zero sample code, comments & contracts only):
+aimlite init my_project --clean
+
+# Interactive Vite-style wizard (recommended):
 aimlite init my_rag
 
 # Non-interactive CLI flag setup for RAG:
@@ -577,7 +589,7 @@ aimlite init . --type adapters --install`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
     subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
-    badge: { label: 'CLI v1.0.6', variant: 'cli' },
+    badge: { label: 'CLI v1.0.7', variant: 'cli' },
     signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
@@ -663,22 +675,35 @@ aimlite train ChurnClassifier`,
     id: 'cli-serve',
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
-    subtitle: 'High-performance inference API server with live Swagger UI and interactive Web Chat Playground.',
-    badge: { label: 'CLI v1.0.6', variant: 'cli' },
-    signatureOrPath: 'aimlite serve [ModelName] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
+    subtitle: 'Zero-path multi-model inference server with type-adaptive Web Playgrounds, Swagger UI, and headless --api mode.',
+    badge: { label: 'CLI v1.0.7', variant: 'cli' },
+    signatureOrPath: 'aimlite serve [ModelName] [--api] [--checkpoint <path>] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
-      'Starts a high-performance JSON inference server on port 8000. Features built-in Swagger UI at GET /docs, interactive dark-mode Chat Playground at GET /chat and /playground (with auto-browser redirect on /), prediction endpoint at POST /predict, direct semantic search at POST /search, and server health checks at GET /health. Also supports hosting production frontend builds (e.g. React/Vite) via --frontend.',
+      'Starts a high-performance HTTP inference server. Automatically discovers and registers all trained model classes in model.py (or serves a specific class if passed as an argument). The served web application dynamically adapts its UI based on the active model type: Classical ML models render an interactive Feature Form with sample presets; RAG models render a grounded conversational assistant with source citations; and LoRA adapters render a prompt generation playground. Developers can run in pure headless mode with --api, override templates by creating a templates/ directory in their project, or serve custom SPA builds via --frontend.',
     djangoAnalogy:
-      'Direct equivalent of python manage.py runserver, bundled with Swagger UI and an interactive testing console.',
+      'Direct equivalent of python manage.py runserver, extended with multi-model dispatching, automatic type-adaptive UI playgrounds, and headless REST mode.',
     parametersTitle: 'Server Arguments & Flags',
     parameters: [
       {
         name: 'ModelName',
         type: 'string (optional)',
         required: false,
-        defaultValue: 'auto-discover default model',
-        description: 'Target model class name to serve. Prompts for selection if multiple models exist in model.py.',
+        defaultValue: 'auto-discover all trained models',
+        description: 'Optional specific Model class name to serve (e.g. ChurnClassifier). If omitted, all trained models in model.py are served with dynamic switching.',
+      },
+      {
+        name: '--api',
+        type: 'boolean flag',
+        required: false,
+        defaultValue: 'false',
+        description: 'Headless API-only mode. Disables all HTML web interfaces and serves pure JSON REST endpoints (/models, /predict, /health, /openapi.json).',
+      },
+      {
+        name: '--checkpoint',
+        type: 'Path (optional)',
+        required: false,
+        description: 'Explicit path to a model weights checkpoint or index artifact to load (defaults to automatic discovery in models/ and artifacts/).',
       },
       {
         name: '--port',
@@ -698,30 +723,59 @@ aimlite train ChurnClassifier`,
         name: '--frontend',
         type: 'Path (optional)',
         required: false,
-        description: 'Path to a pre-built static directory (e.g. frontend/dist) to serve alongside API routes.',
+        description: 'Path to a custom frontend build directory (e.g. frontend/dist) to serve at the root URL.',
+      },
+    ],
+    conventions: [
+      {
+        title: 'Model (Classical / Deep ML)',
+        description: 'Auto-generates interactive Feature Form inputs with presets (Sample 1/2, Zero Vector, Randomize), confidence scores, and raw JSON editor.',
+      },
+      {
+        title: 'KnowledgeModel (RAG)',
+        description: 'Auto-generates conversational chat assistant with grounded context citations, similarity scores, and Top-K context slider.',
+      },
+      {
+        title: 'AdapterModel (LoRA)',
+        description: 'Auto-generates prompt completion playground with temperature, max tokens, and real-time generation output.',
+      },
+      {
+        title: 'Dynamic Model Switcher',
+        description: 'Navbar dropdown lets you switch between all trained classes in model.py without page reload or restarting the server.',
+      },
+      {
+        title: 'Any Frontend Framework (--frontend)',
+        description: 'Mounts React, Next.js, Vue, or SvelteKit build folder at / with SPA client-side routing fallback and zero CORS issues.',
+      },
+      {
+        title: 'Template Overrides',
+        description: 'Place templates/app.html or templates/index.html in your project root to completely replace the built-in interface.',
       },
     ],
     snippets: {
-      cli: `# Serve active model with Swagger docs and Chat Playground on port 8000:
+      cli: `# 1. Auto-discover & serve all trained models with type-adaptive UI:
 aimlite serve
 
-# Serve on all network interfaces for container deployment:
-aimlite serve --host 0.0.0.0 --port 8080
+# 2. Serve a specific model class exclusively:
+aimlite serve ChurnClassifier
 
-# Serve with custom React frontend bundle:
+# 3. Headless REST API mode for microservice deployment (no HTML UI):
+aimlite serve --api --host 0.0.0.0 --port 8000
+
+# 4. Custom developer templates or frontend build:
 aimlite serve --frontend ./frontend/dist`,
     },
-    defaultPayload: '{\n  "port": 8000,\n  "target_model": "SupportDocRAG"\n}',
+    defaultPayload: '{\n  "port": 8000,\n  "target_model": "All Trained Models",\n  "api_only": false\n}',
     defaultResponse: {
       status: 'server_active',
       endpoints: {
-        'GET /': 'Interactive Chat Playground (browser) or API Root (JSON)',
-        'GET /chat': 'Interactive RAG Chat Playground',
+        'GET /': 'Interactive Adaptive Web Playground (browser) or API Directory (JSON)',
+        'GET /models': 'Registered Models Inventory List (JSON)',
+        'POST /predict': 'Default Model Forward Inference',
+        'POST /models/{name}/predict': 'Targeted Model Forward Inference',
+        'GET /health': 'Server & Active Model Health Probe',
         'GET /docs': 'Interactive Swagger UI Documentation',
         'GET /openapi.json': 'OpenAPI 3.0 Schema',
-        'POST /predict': 'Forward Inference & Answer Synthesis',
-        'POST /search': 'Semantic Search & Document Retrieval',
-        'GET /health': 'Server Health Status',
       },
     },
   },
@@ -731,7 +785,7 @@ aimlite serve --frontend ./frontend/dist`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite benchmark',
     subtitle: 'Runs experiment and benchmark scripts with the project root automatically injected into sys.path.',
-    badge: { label: 'NEW v1.0.5', variant: 'cli' },
+    badge: { label: 'CLI', variant: 'cli' },
     signatureOrPath: 'aimlite benchmark [script.py] [args...]',
     breadcrumbs: ['CLI', 'benchmark'],
     overview:
@@ -1002,38 +1056,260 @@ with urllib.request.urlopen(req) as resp:
     },
   },
 
+  'endpoint-models': {
+    id: 'endpoint-models',
+    category: 'HTTP Inference Server',
+    title: 'Models Inventory (GET /models)',
+    subtitle: 'List all registered and trained model classes with types and feature metadata.',
+    badge: { label: 'GET', variant: 'get' },
+    signatureOrPath: 'GET http://127.0.0.1:8000/models',
+    breadcrumbs: ['HTTP Server', 'GET /models'],
+    overview:
+      'Returns a JSON array of all model classes discovered in model.py that have trained checkpoints or ready weights. Each entry includes the model name, type (ml, rag, or adapter), descriptive docstring, checkpoint path, active status, and discovered feature names for ML models. Also supports targeting specific models at POST /models/{name}/predict.',
+    djangoAnalogy:
+      'Like an automated model introspection registry or Django apps/models catalog.',
+    snippets: {
+      curl: `# List all registered models:
+curl http://127.0.0.1:8000/models
+
+# Inspect specific model metadata:
+curl http://127.0.0.1:8000/models/ChurnClassifier
+
+# Execute prediction on a specific model:
+curl -X POST http://127.0.0.1:8000/models/ChurnClassifier/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"features": [128.0, 1.0, 1.0, 2.7, 1.0, 265.1, 110.0, 89.0, 9.8, 10.0]}'`,
+    },
+    defaultPayload: '{\n  "method": "GET",\n  "endpoint": "/models"\n}',
+    defaultResponse: [
+      {
+        name: 'ChurnClassifier',
+        type: 'ml',
+        description: 'Customer Churn classifier model predicting whether a customer will churn.',
+        checkpoint: 'models/churn_classifier.pkl',
+        features: ['AccountWeeks', 'ContractRenewal', 'DataPlan', 'DataUsage', 'CustServCalls', 'DayMins'],
+        active: true,
+      },
+    ],
+  },
+
   'endpoint-chat': {
     id: 'endpoint-chat',
     category: 'HTTP Inference Server',
-    title: 'Chat Playground (GET /chat)',
-    subtitle: 'Embedded web chat interface served directly by aimlite serve for testing knowledge models.',
+    title: 'Adaptive Web Playground (GET /app, /chat)',
+    subtitle: 'Embedded web interface automatically tailored to your model type (ML, RAG, or LoRA Adapter).',
     badge: { label: 'WEB UI', variant: 'get' },
-    signatureOrPath: 'GET http://127.0.0.1:8000/chat',
-    breadcrumbs: ['HTTP Server', 'GET /chat'],
+    signatureOrPath: 'GET http://127.0.0.1:8000/app',
+    breadcrumbs: ['HTTP Server', 'GET /app'],
     overview:
-      'AIMLite serve ships with a built-in, production-grade interactive Chat Playground available at /chat or /playground (with automatic browser redirect on /). Features dark theme, animated response streaming, source context citation inspector, temperature and top_k sliders, system prompt editor, and multi-turn session testing.',
+      'AIMLite serves a production-ready, responsive web application at /app (and /chat). The interface dynamically inspects your registered models and adapts based on their type: Classical ML models render an interactive Feature Form with sample presets and real-time prediction output; RAG models render an AI chat playground with grounded context citations; and LoRA models render prompt completion sliders. Supports light/dark mode, instant model switching, and 100% offline self-contained execution.',
     djangoAnalogy:
-      'Like Django admin or Django debug toolbar — a built-in graphical interface ready out-of-the-box with zero frontend setup required.',
+      'Like Django admin and Django debug toolbar combined — an instant interactive UI that automatically understands your schema and model types.',
     snippets: {
-      cli: `# Start server with embedded playground:
-aimlite serve SupportDocRAG --port 8000
+      cli: `# Start server with embedded adaptive playground:
+aimlite serve --port 8000
 
 # Open in browser:
-# http://localhost:8000/chat
+# http://localhost:8000/
 # http://localhost:8000/docs (Swagger UI)`,
     },
-    defaultPayload: '{\n  "browser_url": "http://127.0.0.1:8000/chat",\n  "method": "GET"\n}',
+    defaultPayload: '{\n  "browser_url": "http://127.0.0.1:8000/app",\n  "method": "GET"\n}',
     defaultResponse: {
-      endpoint: '/chat',
-      ui_type: 'Interactive RAG Chat Playground',
-      features: [
-        'Real-time answer streaming',
-        'Source citations & snippet inspector',
-        'Top-K & temperature parameter sliders',
-        'System prompt customizer',
-        'Session history clearing',
-      ],
+      endpoint: '/app',
+      ui_type: 'Type-Adaptive Playground',
+      supported_types: {
+        ml: 'Interactive feature input grid, presets, confidence scores, and JSON mode',
+        rag: 'Conversational assistant, grounded context citations, top-k slider',
+        adapter: 'LoRA prompt playground, temperature and token controls',
+      },
       status: 'active',
+    },
+  },
+
+  'guide-serving': {
+    id: 'guide-serving',
+    category: 'HTTP Inference Server',
+    title: 'Serving & App Customization Guide',
+    subtitle: 'Complete developer guide on multi-model serving, type-driven web apps, headless --api mode, and custom templates.',
+    badge: { label: 'GUIDE', variant: 'cli' },
+    signatureOrPath: 'aimlite serve [options]',
+    breadcrumbs: ['HTTP Server', 'Serving Guide'],
+    overview:
+      'AIMLite makes model deployment effortless while giving developers 100% control over the application. When you launch aimlite serve, the framework automatically scans model.py, instantiates every trained model class, and launches a type-adaptive web playground. This guide covers multi-model serving, UI adaptation per model type, headless API mode, and custom template overrides.',
+    djangoAnalogy:
+      'Just like Django allows overriding default templates in a templates/ directory and toggling headless DRF API mode, AIMLite gives developers full customizability without boilerplate.',
+    whyCode: [
+      {
+        component: '1. Classical / Deep ML Models (Model)',
+        reason:
+          'When the active model inherits from Model, the served website renders an interactive Feature Form Playground. It auto-discovers dataset feature names (e.g. AccountWeeks, MonthlyCharge), provides 1-click Preset Buttons (Sample 1, Sample 2, Zero Vector, Randomize), toggles between visual Form Mode and raw JSON Mode, and displays predictions with latency gauges and confidence meters.',
+      },
+      {
+        component: '2. Knowledge / RAG Models (KnowledgeModel, RAGModel)',
+        reason:
+          'When the active model inherits from KnowledgeModel or RAGModel, the served website transforms into an AI Conversational Playground. It features multi-turn chat bubbles, Top-K context sliders (1-10), query suggestion chips, and an expandable Source Citations accordion showing document IDs, chunk excerpts, and cosine similarity percentages.',
+      },
+      {
+        component: '3. Fine-Tuned LoRA Models (AdapterModel)',
+        reason:
+          'When the active model inherits from AdapterModel, the served website renders a LoRA Prompt Completion Playground. It provides temperature and max token sliders, dynamic adapter controls, and real-time generation output inspection.',
+      },
+      {
+        component: '4. Dynamic Model Switcher',
+        reason:
+          'If model.py contains multiple trained classes (even across different paradigms!), all ready models are registered in the server inventory. The top navigation bar displays a live Model Switcher that flips the UI controls instantly without page reload or port changes.',
+      },
+      {
+        component: '5. Using --frontend with ANY Framework (React, Vue, Next.js, Svelte)',
+        reason:
+          'Pass --frontend <build_dir> to serve your custom frontend directly. AIMLite acts as a high-performance static file server with SPA routing fallback (redirecting non-file routes to index.html for React/Vue/Svelte routers) while keeping all REST APIs (/predict, /models, /health) active on the same port. This eliminates CORS issues completely.',
+      },
+      {
+        component: '6. Developer Template Overrides',
+        reason:
+          'For rapid UI customization without a build step, create a templates/ directory in your project root (e.g. templates/app.html or templates/index.html). AIMLite checks your project directory first before falling back to built-in templates.',
+      },
+      {
+        component: '7. Headless REST API Mode (--api)',
+        reason:
+          'Add --api to run a lightweight headless JSON microservice without HTML pages, perfect for Docker containers, Kubernetes pods, and backend integrations.',
+      },
+    ],
+    parametersTitle: 'Serving Arguments & Integration Options',
+    parameters: [
+      {
+        name: 'ModelName',
+        type: 'string (optional)',
+        required: false,
+        defaultValue: 'all trained models in model.py',
+        description: 'Specific model class to serve. If omitted, all trained model classes in model.py are served with navbar model switching.',
+      },
+      {
+        name: '--frontend <dir>',
+        type: 'Path (optional)',
+        required: false,
+        description: 'Directory path to any compiled frontend build (React/Vite in frontend/dist, Next.js in out/, Vue in dist/, SvelteKit in build/).',
+      },
+      {
+        name: '--api',
+        type: 'boolean flag',
+        required: false,
+        defaultValue: 'false',
+        description: 'Headless REST mode. Disables all HTML web pages and serves pure JSON REST endpoints (/models, /predict, /health, /openapi.json).',
+      },
+      {
+        name: '--checkpoint <path>',
+        type: 'Path (optional)',
+        required: false,
+        description: 'Explicit checkpoint weights or index artifact path (defaults to auto-discovering in models/ and artifacts/).',
+      },
+      {
+        name: '--port <int>',
+        type: 'integer',
+        required: false,
+        defaultValue: '8000',
+        description: 'TCP port number to bind the server.',
+      },
+      {
+        name: '--host <str>',
+        type: 'string',
+        required: false,
+        defaultValue: '127.0.0.1',
+        description: 'Network interface IP to listen on (use 0.0.0.0 for external/container access).',
+      },
+    ],
+    conventions: [
+      {
+        title: '1. Model Paradigm: Classical & Deep ML (Model)',
+        description: 'Renders an interactive feature form with auto-discovered dataset columns, 1-click preset sample buttons, visual form vs JSON mode, confidence badges, and latency tracking.',
+      },
+      {
+        title: '2. Model Paradigm: Knowledge & RAG (KnowledgeModel, RAGModel)',
+        description: 'Renders an AI conversational chat assistant with grounded context citations, similarity percentages, expandable chunks, Top-K slider (1-10), and sample prompt chips.',
+      },
+      {
+        title: '3. Model Paradigm: LoRA Fine-Tuning (AdapterModel)',
+        description: 'Renders a LoRA prompt completion runner with temperature slider, max token controls, and token generation stream view.',
+      },
+      {
+        title: '4. Dynamic Multi-Model Switcher',
+        description: 'Auto-registers all trained models in model.py. Top navbar switcher switches models and their dedicated paradigm controls on the fly without page reload.',
+      },
+      {
+        title: '5. Framework-Agnostic Hosting (--frontend)',
+        description: 'Works with React, Vue, Next.js, SvelteKit, Angular, or Vanilla JS. Mounts the build folder at / with SPA client routing fallback to index.html.',
+      },
+      {
+        title: '6. Zero-CORS Unified Deployment',
+        description: 'Serves your custom frontend and all backend REST APIs (/predict, /models, /health) on the same port, completely eliminating CORS problems.',
+      },
+      {
+        title: '7. Template Overrides (<project>/templates/)',
+        description: 'Place templates/app.html or templates/index.html in your project root to customize the web interface without any frontend build pipeline.',
+      },
+      {
+        title: '8. Headless Microservices (--api)',
+        description: 'Lightweight REST API container mode without HTML pages, returning structured JSON for Kubernetes, Docker, and backend services.',
+      },
+    ],
+    snippets: {
+      cli: `# 1. Auto-serve all models with type-adaptive UI:
+aimlite serve
+
+# 2. Serve a specific model only:
+aimlite serve ChurnClassifier
+
+# 3. Headless REST API mode (pure JSON, no HTML):
+aimlite serve --api --port 8000
+
+# 4. Serve with React / Vite:
+# In frontend/: npm run build (creates frontend/dist)
+aimlite serve --frontend ./frontend/dist
+
+# 5. Serve with Next.js (Static Export):
+# In next.config.js: { output: 'export' }, then npm run build (creates out/)
+aimlite serve --frontend ./frontend/out
+
+# 6. Serve with Vue 3 / Nuxt / SvelteKit:
+aimlite serve --frontend ./frontend/dist
+
+# 7. Custom developer template override:
+# Put your custom HTML in templates/app.html
+aimlite serve`,
+      curl: `// Calling AIMLite from ANY frontend framework (React, Vue, Vanilla JS):
+// Because AIMLite serves the frontend on the same port, use simple relative paths!
+
+// 1. Fetch all registered models:
+const models = await fetch('/models').then(r => r.json());
+console.log(models); // [{ name: "ChurnClassifier", type: "ml", features: [...] }]
+
+// 2. Submit ML inference:
+const mlResult = await fetch('/predict', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ features: [128.0, 1.0, 2.7, 1.0, 265.1, 110.0, 89.0, 9.8, 10.0] })
+}).then(r => r.json());
+
+// 3. Submit RAG Knowledge query:
+const ragResult = await fetch('/models/SupportDocRAG/predict', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ query: 'How do I configure database backups?', top_k: 3 })
+}).then(r => r.json());`,
+    },
+    defaultPayload: '{\n  "supported_frameworks": ["React", "Vue", "Next.js", "SvelteKit", "Angular", "Vanilla JS"],\n  "paradigm_uis": ["ml: Feature Form", "rag: Chat & Citations", "adapter: LoRA Generator"]\n}',
+    defaultResponse: {
+      framework_integration: {
+        'Step 1': 'Build frontend bundle: npm run build (into dist/, out/, or build/)',
+        'Step 2': 'Make relative API calls in frontend code: fetch("/predict"), fetch("/models")',
+        'Step 3': 'Serve with single command: aimlite serve --frontend ./frontend/dist',
+        'Benefit': 'Zero CORS configuration, single-port deployment, SPA client routing supported',
+      },
+      paradigm_controllers: {
+        'Model (ML)': 'Interactive input form, auto-populated feature labels, presets, class decision badge',
+        'KnowledgeModel (RAG)': 'Multi-turn chat, context citation accordion, top-k slider, query chips',
+        'AdapterModel (LoRA)': 'Prompt editor, temperature slider, max token controls, response streaming',
+      },
     },
   },
 
@@ -1431,7 +1707,7 @@ aimlite serve LoRAInstructionModel --port 8000`,
     category: 'AIMLite RAG Deep Dive',
     title: 'KnowledgeModel & RAG Lifecycle Hooks',
     subtitle: 'Complete guide to modular extension hooks in aimlite.rag introduced in v1.0.6.',
-    badge: { label: 'v1.0.6', variant: 'pillar' },
+    badge: { label: 'HOOKS', variant: 'pillar' },
     signatureOrPath: 'from aimlite.rag import KnowledgeModel, RAGModel, RAGTrainer, Document',
     breadcrumbs: ['RAG Deep Dive', 'Extension Hooks'],
     overview:
@@ -1588,15 +1864,19 @@ class CustomSupportRAG(KnowledgeModel):
     id: 'changelog',
     category: 'Releases & Changelog',
     title: 'Framework Changelog & Releases',
-    subtitle: 'Release history and upgrade guide for AIMLite (v1.0.6 latest).',
-    badge: { label: 'v1.0.6', variant: 'util' },
-    signatureOrPath: 'pip install --upgrade aimlite==1.0.6',
-    breadcrumbs: ['Releases', 'v1.0.6'],
+    subtitle: 'Release history and upgrade guide for AIMLite (v1.0.7 latest).',
+    badge: { label: 'v1.0.7', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==1.0.7',
+    breadcrumbs: ['Releases', 'v1.0.7'],
     overview:
-      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v1.0.6, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v1.0.7, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
     djangoAnalogy:
       'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
     conventions: [
+      {
+        title: 'Release [1.0.7] - 2026-09-28 (Major)',
+        description: 'Zero-Path Multi-Model Serving & Inventory: Auto-scans model.py for all trained classes, registers them in GET /models, supports class targeting (aimlite serve [ModelName]), and POST /models/{name}/predict. Paradigm-Adaptive Web Application (app.html) with tailored controls for ML (Feature Form, presets, JSON mode), RAG (Grounded Chat, Citations, Top-K), and LoRA (Prompt tester), plus live top navbar Model Switcher. Clean Scratch Scaffolding (aimlite init --clean) generating pure project skeletons with zero sample code or dummy datasets (comments & class contracts only). Headless REST API mode (--api). Framework-agnostic static hosting (--frontend) with SPA routing fallback to index.html and zero-CORS single-port deployment. Project template priority overrides (<project>/templates/).',
+      },
       {
         title: 'Release [1.0.6] - 2026-09-24',
         description: 'Developer-Editable KnowledgeModel & RAGModel architecture (preprocess_query, retrieve, rerank, format_prompt, synthesize, postprocess_answer, chunk_documents, search, add_document). before_index & after_index hooks on RAGTrainer. Modular scaffolded RAG codebase. POST /search endpoint.',
@@ -1633,19 +1913,20 @@ pip install --upgrade aimlite
 # Verify installation & diagnostic health:
 aimlite doctor`,
     },
-    defaultPayload: '{\n  "package": "aimlite",\n  "version": "1.0.6",\n  "channel": "pypi"\n}',
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "1.0.7",\n  "channel": "pypi"\n}',
     defaultResponse: {
       package: 'aimlite',
-      installed_version: '1.0.6',
-      latest_pypi_version: '1.0.6',
-      release_date: '2026-09-24',
+      installed_version: '1.0.7',
+      latest_pypi_version: '1.0.7',
+      release_date: '2026-09-28',
       status: 'up_to_date',
       highlights: [
-        'Modular developer extension hooks on KnowledgeModel & RAGModel',
-        'RAGTrainer before_index and after_index lifecycle hooks',
-        'aimlite benchmark command with auto sys.path injection',
-        'Direct semantic search endpoint at POST /search',
-        'Interactive dark-mode Chat Playground at /chat',
+        'Zero-Path Multi-Model Serving & Inventory (GET /models)',
+        'Paradigm-Adaptive Web Application with dedicated controls per model type',
+        'Top navbar Model Switcher for instant model toggling without page reload',
+        'Headless REST API mode (--api) for microservices and containers',
+        'Framework-agnostic hosting (--frontend) with SPA client routing fallback',
+        'Developer template override priority (<project>/templates/)',
       ],
     },
   },

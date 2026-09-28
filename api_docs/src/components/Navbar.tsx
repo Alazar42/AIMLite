@@ -214,10 +214,10 @@ export default function Navbar({
             onSelectSection('changelog');
           }}
           className="hidden min-[480px]:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono transition-colors shrink-0"
-          title="View v1.0.6 Release Notes"
+          title="View v1.0.7 Release Notes"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 dark:bg-zinc-400 animate-pulse" />
-          <span>v1.0.6</span>
+          <span>v1.0.7</span>
         </button>
 
         {/* GitHub Link */}

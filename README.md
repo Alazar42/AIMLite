@@ -197,12 +197,12 @@ AIMLite provides zero-path convention-over-configuration commands:
 
 | Command | Description |
 |---|---|
-| `aimlite init [project_name \| .]` | Scaffolds a project in a new folder or directly in the current directory (`.`), setting up `.venv`, pre-installing `aimlite`, starter files, and conventions. |
+| `aimlite init [project_name \| .] [--clean]` | Scaffolds a project in a new folder or directly in the current directory (`.`). Supports `--clean` to generate a pure scratch project with zero sample code or dummy datasets (only class contracts and guiding comments). |
 | `aimlite install [packages...]` | Without arguments, installs all dependencies listed in `aimlite.json`. With packages, installs them into `.venv` using `uv` (or `pip`) and adds them to `aimlite.json`. |
 | `aimlite data validate [target]` | Validates dataset schema, record count, column names, and partition readiness across all datasets in `data/`, or selectively validates by dataset class name, declared filename, path, or raw unbound data file. |
 | `aimlite train [ModelName] [--resume [path]] [--checkpoint-dir <dir>]` | Automatically discovers registered models and executes training. Supports resuming from latest or specific past checkpoints with `--resume`, and saving to custom directories with `--checkpoint-dir`. Saves weights to `models/<model_name>.pkl` and snapshots to `experiments/`. |
 | `aimlite evaluate [ModelName] [--checkpoint <path>]` | Loads the model's checkpoint and calculates benchmark metrics on test partitions. Discovers latest checkpoint automatically or loads an explicit past checkpoint with `--checkpoint`. |
-| `aimlite serve [ModelName] [--checkpoint <path>] [--port 8000] [--frontend <dir>]` | Starts an HTTP inference server exposing `POST /predict`, `GET /health`, `GET /docs`, custom routes, and optional static frontend hosting. Supports loading a specific past checkpoint with `--checkpoint`. |
+| `aimlite serve [ModelName] [--checkpoint <path>] [--port 8000] [--frontend <dir>] [--api]` | Starts an HTTP inference server with multi-model auto-discovery, paradigm-adaptive web UI, `GET /models`, `POST /models/{name}/predict`, optional headless API mode (`--api`), and custom SPA frontend hosting (`--frontend <dir>`). |
 | `aimlite doctor` | Diagnoses runtime health, virtual environment, hardware accelerator availability (`cuda`, `mps`, `cpu`), and directory permissions. |
 | `aimlite benchmark [script] [args...]` | Runs any Python script with the project root automatically injected into `PYTHONPATH`. Eliminates `ModuleNotFoundError` when running experiment or benchmark scripts. Uses the project `.venv` Python automatically. Auto-discovers scripts in `experiments/` when no path is given. |
 
