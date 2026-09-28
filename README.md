@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/logo_white.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/logo.png">
-    <img src="docs/logo.png" alt="AIMLite Logo" width="460" />
+    <img src="https://i.ibb.co/5W4Gns1v/logo-white.png" alt="AIMLite Logo" width="460" />
   </picture>
 </p>
 
