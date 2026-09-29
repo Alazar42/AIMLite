@@ -140,7 +140,7 @@ def get_openapi_schema(
         "openapi": "3.0.0",
         "info": {
             "title": f"AIMLite API — {active_model_name}",
-            "version": "1.0.7",
+            "version": "1.0.8",
             "description": "Developer-customizable zero-path multi-model inference server.",
         },
         "paths": paths,
@@ -450,7 +450,7 @@ def create_handler_class(
                 payload = {
                     "name": primary_name,
                     "status": "online",
-                    "version": "1.0.7",
+                    "version": "1.0.8",
                     "active_model": primary_name,
                     "models": list(models_dict.keys()),
                     "endpoints": endpoints,

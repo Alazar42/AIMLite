@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import Any, Optional, Tuple, Type
+from typing import Any, Optional, Tuple, Type, Union
 
 from cli.discovery import ProjectContext, resolve_project_context
 from cli.ui import C, arrow, check, cross, vite_header

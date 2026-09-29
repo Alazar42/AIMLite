@@ -167,3 +167,51 @@ def test_init_standard_mode_still_has_samples(tmp_path: Path):
     assert manifest["clean"] is False
     # Standard scratch generates sample dataset.csv
     assert (target / "data" / "dataset.csv").exists()
+
+
+def test_init_standard_rag_has_samples(tmp_path: Path):
+    target = tmp_path / "test_standard_rag"
+
+    code = run_init(
+        project_name="test_standard_rag",
+        target_dir=str(tmp_path),
+        template_type="rag",
+        create_venv=False,
+        interactive=False,
+        install_deps=False,
+        clean=False,
+    )
+    assert code == 0
+    assert target.is_dir()
+
+    manifest = json.loads((target / "aimlite.json").read_text(encoding="utf-8"))
+    assert manifest["template"] == "rag"
+    assert manifest["clean"] is False
+
+    # Standard RAG generates sample knowledge_base.md and faq.md
+    faq_file = target / "data" / "faq.md"
+    kb_file = target / "data" / "knowledge_base.md"
+    assert faq_file.exists()
+    assert kb_file.exists()
+    assert "Frequently Asked Questions" in faq_file.read_text(encoding="utf-8")
+    assert "Knowledge Base" in kb_file.read_text(encoding="utf-8")
+
+
+def test_init_standard_fine_tuning_has_readme(tmp_path: Path):
+    target = tmp_path / "test_standard_lora"
+
+    code = run_init(
+        project_name="test_standard_lora",
+        target_dir=str(tmp_path),
+        template_type="fine-tuning",
+        create_venv=False,
+        interactive=False,
+        install_deps=False,
+        clean=False,
+    )
+    assert code == 0
+    assert target.is_dir()
+
+    # Standard Fine-Tuning generates README.md and sample instructions
+    assert (target / "README.md").exists()
+    assert (target / "data" / "instructions.jsonl").exists()

@@ -1030,6 +1030,17 @@ All project directories (`data/`, `models/`, `experiments/`, `artifacts/`) are a
 AIMLite models are served via `aimlite serve --port 8000`.
 For production deployments, containerize with Docker and scale horizontally with Kubernetes.
 """
+    faq_md = """# Frequently Asked Questions (FAQ)
+
+## How does AIMLite manage model checkpoints?
+AIMLite automatically persists model weights, optimizer states, and configuration metadata into the `checkpoints/` directory.
+
+## Can I switch from SQLite/Memory to PostgreSQL in production?
+Yes! Simply configure `PostgresVectorStore(db_url="postgresql://user:pass@localhost:5432/rag_db")` in `store.py`.
+
+## How do I customize LLM System Prompts?
+Edit `chat_provider.py` to change prompt templates or pass custom instructions directly to `get_chat_provider()`.
+"""
     if not clean:
         (dest_root / "data" / "knowledge_base.md").write_text(sample_md, encoding="utf-8")
         (dest_root / "data" / "faq.md").write_text(faq_md, encoding="utf-8")
@@ -1682,6 +1693,9 @@ aimlite benchmark
 aimlite serve --port 8000
 ```
 """
+    (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
+
+
 def _scaffold_clean_scratch(package_dir: Path, dest_root: Path, project_name: str) -> None:
     """Generates a clean scratch ML project with zero sample code or dummy datasets.
 
