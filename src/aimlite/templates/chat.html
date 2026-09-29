@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
   <style>
     :root {
       --bg-base: #090d16;
@@ -309,6 +310,135 @@
       border-top-right-radius: 4px;
     }
 
+    /* Markdown Styles in Chat Bubbles */
+    .markdown-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .markdown-content > *:first-child {
+      margin-top: 0 !important;
+    }
+
+    .markdown-content > *:last-child {
+      margin-bottom: 0 !important;
+    }
+
+    .markdown-content p {
+      margin: 0 0 10px 0;
+      line-height: 1.6;
+    }
+
+    .markdown-content h1,
+    .markdown-content h2,
+    .markdown-content h3,
+    .markdown-content h4,
+    .markdown-content h5,
+    .markdown-content h6 {
+      margin: 16px 0 8px 0;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+
+    .markdown-content h1 { font-size: 1.35em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px; }
+    .markdown-content h2 { font-size: 1.2em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px; }
+    .markdown-content h3 { font-size: 1.08em; }
+    .markdown-content h4 { font-size: 1.0em; }
+
+    .markdown-content ul,
+    .markdown-content ol {
+      margin: 6px 0 10px 20px;
+      padding: 0;
+    }
+
+    .markdown-content li {
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .markdown-content blockquote {
+      margin: 10px 0;
+      padding: 8px 14px;
+      border-left: 3px solid var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.08);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .markdown-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88em;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--accent-cyan);
+    }
+
+    .markdown-content pre {
+      margin: 10px 0;
+      padding: 12px 14px;
+      background: #050811;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    .markdown-content pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #e2e8f0;
+      display: block;
+    }
+
+    .markdown-content a {
+      color: var(--accent-cyan);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .markdown-content hr {
+      border: none;
+      border-top: 1px solid var(--border-subtle);
+      margin: 14px 0;
+    }
+
+    .markdown-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+
+    .markdown-content th,
+    .markdown-content td {
+      border: 1px solid var(--border-subtle);
+      padding: 6px 10px;
+      text-align: left;
+    }
+
+    .markdown-content th {
+      background: var(--bg-surface-elevated);
+      font-weight: 600;
+    }
+
+    .markdown-content tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .markdown-content strong {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
     /* Sources Accordion */
     .sources-box {
       margin-top: 8px;
@@ -607,7 +737,11 @@
 
       const bubble = document.createElement("div");
       bubble.className = "bubble";
-      bubble.innerText = text;
+      if (role === "ai") {
+        bubble.innerHTML = `<div class="markdown-content">${renderMarkdown(text)}</div>`;
+      } else {
+        bubble.innerText = text;
+      }
       bubbleContainer.appendChild(bubble);
 
       // Render retrieved knowledge sources if present
@@ -731,6 +865,139 @@
         sendBtn.disabled = false;
         userInput.focus();
       }
+    }
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+
+    function renderMarkdown(md) {
+      if (md === null || md === undefined) return "";
+      const text = String(md);
+
+      // 1. If marked.js is available from CDN, use it for full GFM support
+      if (window.marked && typeof window.marked.parse === "function") {
+        try {
+          return window.marked.parse(text, { gfm: true, breaks: true });
+        } catch (e) {
+          console.warn("marked.parse error, using built-in renderer fallback:", e);
+        }
+      }
+
+      // 2. Built-in lightweight, reliable markdown parser fallback
+      let s = text;
+
+      // Extract and protect fenced code blocks
+      const codeBlocks = [];
+      s = s.replace(/```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g, function(match, lang, code) {
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        const escapedCode = escapeHtml(code.replace(/\n$/, ""));
+        const langAttr = lang ? ` class="language-${escapeHtml(lang)}"` : "";
+        codeBlocks.push(`<pre><code${langAttr}>${escapedCode}</code></pre>`);
+        return placeholder;
+      });
+
+      // Extract and protect inline code
+      const inlineCodes = [];
+      s = s.replace(/`([^`\n]+)`/g, function(match, code) {
+        const placeholder = `__INLINE_CODE_${inlineCodes.length}__`;
+        inlineCodes.push(`<code>${escapeHtml(code)}</code>`);
+        return placeholder;
+      });
+
+      // Escape remaining general HTML for safety
+      s = escapeHtml(s);
+
+      // Headers (# Heading)
+      s = s.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+      s = s.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+      s = s.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+      s = s.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+      s = s.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+      s = s.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+      // Horizontal rules
+      s = s.replace(/^(?:---|\*\*\*|___)\s*$/gm, '<hr>');
+
+      // Blockquotes
+      s = s.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+      s = s.replace(/<\/blockquote>\n<blockquote>/g, '<br>');
+
+      // Bold, Italic, Strikethrough
+      s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+      s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      s = s.replace(/__(.+?)__/g, '<strong>$1</strong>');
+      s = s.replace(/\*([^\*\n]+)\*/g, '<em>$1</em>');
+      s = s.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+      s = s.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+      // Links & Images
+      s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%; border-radius:6px;">');
+      s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+      // Markdown Tables
+      s = s.replace(/((?:\|[^\n]+\|\r?\n?)+)/g, function(tableMatch) {
+        const rows = tableMatch.trim().split(/\r?\n/).filter(r => r.trim());
+        if (rows.length < 2) return tableMatch;
+        let html = '<table>';
+        let isHeader = true;
+        for (let r = 0; r < rows.length; r++) {
+          const row = rows[r].trim();
+          if (/^\|[\s\-:|]+\|$/.test(row)) {
+            isHeader = false;
+            continue;
+          }
+          const cells = row.split('|').slice(1, -1);
+          html += '<tr>';
+          for (let c = 0; c < cells.length; c++) {
+            const cell = cells[c].trim();
+            const tag = isHeader ? 'th' : 'td';
+            html += `<${tag}>${cell}</${tag}>`;
+          }
+          html += '</tr>';
+        }
+        html += '</table>';
+        return html;
+      });
+
+      // Lists (Unordered & Ordered)
+      s = s.replace(/(?:^|\n)((?:[\t ]*[-*+]\s+[^\n]+\n?)+)/g, function(m, listContent) {
+        const items = listContent.trim().split(/\n/).map(line => {
+          return `<li>${line.replace(/^[\t ]*[-*+]\s+/, "")}</li>`;
+        }).join("");
+        return `\n<ul>${items}</ul>\n`;
+      });
+
+      s = s.replace(/(?:^|\n)((?:[\t ]*\d+\.\s+[^\n]+\n?)+)/g, function(m, listContent) {
+        const items = listContent.trim().split(/\n/).map(line => {
+          return `<li>${line.replace(/^[\t ]*\d+\.\s+/, "")}</li>`;
+        }).join("");
+        return `\n<ol>${items}</ol>\n`;
+      });
+
+      // Paragraphs & Line Breaks
+      const paras = s.split(/\n{2,}/);
+      s = paras.map(p => {
+        p = p.trim();
+        if (!p) return "";
+        if (/^<(h[1-6]|hr|blockquote|pre|table|ul|ol|div)[\s>]/.test(p)) {
+          return p;
+        }
+        return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+      }).join("\n");
+
+      // Restore inline code
+      s = s.replace(/__INLINE_CODE_(\d+)__/g, function(match, id) {
+        return inlineCodes[Number(id)] || "";
+      });
+
+      // Restore code blocks
+      s = s.replace(/__CODE_BLOCK_(\d+)__/g, function(match, id) {
+        return codeBlocks[Number(id)] || "";
+      });
+
+      return s;
     }
   </script>
 </body>

@@ -1,4 +1,4 @@
-import { Menu, Search, Terminal, ExternalLink, BookOpen, Code2 } from 'lucide-react';
+import { Menu, Search, Terminal, ExternalLink, BookOpen, Code2, Bot } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 const GithubIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
@@ -214,11 +214,23 @@ export default function Navbar({
             onSelectSection('changelog');
           }}
           className="hidden min-[480px]:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono transition-colors shrink-0"
-          title="View v1.0.7 Release Notes"
+          title="View v1.0.9 Release Notes"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 dark:bg-zinc-400 animate-pulse" />
-          <span>v1.0.7</span>
+          <span>v1.0.9</span>
         </button>
+
+        {/* llms.txt Agent Specification Link */}
+        <a
+          href="/llms.txt"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 text-[11px] font-mono border border-zinc-200 dark:border-zinc-800 transition-colors"
+          title="Open llms.txt standard guide for coding agents"
+        >
+          <Bot size={13} />
+          <span>llms.txt</span>
+        </a>
 
         {/* GitHub Link */}
         <a

@@ -121,7 +121,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'Releases & Changelog',
     items: [
-      { id: 'changelog', label: 'Version Changelog', badge: 'v1.0.7', badgeVariant: 'util' },
+      { id: 'changelog', label: 'Version Changelog', badge: 'v1.0.9', badgeVariant: 'util' },
     ],
   },
 ];
@@ -166,11 +166,11 @@ export const DOC_SECTIONS: Record<string, DocSection> = {
         description: 'Ingests data into memory. Uses standard library csv (or pandas if installed).',
       },
       {
-        name: 'split(train=0.8, validation=0.1, test=0.1)',
+        name: 'split(train=0.8, validation=0.1, test=0.1, seed=42, shuffle=True)',
         type: 'method',
         required: true,
-        description: 'Partitions rows into (train_data, val_data, test_data) tuples.',
-        defaultValue: '0.8, 0.1, 0.1',
+        description: 'Partitions rows into (train_data, val_data, test_data) tuples with deterministic seeded shuffling and ratio sum validation.',
+        defaultValue: '0.8, 0.1, 0.1, seed=42, shuffle=True',
       },
       {
         name: 'validate()',
@@ -493,7 +493,7 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
     subtitle: 'Vite-inspired interactive wizard scaffolding modular AI projects in <50ms.',
-    badge: { label: 'CLI v1.0.7', variant: 'cli' },
+    badge: { label: 'CLI v1.0.9', variant: 'cli' },
     signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapters>] [--clean] [--install] [-y]',
     breadcrumbs: ['CLI', 'init'],
     overview:
@@ -589,7 +589,7 @@ aimlite init . --type adapters --install`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
     subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
-    badge: { label: 'CLI v1.0.7', variant: 'cli' },
+    badge: { label: 'CLI v1.0.9', variant: 'cli' },
     signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
@@ -676,7 +676,7 @@ aimlite train ChurnClassifier`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
     subtitle: 'Zero-path multi-model inference server with type-adaptive Web Playgrounds, Swagger UI, and headless --api mode.',
-    badge: { label: 'CLI v1.0.7', variant: 'cli' },
+    badge: { label: 'CLI v1.0.9', variant: 'cli' },
     signatureOrPath: 'aimlite serve [ModelName] [--api] [--checkpoint <path>] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
@@ -1864,15 +1864,23 @@ class CustomSupportRAG(KnowledgeModel):
     id: 'changelog',
     category: 'Releases & Changelog',
     title: 'Framework Changelog & Releases',
-    subtitle: 'Release history and upgrade guide for AIMLite (v1.0.7 latest).',
-    badge: { label: 'v1.0.7', variant: 'util' },
-    signatureOrPath: 'pip install --upgrade aimlite==1.0.7',
-    breadcrumbs: ['Releases', 'v1.0.7'],
+    subtitle: 'Release history and upgrade guide for AIMLite (v1.0.9 latest).',
+    badge: { label: 'v1.0.9', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==1.0.9',
+    breadcrumbs: ['Releases', 'v1.0.9'],
     overview:
-      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v1.0.7, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v1.0.9, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
     djangoAnalogy:
       'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
     conventions: [
+      {
+        title: 'Release [1.0.9] - 2026-09-29 (Production-Readiness Implementation)',
+        description: 'Real LoRA Gradient Training Engine: Replaced simulated curves with true analytical backpropagation (MSE loss, backward_A & backward_B updates, gradient clipping, zero-gradient assertion). Semantic & Hierarchical SmartChunker: Recursive multi-tier document splitting across Markdown headers, paragraphs, sentences, words, and character fallback with max_chunk_size guarantees and chunk_overlap. Strict Chat Provider Requirement: Mandates explicit chat_provider for KnowledgeModel and RAGModel (no silent Mock fallbacks in production). Zero Silent Fallbacks: SentenceTransformerEmbedding raises explicit ImportError when dependencies are missing; DocumentLoader.load_directory raises RuntimeError for corrupt files. Deterministic Dataset Partitioning: Dataset.split with seeded random shuffling and ratio validation. Threaded Concurrent Server: ThreadingHTTPServer (ThreadingMixIn) for non-blocking concurrent inference and health checks. 107 passing tests.',
+      },
+      {
+        title: 'Release [1.0.8] - 2026-09-29',
+        description: 'RAG & Fine-Tuning Template Sample Assets: Curated sample markdown documentation in data/samples/ for standard RAG projects, and instruction datasets in data/samples/ with fine-tuning README for adapter projects. Expanded test_init_clean suite verifying clean vs standard scaffolding modes.',
+      },
       {
         title: 'Release [1.0.7] - 2026-09-28 (Major)',
         description: 'Zero-Path Multi-Model Serving & Inventory: Auto-scans model.py for all trained classes, registers them in GET /models, supports class targeting (aimlite serve [ModelName]), and POST /models/{name}/predict. Paradigm-Adaptive Web Application (app.html) with tailored controls for ML (Feature Form, presets, JSON mode), RAG (Grounded Chat, Citations, Top-K), and LoRA (Prompt tester), plus live top navbar Model Switcher. Clean Scratch Scaffolding (aimlite init --clean) generating pure project skeletons with zero sample code or dummy datasets (comments & class contracts only). Headless REST API mode (--api). Framework-agnostic static hosting (--frontend) with SPA routing fallback to index.html and zero-CORS single-port deployment. Project template priority overrides (<project>/templates/).',
@@ -1913,20 +1921,20 @@ pip install --upgrade aimlite
 # Verify installation & diagnostic health:
 aimlite doctor`,
     },
-    defaultPayload: '{\n  "package": "aimlite",\n  "version": "1.0.7",\n  "channel": "pypi"\n}',
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "1.0.9",\n  "channel": "pypi"\n}',
     defaultResponse: {
       package: 'aimlite',
-      installed_version: '1.0.7',
-      latest_pypi_version: '1.0.7',
-      release_date: '2026-09-28',
+      installed_version: '1.0.9',
+      latest_pypi_version: '1.0.9',
+      release_date: '2026-09-29',
       status: 'up_to_date',
       highlights: [
-        'Zero-Path Multi-Model Serving & Inventory (GET /models)',
-        'Paradigm-Adaptive Web Application with dedicated controls per model type',
-        'Top navbar Model Switcher for instant model toggling without page reload',
-        'Headless REST API mode (--api) for microservices and containers',
-        'Framework-agnostic hosting (--frontend) with SPA client routing fallback',
-        'Developer template override priority (<project>/templates/)',
+        'Production LoRA Real Gradient Training with analytical backprop and MSE loss',
+        'Hierarchical SmartChunker (Markdown -> Paragraph -> Sentence -> Word -> Char)',
+        'Strict Chat Provider requirements and zero silent fallbacks in production paths',
+        'Deterministic Dataset.split with seeded shuffling and ratio sum validation',
+        'Threaded Concurrent Multi-Model Server (ThreadingHTTPServer)',
+        '107 comprehensive tests passing across all ML paradigms',
       ],
     },
   },

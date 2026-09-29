@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from cli.commands.agent_assets import scaffold_agent_customizations
 from cli.commands.install import run_install
 from cli.ui import (
     C,
@@ -468,6 +469,10 @@ class Config(BaseConfig):
         _scaffold_clean_scratch(package_dir, dest_root, project_name)
     else:
         _scaffold_scratch(package_dir, dest_root, project_name)
+
+    scaffold_agent_customizations(dest_root, project_name, template_type, clean=clean)
+    print(f"  {check('Agent Ready', '.agents/skills/aimlite/SKILL.md, AGENTS.md, llms.txt')}")
+
 
 
 def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_config: Dict[str, Any], clean: bool = False) -> None:

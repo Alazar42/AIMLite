@@ -4,13 +4,12 @@ import json
 import tempfile
 import urllib.request
 import threading
-from http.server import HTTPServer
 from pathlib import Path
 
 from cli.commands.serve import detect_model_type, discover_feature_names
-from cli.server import _load_template, create_handler_class, get_openapi_schema
+from cli.server import ThreadingHTTPServer, _load_template, create_handler_class, get_openapi_schema
 from aimlite.models import Model
-from aimlite.rag import KnowledgeModel
+from aimlite.rag import KnowledgeModel, MockChatProvider
 from aimlite.adapters import AdapterModel
 
 
@@ -22,6 +21,11 @@ class MockClassifier(Model):
 
 class MockRAG(KnowledgeModel):
     """Mock RAG conversational assistant."""
+    def __init__(self, **kwargs):
+        # KnowledgeModel requires an explicit chat_provider
+        kwargs.setdefault("chat_provider", MockChatProvider())
+        super().__init__(**kwargs)
+
     def predict(self, inputs, **kwargs):
         return {"answer": "Grounded response", "sources": [{"content": "Source doc 1"}]}
 
@@ -76,7 +80,7 @@ def test_multi_model_server_endpoints():
         api_only=False,
     )
     
-    server = HTTPServer(("127.0.0.1", 9922), handler)
+    server = ThreadingHTTPServer(("127.0.0.1", 9922), handler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
     
@@ -150,7 +154,7 @@ def test_headless_api_mode():
         api_only=True,
     )
     
-    server = HTTPServer(("127.0.0.1", 9923), handler)
+    server = ThreadingHTTPServer(("127.0.0.1", 9923), handler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
     

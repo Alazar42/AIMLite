@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
+import random
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
@@ -330,20 +331,47 @@ class Dataset:
         train: float = 0.8,
         validation: float = 0.1,
         test: float = 0.1,
+        seed: Optional[int] = 42,
+        shuffle: bool = True,
         **kwargs: Any,
     ) -> Tuple[Any, Any, Any]:
-        """Partitions the dataset rows into (train, validation, test) subsets."""
-        if self._train_data is not None and (self._test_data is not None or self._val_data is not None):
-            train_data = self._train_data
-            test_data = self._test_data or []
-            val_data = self._val_data
+        """Partitions the dataset rows into (train, validation, test) subsets.
 
-            if val_data is None and validation > 0 and len(train_data) > 1:
+        Args:
+            train: Fraction of data for training (0.0–1.0).
+            validation: Fraction of data for validation (0.0–1.0).
+            test: Fraction of data for testing (0.0–1.0).
+            seed: Random seed for reproducible shuffling. None disables seeding.
+            shuffle: If True (default), shuffles data before splitting.
+
+        Returns:
+            Tuple of (train_records, validation_records, test_records).
+
+        Raises:
+            ValueError: If ratios do not sum to approximately 1.0 or are invalid.
+        """
+        total = train + validation + test
+        if not (0.99 <= total <= 1.01):
+            raise ValueError(
+                f"Dataset.split() ratios must sum to 1.0, got train={train} + "
+                f"validation={validation} + test={test} = {total:.4f}."
+            )
+        if train <= 0.0:
+            raise ValueError("train ratio must be greater than 0.0.")
+
+        if self._train_data is not None and (self._test_data is not None or self._val_data is not None):
+            # Pre-split files detected; use them directly
+            train_data = list(self._train_data)
+            test_data = list(self._test_data) if self._test_data else []
+            val_data = list(self._val_data) if self._val_data else []
+
+            if not val_data and validation > 0 and len(train_data) > 1:
+                if shuffle:
+                    rng = random.Random(seed)
+                    rng.shuffle(train_data)
                 n_val = max(1, int(len(train_data) * validation))
                 val_data = train_data[-n_val:]
                 train_data = train_data[:-n_val]
-            elif val_data is None:
-                val_data = []
 
             return train_data, val_data, test_data
 
@@ -354,12 +382,18 @@ class Dataset:
         if n == 0:
             return [], [], []
 
+        # Shuffle before splitting for proper randomization
+        data = list(self._data)
+        if shuffle:
+            rng = random.Random(seed)
+            rng.shuffle(data)
+
         n_train = max(1, int(n * train))
         n_val = int(n * validation)
 
-        train_data = self._data[:n_train]
-        val_data = self._data[n_train : n_train + n_val]
-        test_data = self._data[n_train + n_val :]
+        train_data = data[:n_train]
+        val_data = data[n_train : n_train + n_val]
+        test_data = data[n_train + n_val :]
         return train_data, val_data, test_data
 
     def validate(self) -> bool:

@@ -7,12 +7,23 @@ import mimetypes
 import os
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from cli.ui import C, arrow, cross, vite_header
 from aimlite.lifecycle import BaseInference
 from aimlite.models import Model
+
+
+class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
+    """HTTP server that handles each request in a separate thread.
+
+    This prevents a slow inference call from blocking other concurrent requests.
+    ThreadingMixIn spawns a new thread for each incoming connection.
+    """
+
+    daemon_threads = True
 
 
 def _load_template(filename: str, template_dir: Optional[Path] = None) -> str:
@@ -140,14 +151,14 @@ def get_openapi_schema(
         "openapi": "3.0.0",
         "info": {
             "title": f"AIMLite API — {active_model_name}",
-            "version": "1.0.8",
+            "version": "1.0.9",
             "description": "Developer-customizable zero-path multi-model inference server.",
         },
         "paths": paths,
     }
 
 
-class DefaultInference(BaseInference):
+class DefaultInference:
     """Fallback inference runner if none is declared by the developer."""
 
     def run(self, model: Model, raw_input: Any, **kwargs: Any) -> Any:
@@ -450,7 +461,7 @@ def create_handler_class(
                 payload = {
                     "name": primary_name,
                     "status": "online",
-                    "version": "1.0.8",
+                    "version": "1.0.9",
                     "active_model": primary_name,
                     "models": list(models_dict.keys()),
                     "endpoints": endpoints,
@@ -638,7 +649,7 @@ def run_inference_server(
     )
 
     try:
-        server = HTTPServer((host, port), handler_cls)
+        server = ThreadingHTTPServer((host, port), handler_cls)
     except OSError as e:
         if "Address already in use" in str(e) or e.errno == 98:
             print(f"\n{cross(f'Port {port} is already in use.')}")

@@ -204,6 +204,73 @@ class SmartChunker:
 
         return [(header, "\n".join(body_lines).strip()) for header, body_lines in sections if "\n".join(body_lines).strip()]
 
+    def _split_into_chunks(self, text: str) -> List[str]:
+        """Splits a single block of text into chunks of at most max_chunk_size."""
+        text = text.strip()
+        if not text:
+            return []
+        if len(text) <= self.max_chunk_size:
+            return [text]
+
+        # 1. Try splitting into sentences
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+        
+        # If no sentence boundaries found or only 1 sentence that exceeds max_chunk_size, split by words
+        if len(sentences) <= 1:
+            words = text.split()
+            if len(words) <= 1:
+                # Single word/token larger than max_chunk_size: slice directly
+                return [text[i : i + self.max_chunk_size] for i in range(0, len(text), self.max_chunk_size)]
+            units = words
+            sep = " "
+        else:
+            units = sentences
+            sep = " "
+
+        chunks: List[str] = []
+        current_chunk: List[str] = []
+        current_len = 0
+
+        for unit in units:
+            unit_len = len(unit)
+            if unit_len > self.max_chunk_size:
+                # Recursively split units that individually exceed max_chunk_size
+                sub_chunks = self._split_into_chunks(unit)
+                for sc in sub_chunks:
+                    if current_chunk:
+                        chunks.append(sep.join(current_chunk).strip())
+                        current_chunk = []
+                        current_len = 0
+                    chunks.append(sc)
+                continue
+
+            added_len = unit_len + (len(sep) if current_chunk else 0)
+            if current_chunk and (current_len + added_len > self.max_chunk_size):
+                chunks.append(sep.join(current_chunk).strip())
+                if self.chunk_overlap > 0:
+                    overlap_units: List[str] = []
+                    overlap_len = 0
+                    for u in reversed(current_chunk):
+                        needed = len(u) + (len(sep) if overlap_units else 0)
+                        if overlap_len + needed <= self.chunk_overlap:
+                            overlap_units.insert(0, u)
+                            overlap_len += needed
+                        else:
+                            break
+                    current_chunk = overlap_units
+                    current_len = overlap_len
+                else:
+                    current_chunk = []
+                    current_len = 0
+
+            current_chunk.append(unit)
+            current_len += unit_len + (len(sep) if len(current_chunk) > 1 else 0)
+
+        if current_chunk:
+            chunks.append(sep.join(current_chunk).strip())
+
+        return chunks
+
     def split_text(self, text: str, title: Optional[str] = None) -> List[Tuple[str, Dict[str, Any]]]:
         """Splits text into chunks accompanied by contextual metadata."""
         text = text.strip()
@@ -214,55 +281,38 @@ class SmartChunker:
         results: List[Tuple[str, Dict[str, Any]]] = []
 
         for section_title, section_body in sections:
-            # Split by paragraphs / double newlines first
+            meta = {
+                "section": section_title,
+                "document_title": title,
+            }
+            # First split by paragraphs
             paragraphs = [p.strip() for p in re.split(r"\n\s*\n", section_body) if p.strip()]
-            
-            current_chunk_parts: List[str] = []
+            if not paragraphs:
+                continue
+
+            current_paras: List[str] = []
             current_len = 0
 
             for p in paragraphs:
                 p_len = len(p)
-                if current_len + p_len > self.max_chunk_size and current_chunk_parts:
-                    chunk_text = "\n\n".join(current_chunk_parts).strip()
-                    meta = {
-                        "section": section_title,
-                        "document_title": title,
-                    }
-                    results.append((chunk_text, meta))
-                    current_chunk_parts = []
-                    current_len = 0
-
-                # If a single paragraph exceeds max_chunk_size, split by sentence or sliding window
                 if p_len > self.max_chunk_size:
-                    sentences = re.split(r"(?<=[.!?])\s+", p)
-                    sent_buf: List[str] = []
-                    sent_len = 0
-                    for s in sentences:
-                        if sent_len + len(s) > self.max_chunk_size and sent_buf:
-                            results.append(
-                                (
-                                    " ".join(sent_buf).strip(),
-                                    {"section": section_title, "document_title": title},
-                                )
-                            )
-                            sent_buf = []
-                            sent_len = 0
-                        sent_buf.append(s)
-                        sent_len += len(s) + 1
-                    if sent_buf:
-                        current_chunk_parts.append(" ".join(sent_buf).strip())
-                        current_len += sent_len
+                    if current_paras:
+                        results.append(("\n\n".join(current_paras).strip(), meta))
+                        current_paras = []
+                        current_len = 0
+                    for sub_chunk in self._split_into_chunks(p):
+                        results.append((sub_chunk, meta))
                 else:
-                    current_chunk_parts.append(p)
-                    current_len += p_len + 2
+                    sep_len = 2 if current_paras else 0
+                    if current_paras and (current_len + sep_len + p_len > self.max_chunk_size):
+                        results.append(("\n\n".join(current_paras).strip(), meta))
+                        current_paras = []
+                        current_len = 0
+                    current_paras.append(p)
+                    current_len += p_len + (2 if len(current_paras) > 1 else 0)
 
-            if current_chunk_parts:
-                chunk_text = "\n\n".join(current_chunk_parts).strip()
-                meta = {
-                    "section": section_title,
-                    "document_title": title,
-                }
-                results.append((chunk_text, meta))
+            if current_paras:
+                results.append(("\n\n".join(current_paras).strip(), meta))
 
         return results
 
@@ -378,14 +428,21 @@ class DocumentLoader:
 
         valid_exts = [e.lower() for e in extensions] if extensions else None
         all_docs: List[Document] = []
+        errors: List[str] = []
 
         for p in dir_path.rglob(glob_pattern):
             if p.is_file():
                 if valid_exts is None or p.suffix.lower() in valid_exts:
                     try:
                         all_docs.extend(cls.load_file(p))
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        errors.append(f"{p}: {e}")
+
+        if errors:
+            raise RuntimeError(
+                f"DocumentLoader.load_directory() encountered {len(errors)} file error(s) "
+                f"in '{dir_path}':\n" + "\n".join(f"  - {err}" for err in errors)
+            )
         return all_docs
 
 
@@ -439,18 +496,24 @@ class TfidfEmbedding(BaseEmbedding):
 
 
 class SentenceTransformerEmbedding(BaseEmbedding):
-    """Dense semantic embedding powered by local SentenceTransformers models with graceful pure-Python fallback."""
+    """Dense semantic embedding powered by local SentenceTransformers models.
+
+    Requires the 'sentence-transformers' package. Install it with:
+        aimlite install sentence-transformers
+    or:
+        pip install sentence-transformers
+
+    There is no silent fallback to a different embedding implementation.
+    If sentence-transformers is not available, an explicit ImportError is raised.
+    """
 
     def __init__(
         self,
         model_name_or_path: str = "all-MiniLM-L6-v2",
         device: Optional[str] = None,
-        fallback_to_tfidf: bool = True,
     ) -> None:
         self.model_name = model_name_or_path
         self.device = device
-        self.fallback_to_tfidf = fallback_to_tfidf
-        self._fallback_tfidf: Optional[TfidfEmbedding] = None
         self._model: Any = None
 
     def _get_model(self) -> Any:
@@ -459,28 +522,30 @@ class SentenceTransformerEmbedding(BaseEmbedding):
                 from sentence_transformers import SentenceTransformer
 
                 self._model = SentenceTransformer(self.model_name, device=self.device)
-            except (ImportError, Exception):
-                if self.fallback_to_tfidf:
-                    if self._fallback_tfidf is None:
-                        self._fallback_tfidf = TfidfEmbedding()
-                    return None
+            except ImportError as e:
                 raise ImportError(
-                    "sentence-transformers is required for SentenceTransformerEmbedding. "
-                    "Install it via 'aimlite install sentence-transformers' or 'pip install sentence-transformers'."
-                )
+                    f"SentenceTransformerEmbedding requires the 'sentence-transformers' package, "
+                    f"which is not installed. Install it with:\n"
+                    f"    pip install sentence-transformers\n"
+                    f"or:\n"
+                    f"    aimlite install sentence-transformers\n"
+                    f"Original error: {e}"
+                ) from e
+            except Exception as e:
+                raise RuntimeError(
+                    f"SentenceTransformerEmbedding failed to load model '{self.model_name}': {e}\n"
+                    f"Check that the model identifier is correct and you have network access "
+                    f"or the model is available in your local cache."
+                ) from e
         return self._model
 
     def embed_text(self, text: str) -> List[float]:
         model = self._get_model()
-        if model is None:
-            return self._fallback_tfidf.embed_text(text)  # type: ignore
         vec = model.encode(text, convert_to_numpy=True)
         return [float(x) for x in vec.tolist()]
 
     def embed_batch(self, texts: List[str]) -> List[List[float]]:
         model = self._get_model()
-        if model is None:
-            return self._fallback_tfidf.embed_batch(texts)  # type: ignore
         vecs = model.encode(texts, convert_to_numpy=True)
         return [[float(x) for x in v.tolist()] for v in vecs]
 
@@ -1698,7 +1763,20 @@ class RAGModel(Model):
     ) -> None:
         super().__init__(name=name, config=config, **kwargs)
         self.retriever = retriever
-        self.chat_provider = chat_provider or MockChatProvider()
+        if chat_provider is None:
+            raise ValueError(
+                f"RAGModel '{name}' requires an explicit chat_provider. "
+                "A provider must be configured before inference can run.\n"
+                "Supported providers:\n"
+                "  - OpenAIChatProvider(api_key=...)\n"
+                "  - AnthropicChatProvider(api_key=...)\n"
+                "  - GeminiChatProvider(api_key=...)\n"
+                "  - OllamaChatProvider(model=...)\n"
+                "  - LocalChatProvider(model_or_fn=...)\n"
+                "  - MockChatProvider()  # for testing only\n"
+                "Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY in your .env file."
+            )
+        self.chat_provider = chat_provider
         self.query_analyzer = query_analyzer
         self.generator_fn = generator_fn
         self.system_prompt = system_prompt or PROMPT_RAG_QA
@@ -1837,10 +1915,23 @@ class KnowledgeModel(RAGModel):
         top_k: int = 3,
         **kwargs: Any,
     ) -> None:
+        if chat_provider is None:
+            raise ValueError(
+                f"KnowledgeModel '{name}' requires an explicit chat_provider. "
+                "A provider must be configured before RAG inference can run.\n"
+                "Supported providers:\n"
+                "  - OpenAIChatProvider(api_key=...)\n"
+                "  - AnthropicChatProvider(api_key=...)\n"
+                "  - GeminiChatProvider(api_key=...)\n"
+                "  - OllamaChatProvider(model=...)\n"
+                "  - LocalChatProvider(model_or_fn=...)\n"
+                "  - MockChatProvider()  # for testing only\n"
+                "Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY in your .env file."
+            )
         self.embedding_fn = embedding_fn or TfidfEmbedding()
         self.vector_store = vector_store or MemoryVectorStore(embedding_fn=self.embedding_fn)
         self.chunker = chunker or SmartChunker()
-        self.chat_provider = chat_provider or MockChatProvider()
+        self.chat_provider = chat_provider
         self.query_analyzer = query_analyzer or QueryAnalyzer(chat_provider=self.chat_provider)
 
         custom_retriever = retriever or VectorRetriever(

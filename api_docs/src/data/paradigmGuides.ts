@@ -1149,7 +1149,7 @@ if __name__ == "__main__":
 
   'aimlite.json': `{
   "name": "support_rag",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "entrypoint": "support_rag",
   "type": "rag",
   "dependencies": [

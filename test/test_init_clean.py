@@ -63,6 +63,10 @@ def test_init_clean_default_scratch(tmp_path: Path):
     assert (target / "README.md").exists()
     assert (target / ".gitignore").exists()
     assert (target / ".env.example").exists()
+    assert (target / ".agents" / "skills" / "aimlite" / "SKILL.md").exists()
+    assert (target / "skills" / "aimlite" / "SKILL.md").exists()
+    assert (target / "AGENTS.md").exists()
+    assert (target / "llms.txt").exists()
 
 
 def test_init_clean_with_type_scratch(tmp_path: Path):
@@ -215,3 +219,45 @@ def test_init_standard_fine_tuning_has_readme(tmp_path: Path):
     # Standard Fine-Tuning generates README.md and sample instructions
     assert (target / "README.md").exists()
     assert (target / "data" / "instructions.jsonl").exists()
+
+
+def test_init_scaffolds_agent_skills_and_llms_txt(tmp_path: Path):
+    target = tmp_path / "test_agent_rag"
+
+    code = run_init(
+        project_name="test_agent_rag",
+        target_dir=str(tmp_path),
+        template_type="rag",
+        create_venv=False,
+        interactive=False,
+        install_deps=False,
+        clean=True,
+    )
+    assert code == 0
+    assert target.is_dir()
+
+    # 1. Agent Skill Guide in .agents/ and skills/
+    agent_skill = target / ".agents" / "skills" / "aimlite" / "SKILL.md"
+    root_skill = target / "skills" / "aimlite" / "SKILL.md"
+    assert agent_skill.exists()
+    assert root_skill.exists()
+    skill_text = agent_skill.read_text(encoding="utf-8")
+    assert "name: aimlite" in skill_text
+    assert "Expert guide for AIMLite" in skill_text
+    assert "aimlite train" in skill_text
+
+    # 2. AGENTS.md at workspace root
+    agents_md = target / "AGENTS.md"
+    assert agents_md.exists()
+    agents_text = agents_md.read_text(encoding="utf-8")
+    assert "test_agent_rag" in agents_text
+    assert "rag" in agents_text
+    assert "Zero-Path CLI Commands" in agents_text
+
+    # 3. llms.txt at workspace root
+    llms_txt = target / "llms.txt"
+    assert llms_txt.exists()
+    llms_text = llms_txt.read_text(encoding="utf-8")
+    assert "test_agent_rag" in llms_text
+    assert "aimlite serve" in llms_text
+

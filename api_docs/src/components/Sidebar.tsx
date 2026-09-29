@@ -134,7 +134,7 @@ export default function Sidebar({
                             className={`text-[8px] font-mono uppercase px-1 rounded border transition-colors ${
                               isActive
                                 ? 'bg-zinc-800 text-zinc-200 border-zinc-700 dark:bg-zinc-200 dark:text-zinc-800 dark:border-zinc-300 font-semibold'
-                                : item.badge.includes('1.0.7') || item.badge.includes('1.0.6') || item.badge === 'NEW'
+                                : item.badge.includes('1.0.9') || item.badge.includes('1.0.8') || item.badge.includes('1.0.7') || item.badge.includes('1.0.6') || item.badge === 'NEW'
                                 ? 'bg-zinc-200 text-zinc-900 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 font-semibold'
                                 : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-800'
                             }`}

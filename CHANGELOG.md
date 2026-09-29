@@ -5,6 +5,53 @@ All notable changes to the AIMLite framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2026-09-29
+
+### Added
+- **Production ML & Real Gradient Fine-Tuning Engine (`aimlite.adapters`)**:
+  - Replaced simulated loss curves and heuristic updates in `AdapterTrainer.fit()` with true mathematical backpropagation across LoRA low-rank decomposition matrices $A$ and $B$.
+  - Forward pass computes intermediate activations $a_x = A \cdot x$; backward passes compute and apply analytical gradients ($\nabla_B \mathcal{L}$ via `layer.backward_B`, $\nabla_A \mathcal{L}$ via `layer.backward_A`).
+  - Implemented MSE loss computation, gradient clipping ($[-1.0, 1.0]$), and prediction clamping to protect against numerical instability and exploding gradients.
+  - Parameter change verification: asserts and validates that parameters measurably updated during training, raising a `RuntimeError` if a zero-gradient condition is encountered.
+  - Enforced strict validation: requires valid `AdapterModel` instances, non-empty datasets (`ValueError`), and initial LoRA layers.
+  - Returns true loss progression history and genuine parameter efficiency statistics via `model.get_trainable_parameters()`.
+- **Semantic & Hierarchical Text Chunker (`aimlite.rag.SmartChunker`)**:
+  - Implemented recursive multi-tier splitting engine (`_split_into_chunks`) that decomposes long text along natural semantic boundaries: Markdown headings $\rightarrow$ paragraphs $\rightarrow$ sentence boundaries $\rightarrow$ word tokens $\rightarrow$ character windowing.
+  - Guarantees strict `max_chunk_size` compliance on arbitrary input (including continuous unpunctuated text or long monolithic blocks).
+  - Supports configurable `chunk_overlap` while preserving parent document title and section heading metadata.
+- **Strict Chat Provider Enforcement (`aimlite.rag.KnowledgeModel`, `aimlite.rag.RAGModel`)**:
+  - `KnowledgeModel` and `RAGModel` now strictly require an explicit `chat_provider` (e.g. `OpenAIChatProvider`, `AnthropicChatProvider`, `GeminiChatProvider`, `OllamaChatProvider`, `LocalChatProvider`, or `MockChatProvider`).
+  - Eliminated silent fallback to mock providers in production code paths, providing clear configuration guidance when missing.
+- **Zero Silent Fallbacks & Explicit Error Handling (`aimlite.rag`)**:
+  - `SentenceTransformerEmbedding` strictly raises an explicit `ImportError` with actionable installation instructions when the `sentence-transformers` package is missing, eliminating silent fallback to TF-IDF.
+  - `DocumentLoader.load_directory()` collects and reports file corruption or reading failures in a comprehensive `RuntimeError` rather than silently swallowing exceptions.
+- **Deterministic Dataset Partitioning (`aimlite.data.Dataset.split`)**:
+  - Added seeded random shuffling (`seed=42`, `shuffle=True`) for reproducible train/val/test splits.
+  - Added validation ensuring split ratios sum to 1.0 ($\pm 0.01$) and `train > 0.0`.
+  - Added support for pre-split datasets (`train.csv`, `test.csv`, `val.csv`) as well as in-memory record lists.
+- **Agent-Native Scaffolding & LLM Standards (`.agents/`, `AGENTS.md`, `llms.txt`)**:
+  - `aimlite init` now automatically scaffolds `.agents/skills/aimlite/SKILL.md` and `skills/aimlite/SKILL.md` into newly created projects, equipping coding agents (Antigravity, Cursor, Windsurf, Claude Code, GitHub Copilot) to understand zero-path execution, conventions, and class contracts immediately.
+  - Generates tailored `AGENTS.md` and `llms.txt` files containing project metadata, CLI commands, and directory layouts in every scaffolded project.
+  - Added project root `llms.txt` and static documentation endpoint `/llms.txt` for coding agents and web crawlers.
+- **Markdown Rendering in Served Chat Interfaces**:
+  - Integrated `marked.js` markdown parsing with light and dark mode styles into `app.html` and `chat.html`.
+  - Implemented a zero-dependency pure-JS regex fallback parser to guarantee markdown formatting works in offline and air-gapped environments.
+- **108-Test Production Verification Suite**:
+  - Added comprehensive test suites: `test/test_adapters.py`, `test/test_dataset.py`, `test/test_rag.py`, `test/test_serving.py`, `test/test_init_clean.py`, verifying zero mock behaviors and complete agent asset generation.
+
+---
+
+## [1.0.8] - 2026-09-29
+
+### Added
+- **RAG & Fine-Tuning Template Sample Assets**:
+  - Added built-in sample markdown articles in `data/samples/` (`sample_faq.md`, `company_handbook.md`, `product_specs.md`) when initializing standard RAG projects via `aimlite init`.
+  - Added sample instruction-following datasets in `data/samples/` (`sample_instructions.json`, `alpaca_sample.jsonl`) and fine-tuning README guidelines for adapter projects.
+- **Clean vs Standard Mode Isolation**:
+  - Expanded `test/test_init_clean.py` to verify that standard mode includes curated samples while `--clean` mode strictly provisions pristine skeletons with zero sample data.
+
+---
+
 ## [1.0.7] - 2026-09-28
 
 ### Added
