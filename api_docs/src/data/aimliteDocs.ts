@@ -121,7 +121,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'Releases & Changelog',
     items: [
-      { id: 'changelog', label: 'Version Changelog', badge: 'v1.0.9', badgeVariant: 'util' },
+      { id: 'changelog', label: 'Version Changelog', badge: 'v2.0.0', badgeVariant: 'util' },
     ],
   },
 ];
@@ -493,7 +493,7 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
     subtitle: 'Vite-inspired interactive wizard scaffolding modular AI projects in <50ms.',
-    badge: { label: 'CLI v1.0.9', variant: 'cli' },
+    badge: { label: 'CLI v2.0.0', variant: 'cli' },
     signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapters>] [--clean] [--install] [-y]',
     breadcrumbs: ['CLI', 'init'],
     overview:
@@ -589,7 +589,7 @@ aimlite init . --type adapters --install`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
     subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
-    badge: { label: 'CLI v1.0.9', variant: 'cli' },
+    badge: { label: 'CLI v2.0.0', variant: 'cli' },
     signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
@@ -676,7 +676,7 @@ aimlite train ChurnClassifier`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
     subtitle: 'Zero-path multi-model inference server with type-adaptive Web Playgrounds, Swagger UI, and headless --api mode.',
-    badge: { label: 'CLI v1.0.9', variant: 'cli' },
+    badge: { label: 'CLI v2.0.0', variant: 'cli' },
     signatureOrPath: 'aimlite serve [ModelName] [--api] [--checkpoint <path>] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
@@ -1864,17 +1864,17 @@ class CustomSupportRAG(KnowledgeModel):
     id: 'changelog',
     category: 'Releases & Changelog',
     title: 'Framework Changelog & Releases',
-    subtitle: 'Release history and upgrade guide for AIMLite (v1.0.9 latest).',
-    badge: { label: 'v1.0.9', variant: 'util' },
-    signatureOrPath: 'pip install --upgrade aimlite==1.0.9',
-    breadcrumbs: ['Releases', 'v1.0.9'],
+    subtitle: 'Release history and upgrade guide for AIMLite (v2.0.0 latest).',
+    badge: { label: 'v2.0.0', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==2.0.0',
+    breadcrumbs: ['Releases', 'v2.0.0'],
     overview:
-      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v1.0.9, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.0.0, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
     djangoAnalogy:
       'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
     conventions: [
       {
-        title: 'Release [1.0.9] - 2026-09-29 (Production-Readiness Implementation)',
+        title: 'Release [2.0.0] - 2026-09-29 (Production-Readiness Implementation)',
         description: 'Real LoRA Gradient Training Engine: Replaced simulated curves with true analytical backpropagation (MSE loss, backward_A & backward_B updates, gradient clipping, zero-gradient assertion). Semantic & Hierarchical SmartChunker: Recursive multi-tier document splitting across Markdown headers, paragraphs, sentences, words, and character fallback with max_chunk_size guarantees and chunk_overlap. Strict Chat Provider Requirement: Mandates explicit chat_provider for KnowledgeModel and RAGModel (no silent Mock fallbacks in production). Zero Silent Fallbacks: SentenceTransformerEmbedding raises explicit ImportError when dependencies are missing; DocumentLoader.load_directory raises RuntimeError for corrupt files. Deterministic Dataset Partitioning: Dataset.split with seeded random shuffling and ratio validation. Threaded Concurrent Server: ThreadingHTTPServer (ThreadingMixIn) for non-blocking concurrent inference and health checks. 107 passing tests.',
       },
       {
@@ -1921,11 +1921,11 @@ pip install --upgrade aimlite
 # Verify installation & diagnostic health:
 aimlite doctor`,
     },
-    defaultPayload: '{\n  "package": "aimlite",\n  "version": "1.0.9",\n  "channel": "pypi"\n}',
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.0.0",\n  "channel": "pypi"\n}',
     defaultResponse: {
       package: 'aimlite',
-      installed_version: '1.0.9',
-      latest_pypi_version: '1.0.9',
+      installed_version: '2.0.0',
+      latest_pypi_version: '2.0.0',
       release_date: '2026-09-29',
       status: 'up_to_date',
       highlights: [

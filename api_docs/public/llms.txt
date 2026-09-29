@@ -1,4 +1,4 @@
-# AIMLite (v1.0.9)
+# AIMLite (v2.0.0)
 > The Django for AI & Machine Learning — an opinionated, convention-over-configuration Python framework with zero-path CLI execution, parameter-efficient LoRA fine-tuning, enterprise RAG knowledge bases, and multi-model serving.
 
 AIMLite standardizes the entire machine learning lifecycle (Data, Model, Lifecycle) across three core paradigms (Scratch ML, RAG Knowledge Bases, LoRA Fine-Tuning). It eliminates repetitive boilerplate, fragile relative path configurations, and unstandardized project layouts.

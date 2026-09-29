@@ -81,8 +81,8 @@ export default function Navbar({
           <button
             onClick={() => onSelectViewMode('landing')}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${viewMode === 'landing'
-                ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
               }`}
           >
             Overview
@@ -101,8 +101,8 @@ export default function Navbar({
               }
             }}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId.startsWith('pillar-')
-                ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
               }`}
           >
             Documentation
@@ -114,8 +114,8 @@ export default function Navbar({
               onSelectSection('paradigm-rag');
             }}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId.startsWith('paradigm-')
-                ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
               }`}
           >
             <BookOpen size={13} className="text-zinc-500 dark:text-zinc-400" />
@@ -128,8 +128,8 @@ export default function Navbar({
               onSelectSection('cli-init');
             }}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId.startsWith('cli-')
-                ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
               }`}
           >
             CLI
@@ -141,8 +141,8 @@ export default function Navbar({
               onSelectSection('endpoint-predict');
             }}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId.startsWith('endpoint-')
-                ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
               }`}
           >
             API Server
@@ -154,8 +154,8 @@ export default function Navbar({
               onSelectSection('changelog');
             }}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId === 'changelog'
-                ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
               }`}
           >
             Changelog
@@ -183,8 +183,8 @@ export default function Navbar({
           <button
             onClick={onToggleConsoleVisibility}
             className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-colors ${isConsoleVisible
-                ? 'bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-700 font-medium'
-                : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:text-zinc-950 dark:hover:text-white'
+              ? 'bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-700 font-medium'
+              : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:text-zinc-950 dark:hover:text-white'
               }`}
             title={isConsoleVisible ? 'Hide Code Console' : 'Show Code Console'}
           >
@@ -214,10 +214,10 @@ export default function Navbar({
             onSelectSection('changelog');
           }}
           className="hidden min-[480px]:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono transition-colors shrink-0"
-          title="View v1.0.9 Release Notes"
+          title="View v2.0.0 Release Notes"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 dark:bg-zinc-400 animate-pulse" />
-          <span>v1.0.9</span>
+          <span>v2.0.0</span>
         </button>
 
         {/* llms.txt Agent Specification Link */}

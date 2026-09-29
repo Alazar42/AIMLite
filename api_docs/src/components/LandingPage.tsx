@@ -129,7 +129,7 @@ const renderTerminalLine = (line: string, idx: number) => {
     return (
       <div key={idx} className="flex items-center gap-2 py-1 text-xs font-mono">
         <span className="text-[#00d8ff] font-extrabold tracking-wider">AIMLITE</span>
-        <span className="text-zinc-500">{parts[1] || 'v1.0.9'}</span>
+        <span className="text-zinc-500">{parts[1] || 'v2.0.0'}</span>
         <span className="text-emerald-400 font-semibold">{parts[2]}</span>
         <span className="text-zinc-400">{parts.slice(3).join(' ')}</span>
       </div>
@@ -138,7 +138,7 @@ const renderTerminalLine = (line: string, idx: number) => {
   if (line.includes('The Django for AI & Machine Learning')) {
     return (
       <div key={idx} className="flex items-center gap-2 pt-1 pb-0.5 text-xs font-mono">
-        <span className="text-zinc-500">v1.0.9</span>
+        <span className="text-zinc-500">v2.0.0</span>
         <span className="text-[#00d8ff] font-bold">❯</span>
         <span className="text-zinc-100 font-bold">The Django for AI & Machine Learning</span>
       </div>
@@ -263,9 +263,8 @@ function ScrollReveal({
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ease-out transform ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-      } ${className}`}
+      className={`transition-all duration-700 ease-out transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+        } ${className}`}
     >
       {children}
     </div>
@@ -325,7 +324,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
   88   88   .88.   88  88  88 88booo.   .88.      88    88.     
   YP   YP Y888888P YP  YP  YP Y88888P Y888888P    YP    Y88888P
 
-  v1.0.9  ❯  The Django for AI & Machine Learning
+  v2.0.0  ❯  The Django for AI & Machine Learning
   create project
 
   ✔  Project name    my_knowledge_base
@@ -346,7 +345,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     train: `$ aimlite train SupportDocRAG
 
-  AIMLITE v1.0.9 train  SupportDocRAG
+  AIMLITE v2.0.0 train  SupportDocRAG
 
 ❯ Discovering project root: /workspace/my_knowledge_base
 ❯ Inspecting data/: found 14 knowledge articles (.md, .txt)
@@ -357,7 +356,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     serve: `$ aimlite serve --port 8000
 
-  AIMLITE v1.0.9 serve
+  AIMLITE v2.0.0 serve
 
   ➜  Primary Model:    ChurnClassifier (ML)
   ➜  Registered:       ChurnClassifier [ml], SupportDocRAG [rag]
@@ -370,7 +369,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     benchmark: `$ aimlite benchmark experiments/benchmark.py
 
-  AIMLITE v1.0.9 benchmark  experiments/benchmark.py
+  AIMLITE v2.0.0 benchmark  experiments/benchmark.py
 
 ❯ Project Root: /workspace/my_knowledge_base
 ❯ Extended PYTHONPATH with project root
@@ -404,7 +403,7 @@ Running 3 benchmark queries:
           className="group inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900/90 dark:hover:bg-zinc-800 border border-zinc-300/80 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-medium transition-all mb-6 sm:mb-7 shadow-xs backdrop-blur-sm max-w-full"
         >
           <span className="flex h-1.5 w-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100 animate-pulse shrink-0" />
-          <span className="font-semibold text-zinc-900 dark:text-zinc-100 shrink-0">v1.0.9 Live</span>
+          <span className="font-semibold text-zinc-900 dark:text-zinc-100 shrink-0">v2.0.0 Live</span>
           <span className="text-zinc-400 dark:text-zinc-600 shrink-0">•</span>
           <span className="hidden sm:inline text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-white transition-colors truncate">
             Production ML Engine & Multi-Model Serving
@@ -438,11 +437,10 @@ Running 3 benchmark queries:
                   <button
                     key={mgr}
                     onClick={() => setInstallTab(mgr)}
-                    className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] uppercase font-semibold transition-colors ${
-                      installTab === mgr
+                    className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] uppercase font-semibold transition-colors ${installTab === mgr
                         ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-sm'
                         : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
-                    }`}
+                      }`}
                   >
                     {mgr}
                   </button>
@@ -503,7 +501,7 @@ Running 3 benchmark queries:
               rel="noopener noreferrer"
               className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-3 rounded-xl bg-white hover:bg-zinc-100 dark:bg-zinc-900/60 dark:hover:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-800 text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200 font-mono text-xs transition-colors"
             >
-              <span>pypi: v1.0.9</span>
+              <span>pypi: v2.0.0</span>
               <ExternalLink size={12} />
             </a>
           </div>
@@ -516,71 +514,70 @@ Running 3 benchmark queries:
       <section className="w-full max-w-5xl px-3 sm:px-6 py-6">
         <ScrollReveal>
           <div className="rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-[#0d0e12] shadow-2xl overflow-hidden">
-          {/* macOS Terminal Titlebar & Command Tabs */}
-          <div className="flex items-center justify-between bg-zinc-900 border-b border-zinc-800 px-3 sm:px-4 py-2.5 gap-2 overflow-hidden">
-            {/* Window Controls */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-600 inline-block" />
-              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-700 inline-block" />
-              <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-700 inline-block" />
-              <span className="text-[11px] font-mono text-zinc-500 ml-2 hidden sm:inline">
-                aimlite terminal session
-              </span>
+            {/* macOS Terminal Titlebar & Command Tabs */}
+            <div className="flex items-center justify-between bg-zinc-900 border-b border-zinc-800 px-3 sm:px-4 py-2.5 gap-2 overflow-hidden">
+              {/* Window Controls */}
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-600 inline-block" />
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-700 inline-block" />
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-zinc-700 inline-block" />
+                <span className="text-[11px] font-mono text-zinc-500 ml-2 hidden sm:inline">
+                  aimlite terminal session
+                </span>
+              </div>
+
+              {/* Interactive Step Switcher Tabs */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-[calc(100vw-120px)] sm:max-w-none">
+                {(
+                  [
+                    { id: 'init', label: '1. aimlite init' },
+                    { id: 'train', label: '2. aimlite train' },
+                    { id: 'serve', label: '3. aimlite serve' },
+                    { id: 'benchmark', label: '4. aimlite benchmark' },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setTerminalTab(tab.id)}
+                    className={`shrink-0 px-2 sm:px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-mono transition-colors whitespace-nowrap ${terminalTab === tab.id
+                        ? 'bg-zinc-800 text-white font-semibold border border-zinc-700'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                      }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Copy Button */}
+              <button
+                onClick={handleCopyTerminal}
+                className="flex items-center gap-1 px-2 py-1 rounded text-[10px] sm:text-[11px] font-mono text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors shrink-0"
+                title="Copy terminal session"
+              >
+                {hasCopiedTerminal ? (
+                  <>
+                    <Check size={12} className="text-zinc-200" />
+                    <span className="text-zinc-200">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
             </div>
 
-            {/* Interactive Step Switcher Tabs */}
-            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-[calc(100vw-120px)] sm:max-w-none">
-              {(
-                [
-                  { id: 'init', label: '1. aimlite init' },
-                  { id: 'train', label: '2. aimlite train' },
-                  { id: 'serve', label: '3. aimlite serve' },
-                  { id: 'benchmark', label: '4. aimlite benchmark' },
-                ] as const
-              ).map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setTerminalTab(tab.id)}
-                  className={`shrink-0 px-2 sm:px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-mono transition-colors whitespace-nowrap ${
-                    terminalTab === tab.id
-                      ? 'bg-zinc-800 text-white font-semibold border border-zinc-700'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            {/* Terminal Body */}
+            <div className="p-3 sm:p-6 font-mono text-xs sm:text-[13px] leading-relaxed text-zinc-300 bg-[#090a10] overflow-x-auto min-h-[250px]">
+              <div className="space-y-0.5">
+                {terminalSnippets[terminalTab].split('\n').map((line, idx) =>
+                  renderTerminalLine(line, idx)
+                )}
+              </div>
             </div>
-
-            {/* Copy Button */}
-            <button
-              onClick={handleCopyTerminal}
-              className="flex items-center gap-1 px-2 py-1 rounded text-[10px] sm:text-[11px] font-mono text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors shrink-0"
-              title="Copy terminal session"
-            >
-              {hasCopiedTerminal ? (
-                <>
-                  <Check size={12} className="text-zinc-200" />
-                  <span className="text-zinc-200">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={12} />
-                  <span>Copy</span>
-                </>
-              )}
-            </button>
           </div>
-
-          {/* Terminal Body */}
-          <div className="p-3 sm:p-6 font-mono text-xs sm:text-[13px] leading-relaxed text-zinc-300 bg-[#090a10] overflow-x-auto min-h-[250px]">
-            <div className="space-y-0.5">
-              {terminalSnippets[terminalTab].split('\n').map((line, idx) =>
-                renderTerminalLine(line, idx)
-              )}
-            </div>
-          </div>
-        </div>
         </ScrollReveal>
       </section>
 
@@ -590,316 +587,313 @@ Running 3 benchmark queries:
       <section className="w-full max-w-6xl px-3 sm:px-6 py-12 sm:py-16">
         <ScrollReveal>
           <div className="text-center space-y-3 mb-8 sm:mb-10 px-1 sm:px-0">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider">
-            <Layers size={13} />
-            <span>Multi-Paradigm Framework</span>
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-zinc-950 dark:text-white tracking-tight">
-            One Architecture. 3 Modern AI Paradigms.
-          </h2>
-          <p className="text-zinc-600 dark:text-zinc-400 text-xs sm:text-base max-w-2xl mx-auto leading-relaxed">
-            Whether training classical models from scratch, fine-tuning LLMs with LoRA deltas, or deploying enterprise RAG, AIMLite standardizes the entire lifecycle.
-          </p>
-        </div>
-
-        {/* Tab Switcher */}
-        <div className="flex items-center justify-center w-full mb-6 sm:mb-8 overflow-hidden">
-          <div className="flex max-w-full overflow-x-auto no-scrollbar p-1 rounded-xl bg-zinc-200 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 gap-1">
-            <button
-              onClick={() => setActiveParadigmTab('rag')}
-              className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                activeParadigmTab === 'rag'
-                  ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-sm'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
-              }`}
-            >
-              <BookOpen size={14} className="shrink-0" />
-              <span>1. Production RAG</span>
-            </button>
-            <button
-              onClick={() => setActiveParadigmTab('adapters')}
-              className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                activeParadigmTab === 'adapters'
-                  ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-sm'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
-              }`}
-            >
-              <Cpu size={14} className="shrink-0" />
-              <span>2. LoRA Fine-Tuning</span>
-            </button>
-            <button
-              onClick={() => setActiveParadigmTab('scratch')}
-              className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                activeParadigmTab === 'scratch'
-                  ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-sm'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
-              }`}
-            >
-              <Boxes size={14} className="shrink-0" />
-              <span>3. Scratch ML</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Paradigm Detail Card */}
-        {activeParadigmTab === 'rag' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-8 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-xl">
-            <div className="lg:col-span-6 space-y-5">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 font-mono text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700">
-                  v1.0.9
-                </span>
-                <span className="text-xs text-zinc-500 font-mono">aimlite.rag</span>
-              </div>
-
-              <h3 className="text-2xl font-bold text-zinc-950 dark:text-white tracking-tight">
-                Enterprise Knowledge Base & Modular RAG
-              </h3>
-
-              <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                Connect enterprise documents with unified multi-provider chat integrations (OpenAI, Gemini, Anthropic, Ollama, Local). All scaffolded code is 100% developer-editable with clean lifecycle extension hooks.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Developer Extension Hooks</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Override <code className="text-zinc-800 dark:text-zinc-200">preprocess_query</code>, <code className="text-zinc-800 dark:text-zinc-200">rerank</code>, <code className="text-zinc-800 dark:text-zinc-200">synthesize</code>, and <code className="text-zinc-800 dark:text-zinc-200">postprocess_answer</code>.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Smart Chunking & HyDE</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Preserves header context with <code className="text-zinc-800 dark:text-zinc-200">SmartChunker</code>; decomposes complex queries via <code className="text-zinc-800 dark:text-zinc-200">QueryAnalyzer</code>.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Vector DB & pgvector</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Seamless swap between <code className="text-zinc-800 dark:text-zinc-200">MemoryVectorStore</code> and production <code className="text-zinc-800 dark:text-zinc-200">PostgresVectorStore</code>.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Web Chat Playground</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Embedded browser test console at <code className="text-zinc-800 dark:text-zinc-200">/chat</code> with citation inspectors and streaming responses.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-                <button
-                  onClick={() => onNavigateToDocs('paradigm-rag')}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors shadow-md w-full sm:w-auto"
-                >
-                  <span>Read RAG Architecture Guide</span>
-                  <ArrowRight size={14} />
-                </button>
-                <button
-                  onClick={() => onNavigateToDocs('rag-hooks')}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-medium transition-colors w-full sm:w-auto"
-                >
-                  <Code2 size={13} />
-                  <span>Inspect Lifecycle Hooks</span>
-                </button>
-              </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider">
+              <Layers size={13} />
+              <span>Multi-Paradigm Framework</span>
             </div>
+            <h2 className="text-2xl sm:text-4xl font-bold text-zinc-950 dark:text-white tracking-tight">
+              One Architecture. 3 Modern AI Paradigms.
+            </h2>
+            <p className="text-zinc-600 dark:text-zinc-400 text-xs sm:text-base max-w-2xl mx-auto leading-relaxed">
+              Whether training classical models from scratch, fine-tuning LLMs with LoRA deltas, or deploying enterprise RAG, AIMLite standardizes the entire lifecycle.
+            </p>
+          </div>
 
-            {/* Code Snippet Column */}
-            <div className="lg:col-span-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#090a0f] p-3 sm:p-4 font-mono text-[10px] sm:text-[11px] leading-relaxed text-zinc-900 dark:text-zinc-200 overflow-x-auto shadow-inner transition-colors">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 text-[10px]">
-                <span>model.py (Developer-Editable KnowledgeModel)</span>
-                <span className="text-zinc-700 dark:text-zinc-400 font-semibold">Python 3.10+</span>
-              </div>
-              <pre className="m-0 p-0 font-mono whitespace-pre text-zinc-900 dark:text-zinc-200">
-                <code dangerouslySetInnerHTML={{ __html: highlightedRAG }} />
-              </pre>
+          {/* Tab Switcher */}
+          <div className="flex items-center justify-center w-full mb-6 sm:mb-8 overflow-hidden">
+            <div className="flex max-w-full overflow-x-auto no-scrollbar p-1 rounded-xl bg-zinc-200 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 gap-1">
+              <button
+                onClick={() => setActiveParadigmTab('rag')}
+                className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeParadigmTab === 'rag'
+                    ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                  }`}
+              >
+                <BookOpen size={14} className="shrink-0" />
+                <span>1. Production RAG</span>
+              </button>
+              <button
+                onClick={() => setActiveParadigmTab('adapters')}
+                className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeParadigmTab === 'adapters'
+                    ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                  }`}
+              >
+                <Cpu size={14} className="shrink-0" />
+                <span>2. LoRA Fine-Tuning</span>
+              </button>
+              <button
+                onClick={() => setActiveParadigmTab('scratch')}
+                className={`shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${activeParadigmTab === 'scratch'
+                    ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                  }`}
+              >
+                <Boxes size={14} className="shrink-0" />
+                <span>3. Scratch ML</span>
+              </button>
             </div>
           </div>
-        )}
 
-        {activeParadigmTab === 'adapters' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-8 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-xl">
-            <div className="lg:col-span-6 space-y-5">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 font-mono text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700">
-                  PEFT & LoRA
-                </span>
-                <span className="text-xs text-zinc-500 font-mono">aimlite.adapters</span>
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-bold text-zinc-950 dark:text-white tracking-tight">
-                Parameter-Efficient Fine-Tuning & Hot-Swapping
-              </h3>
-
-              <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                Train lightweight low-rank delta matrices without duplicating multi-gigabyte base model weights. Reduce checkpoints from 14GB down to &lt;50MB with zero runtime serving latency.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Low-Rank Math Decomposition</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    <code className="text-zinc-800 dark:text-zinc-200">h = W0*x + (alpha/r)*(B*A)*x</code> with Gaussian A and zero-initialized B.
-                  </p>
+          {/* Paradigm Detail Card */}
+          {activeParadigmTab === 'rag' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-8 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-xl">
+              <div className="lg:col-span-6 space-y-5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 font-mono text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700">
+                    v2.0.0
+                  </span>
+                  <span className="text-xs text-zinc-500 font-mono">aimlite.rag</span>
                 </div>
 
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Zero-Latency Weight Merging</span>
+                <h3 className="text-2xl font-bold text-zinc-950 dark:text-white tracking-tight">
+                  Enterprise Knowledge Base & Modular RAG
+                </h3>
+
+                <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                  Connect enterprise documents with unified multi-provider chat integrations (OpenAI, Gemini, Anthropic, Ollama, Local). All scaffolded code is 100% developer-editable with clean lifecycle extension hooks.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Developer Extension Hooks</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Override <code className="text-zinc-800 dark:text-zinc-200">preprocess_query</code>, <code className="text-zinc-800 dark:text-zinc-200">rerank</code>, <code className="text-zinc-800 dark:text-zinc-200">synthesize</code>, and <code className="text-zinc-800 dark:text-zinc-200">postprocess_answer</code>.
+                    </p>
                   </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    In-place <code className="text-zinc-800 dark:text-zinc-200">merge_weights()</code> folds delta weights into base matrices for 0ms inference overhead.
-                  </p>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Smart Chunking & HyDE</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Preserves header context with <code className="text-zinc-800 dark:text-zinc-200">SmartChunker</code>; decomposes complex queries via <code className="text-zinc-800 dark:text-zinc-200">QueryAnalyzer</code>.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Vector DB & pgvector</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Seamless swap between <code className="text-zinc-800 dark:text-zinc-200">MemoryVectorStore</code> and production <code className="text-zinc-800 dark:text-zinc-200">PostgresVectorStore</code>.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Web Chat Playground</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Embedded browser test console at <code className="text-zinc-800 dark:text-zinc-200">/chat</code> with citation inspectors and streaming responses.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>MultiAdapterManager</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Host and route dozens of specialized adapters on a single running base model in sub-millisecond time.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Zero Heavy Dependencies</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Runs in pure Python & NumPy; seamlessly connects with PyTorch and Hugging Face PEFT when installed.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-                <button
-                  onClick={() => onNavigateToDocs('paradigm-adapters')}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors shadow-md w-full sm:w-auto"
-                >
-                  <span>Explore Adapter & LoRA Docs</span>
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
-
-            {/* Code Snippet Column */}
-            <div className="lg:col-span-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#090a0f] p-3 sm:p-4 font-mono text-[10px] sm:text-[11px] leading-relaxed text-zinc-900 dark:text-zinc-200 overflow-x-auto shadow-inner transition-colors">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 text-[10px]">
-                <span>model.py (LoRALayer & MultiAdapterManager)</span>
-                <span className="text-zinc-700 dark:text-zinc-400 font-semibold">PEFT Compatible</span>
-              </div>
-              <pre className="m-0 p-0 font-mono whitespace-pre text-zinc-900 dark:text-zinc-200">
-                <code dangerouslySetInnerHTML={{ __html: highlightedAdapter }} />
-              </pre>
-            </div>
-          </div>
-        )}
-
-        {activeParadigmTab === 'scratch' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-8 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-xl">
-            <div className="lg:col-span-6 space-y-5">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 font-mono text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700">
-                  CLASSICAL & DEEP ML
-                </span>
-                <span className="text-xs text-zinc-500 font-mono">aimlite.data & aimlite.models</span>
-              </div>
-
-              <h3 className="text-xl sm:text-2xl font-bold text-zinc-950 dark:text-white tracking-tight">
-                Scratch Training & Custom Architectures
-              </h3>
-
-              <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-                Build tabular predictors, neural networks, or scikit-learn pipelines with zero boilerplate. Define your data contract and model class — AIMLite handles training execution, evaluation, and production serving.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Zero-Path Execution</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    No imports or routing boilerplate. <code className="text-zinc-800 dark:text-zinc-200">aimlite train</code> automatically discovers models in <code className="text-zinc-800 dark:text-zinc-200">model.py</code>.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Strict Data Contracts</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Dataset subclasses explicitly declare <code className="text-zinc-800 dark:text-zinc-200">filename</code>. Validates data readiness and auto-splits rows.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Any Framework</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Use PyTorch, scikit-learn, XGBoost, TensorFlow, or pure Python with identical interfaces.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
-                  <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
-                    <span>Instant Production API</span>
-                  </div>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
-                    Deploy forward passes immediately with <code className="text-zinc-800 dark:text-zinc-200">aimlite serve</code> with Swagger UI at <code className="text-zinc-800 dark:text-zinc-200">/docs</code>.
-                  </p>
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+                  <button
+                    onClick={() => onNavigateToDocs('paradigm-rag')}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors shadow-md w-full sm:w-auto"
+                  >
+                    <span>Read RAG Architecture Guide</span>
+                    <ArrowRight size={14} />
+                  </button>
+                  <button
+                    onClick={() => onNavigateToDocs('rag-hooks')}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-medium transition-colors w-full sm:w-auto"
+                  >
+                    <Code2 size={13} />
+                    <span>Inspect Lifecycle Hooks</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-                <button
-                  onClick={() => onNavigateToDocs('paradigm-scratch')}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors shadow-md w-full sm:w-auto"
-                >
-                  <span>Explore Scratch Training Docs</span>
-                  <ArrowRight size={14} />
-                </button>
+              {/* Code Snippet Column */}
+              <div className="lg:col-span-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#090a0f] p-3 sm:p-4 font-mono text-[10px] sm:text-[11px] leading-relaxed text-zinc-900 dark:text-zinc-200 overflow-x-auto shadow-inner transition-colors">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 text-[10px]">
+                  <span>model.py (Developer-Editable KnowledgeModel)</span>
+                  <span className="text-zinc-700 dark:text-zinc-400 font-semibold">Python 3.10+</span>
+                </div>
+                <pre className="m-0 p-0 font-mono whitespace-pre text-zinc-900 dark:text-zinc-200">
+                  <code dangerouslySetInnerHTML={{ __html: highlightedRAG }} />
+                </pre>
               </div>
             </div>
+          )}
 
-            {/* Code Snippet Column */}
-            <div className="lg:col-span-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#090a0f] p-3 sm:p-4 font-mono text-[10px] sm:text-[11px] leading-relaxed text-zinc-900 dark:text-zinc-200 overflow-x-auto shadow-inner transition-colors">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 text-[10px]">
-                <span>model.py & data.py (Customer Churn Example)</span>
-                <span className="text-zinc-700 dark:text-zinc-400 font-semibold">Zero Boilerplate</span>
+          {activeParadigmTab === 'adapters' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-8 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-xl">
+              <div className="lg:col-span-6 space-y-5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 font-mono text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700">
+                    PEFT & LoRA
+                  </span>
+                  <span className="text-xs text-zinc-500 font-mono">aimlite.adapters</span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-bold text-zinc-950 dark:text-white tracking-tight">
+                  Parameter-Efficient Fine-Tuning & Hot-Swapping
+                </h3>
+
+                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                  Train lightweight low-rank delta matrices without duplicating multi-gigabyte base model weights. Reduce checkpoints from 14GB down to &lt;50MB with zero runtime serving latency.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Low-Rank Math Decomposition</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      <code className="text-zinc-800 dark:text-zinc-200">h = W0*x + (alpha/r)*(B*A)*x</code> with Gaussian A and zero-initialized B.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Zero-Latency Weight Merging</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      In-place <code className="text-zinc-800 dark:text-zinc-200">merge_weights()</code> folds delta weights into base matrices for 0ms inference overhead.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>MultiAdapterManager</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Host and route dozens of specialized adapters on a single running base model in sub-millisecond time.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Zero Heavy Dependencies</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Runs in pure Python & NumPy; seamlessly connects with PyTorch and Hugging Face PEFT when installed.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+                  <button
+                    onClick={() => onNavigateToDocs('paradigm-adapters')}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors shadow-md w-full sm:w-auto"
+                  >
+                    <span>Explore Adapter & LoRA Docs</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
               </div>
-              <pre className="m-0 p-0 font-mono whitespace-pre text-zinc-900 dark:text-zinc-200">
-                <code dangerouslySetInnerHTML={{ __html: highlightedScratch }} />
-              </pre>
+
+              {/* Code Snippet Column */}
+              <div className="lg:col-span-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#090a0f] p-3 sm:p-4 font-mono text-[10px] sm:text-[11px] leading-relaxed text-zinc-900 dark:text-zinc-200 overflow-x-auto shadow-inner transition-colors">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 text-[10px]">
+                  <span>model.py (LoRALayer & MultiAdapterManager)</span>
+                  <span className="text-zinc-700 dark:text-zinc-400 font-semibold">PEFT Compatible</span>
+                </div>
+                <pre className="m-0 p-0 font-mono whitespace-pre text-zinc-900 dark:text-zinc-200">
+                  <code dangerouslySetInnerHTML={{ __html: highlightedAdapter }} />
+                </pre>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {activeParadigmTab === 'scratch' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 sm:p-8 rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 shadow-xl">
+              <div className="lg:col-span-6 space-y-5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 font-mono text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700">
+                    CLASSICAL & DEEP ML
+                  </span>
+                  <span className="text-xs text-zinc-500 font-mono">aimlite.data & aimlite.models</span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-bold text-zinc-950 dark:text-white tracking-tight">
+                  Scratch Training & Custom Architectures
+                </h3>
+
+                <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                  Build tabular predictors, neural networks, or scikit-learn pipelines with zero boilerplate. Define your data contract and model class — AIMLite handles training execution, evaluation, and production serving.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Zero-Path Execution</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      No imports or routing boilerplate. <code className="text-zinc-800 dark:text-zinc-200">aimlite train</code> automatically discovers models in <code className="text-zinc-800 dark:text-zinc-200">model.py</code>.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Strict Data Contracts</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Dataset subclasses explicitly declare <code className="text-zinc-800 dark:text-zinc-200">filename</code>. Validates data readiness and auto-splits rows.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Any Framework</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Use PyTorch, scikit-learn, XGBoost, TensorFlow, or pure Python with identical interfaces.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-zinc-700 dark:text-zinc-300" />
+                      <span>Instant Production API</span>
+                    </div>
+                    <p className="text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      Deploy forward passes immediately with <code className="text-zinc-800 dark:text-zinc-200">aimlite serve</code> with Swagger UI at <code className="text-zinc-800 dark:text-zinc-200">/docs</code>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+                  <button
+                    onClick={() => onNavigateToDocs('paradigm-scratch')}
+                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 hover:bg-zinc-800 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors shadow-md w-full sm:w-auto"
+                  >
+                    <span>Explore Scratch Training Docs</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Code Snippet Column */}
+              <div className="lg:col-span-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-[#090a0f] p-3 sm:p-4 font-mono text-[10px] sm:text-[11px] leading-relaxed text-zinc-900 dark:text-zinc-200 overflow-x-auto shadow-inner transition-colors">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 text-[10px]">
+                  <span>model.py & data.py (Customer Churn Example)</span>
+                  <span className="text-zinc-700 dark:text-zinc-400 font-semibold">Zero Boilerplate</span>
+                </div>
+                <pre className="m-0 p-0 font-mono whitespace-pre text-zinc-900 dark:text-zinc-200">
+                  <code dangerouslySetInnerHTML={{ __html: highlightedScratch }} />
+                </pre>
+              </div>
+            </div>
+          )}
         </ScrollReveal>
       </section>
 
@@ -909,103 +903,103 @@ Running 3 benchmark queries:
       <section className="w-full max-w-6xl px-3 sm:px-6 py-12 sm:py-16">
         <ScrollReveal>
           <div className="text-center space-y-3 mb-8 sm:mb-12 px-1 sm:px-0">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider">
-            <Boxes size={13} />
-            <span>Core Architecture</span>
-          </div>
-          <h2 className="text-2xl sm:text-4xl font-bold text-zinc-950 dark:text-white tracking-tight">
-            The 3 Pillars of AIMLite
-          </h2>
-          <p className="text-zinc-600 dark:text-zinc-400 text-xs sm:text-base max-w-xl mx-auto leading-relaxed">
-            Just like Django separates Models, Views, and Templates, AIMLite organizes AI development into three strictly defined pillars.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-          {/* Pillar 1: Data */}
-          <div
-            onClick={() => onNavigateToDocs('pillar-data')}
-            className="group cursor-pointer rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 sm:p-6 space-y-3 sm:space-y-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all relative overflow-hidden"
-          >
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-white group-hover:scale-105 transition-transform">
-              <Database size={18} />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-800 dark:text-zinc-300 text-xs font-semibold uppercase tracking-wider">
+              <Boxes size={13} />
+              <span>Core Architecture</span>
             </div>
-
-            <div className="space-y-1">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
-                Pillar 1
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white group-hover:underline transition-colors">
-                Data (Dataset)
-              </h3>
-            </div>
-
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Standardized data ingestion, explicit file declarations (<code className="text-zinc-900 dark:text-zinc-200">filename = "data.csv"</code>), schema validation, and automatic partition contracts (<code className="text-zinc-900 dark:text-zinc-200">split()</code>).
+            <h2 className="text-2xl sm:text-4xl font-bold text-zinc-950 dark:text-white tracking-tight">
+              The 3 Pillars of AIMLite
+            </h2>
+            <p className="text-zinc-600 dark:text-zinc-400 text-xs sm:text-base max-w-xl mx-auto leading-relaxed">
+              Just like Django separates Models, Views, and Templates, AIMLite organizes AI development into three strictly defined pillars.
             </p>
-
-            <div className="pt-2 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white group-hover:translate-x-1 transition-transform">
-              <span>Inspect Data Pillar</span>
-              <ArrowRight size={13} />
-            </div>
           </div>
 
-          {/* Pillar 2: Model */}
-          <div
-            onClick={() => onNavigateToDocs('pillar-model')}
-            className="group cursor-pointer rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 sm:p-6 space-y-3 sm:space-y-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all relative overflow-hidden"
-          >
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-white group-hover:scale-105 transition-transform">
-              <Cpu size={18} />
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
-                Pillar 2
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            {/* Pillar 1: Data */}
+            <div
+              onClick={() => onNavigateToDocs('pillar-data')}
+              className="group cursor-pointer rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 sm:p-6 space-y-3 sm:space-y-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all relative overflow-hidden"
+            >
+              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-white group-hover:scale-105 transition-transform">
+                <Database size={18} />
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white group-hover:underline transition-colors">
-                Model (Model & KnowledgeModel)
-              </h3>
-            </div>
 
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Unified interface for classical ML, LoRA adaptation, and Knowledge Base RAG. Features developer-editable lifecycle hooks with zero hidden boilerplate.
-            </p>
-
-            <div className="pt-2 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white group-hover:translate-x-1 transition-transform">
-              <span>Inspect Model Pillar</span>
-              <ArrowRight size={13} />
-            </div>
-          </div>
-
-          {/* Pillar 3: Lifecycle */}
-          <div
-            onClick={() => onNavigateToDocs('pillar-lifecycle')}
-            className="group cursor-pointer rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 sm:p-6 space-y-3 sm:space-y-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all relative overflow-hidden"
-          >
-            <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-white group-hover:scale-105 transition-transform">
-              <RefreshCw size={18} />
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
-                Pillar 3
+              <div className="space-y-1">
+                <div className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
+                  Pillar 1
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white group-hover:underline transition-colors">
+                  Data (Dataset)
+                </h3>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white group-hover:underline transition-colors">
-                Lifecycle (Trainer & Inference)
-              </h3>
+
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Standardized data ingestion, explicit file declarations (<code className="text-zinc-900 dark:text-zinc-200">filename = "data.csv"</code>), schema validation, and automatic partition contracts (<code className="text-zinc-900 dark:text-zinc-200">split()</code>).
+              </p>
+
+              <div className="pt-2 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white group-hover:translate-x-1 transition-transform">
+                <span>Inspect Data Pillar</span>
+                <ArrowRight size={13} />
+              </div>
             </div>
 
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Standardized training loops (<code className="text-zinc-900 dark:text-zinc-200">BaseTrainer</code>, <code className="text-zinc-900 dark:text-zinc-200">RAGTrainer</code>), metric evaluations, and embedded FastAPI serving with Swagger and Web Chat Playground.
-            </p>
+            {/* Pillar 2: Model */}
+            <div
+              onClick={() => onNavigateToDocs('pillar-model')}
+              className="group cursor-pointer rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 sm:p-6 space-y-3 sm:space-y-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all relative overflow-hidden"
+            >
+              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-white group-hover:scale-105 transition-transform">
+                <Cpu size={18} />
+              </div>
 
-            <div className="pt-2 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white group-hover:translate-x-1 transition-transform">
-              <span>Inspect Lifecycle Pillar</span>
-              <ArrowRight size={13} />
+              <div className="space-y-1">
+                <div className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
+                  Pillar 2
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white group-hover:underline transition-colors">
+                  Model (Model & KnowledgeModel)
+                </h3>
+              </div>
+
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Unified interface for classical ML, LoRA adaptation, and Knowledge Base RAG. Features developer-editable lifecycle hooks with zero hidden boilerplate.
+              </p>
+
+              <div className="pt-2 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white group-hover:translate-x-1 transition-transform">
+                <span>Inspect Model Pillar</span>
+                <ArrowRight size={13} />
+              </div>
+            </div>
+
+            {/* Pillar 3: Lifecycle */}
+            <div
+              onClick={() => onNavigateToDocs('pillar-lifecycle')}
+              className="group cursor-pointer rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 sm:p-6 space-y-3 sm:space-y-4 hover:border-zinc-400 dark:hover:border-zinc-600 hover:shadow-lg transition-all relative overflow-hidden"
+            >
+              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-900 dark:text-white group-hover:scale-105 transition-transform">
+                <RefreshCw size={18} />
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
+                  Pillar 3
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white group-hover:underline transition-colors">
+                  Lifecycle (Trainer & Inference)
+                </h3>
+              </div>
+
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Standardized training loops (<code className="text-zinc-900 dark:text-zinc-200">BaseTrainer</code>, <code className="text-zinc-900 dark:text-zinc-200">RAGTrainer</code>), metric evaluations, and embedded FastAPI serving with Swagger and Web Chat Playground.
+              </p>
+
+              <div className="pt-2 flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-white group-hover:translate-x-1 transition-transform">
+                <span>Inspect Lifecycle Pillar</span>
+                <ArrowRight size={13} />
+              </div>
             </div>
           </div>
-        </div>
         </ScrollReveal>
       </section>
 
@@ -1015,75 +1009,75 @@ Running 3 benchmark queries:
       <section className="w-full max-w-6xl px-3 sm:px-6 py-12 sm:py-16">
         <ScrollReveal>
           <div className="text-center space-y-3 mb-8 sm:mb-12 px-1 sm:px-0">
-          <h2 className="text-2xl sm:text-4xl font-bold text-zinc-950 dark:text-white tracking-tight">
-            Engineered for Developer Velocity
-          </h2>
-          <p className="text-zinc-600 dark:text-zinc-400 text-xs sm:text-base max-w-xl mx-auto leading-relaxed">
-            Everything you need to go from an idea in a terminal to an enterprise-ready inference service.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
-              <Rocket size={17} />
-            </div>
-            <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Zero-Path Execution</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Never configure <code className="text-zinc-900 dark:text-zinc-200">sys.path.append()</code> or deal with <code className="text-zinc-900 dark:text-zinc-200">ModuleNotFoundError</code>. AIMLite resolves roots automatically via <code className="text-zinc-900 dark:text-zinc-200">aimlite.json</code>.
+            <h2 className="text-2xl sm:text-4xl font-bold text-zinc-950 dark:text-white tracking-tight">
+              Engineered for Developer Velocity
+            </h2>
+            <p className="text-zinc-600 dark:text-zinc-400 text-xs sm:text-base max-w-xl mx-auto leading-relaxed">
+              Everything you need to go from an idea in a terminal to an enterprise-ready inference service.
             </p>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
-              <ShieldCheck size={17} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
+                <Rocket size={17} />
+              </div>
+              <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Zero-Path Execution</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Never configure <code className="text-zinc-900 dark:text-zinc-200">sys.path.append()</code> or deal with <code className="text-zinc-900 dark:text-zinc-200">ModuleNotFoundError</code>. AIMLite resolves roots automatically via <code className="text-zinc-900 dark:text-zinc-200">aimlite.json</code>.
+              </p>
             </div>
-            <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Zero Heavy-Dependency Guarantee</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Core package runs in pure Python and NumPy. Heavy frameworks (PyTorch, transformers, CUDA) are loaded only when explicitly requested.
-            </p>
-          </div>
 
-          <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
-              <Boxes size={17} />
+            <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
+                <ShieldCheck size={17} />
+              </div>
+              <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Zero Heavy-Dependency Guarantee</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Core package runs in pure Python and NumPy. Heavy frameworks (PyTorch, transformers, CUDA) are loaded only when explicitly requested.
+              </p>
             </div>
-            <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Instant Project Scaffolding</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              <code className="text-zinc-900 dark:text-zinc-200">aimlite init</code> completes in under 50ms. Never wait for silent multi-gigabyte downloads during project creation.
-            </p>
-          </div>
 
-          <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
-              <Sliders size={17} />
+            <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
+                <Boxes size={17} />
+              </div>
+              <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Instant Project Scaffolding</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                <code className="text-zinc-900 dark:text-zinc-200">aimlite init</code> completes in under 50ms. Never wait for silent multi-gigabyte downloads during project creation.
+              </p>
             </div>
-            <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Developer-Editable Code</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              No closed black boxes. Every file generated by the CLI is clear, commented, and checked directly into your git repository.
-            </p>
-          </div>
 
-          <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
-              <Server size={17} />
+            <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
+                <Sliders size={17} />
+              </div>
+              <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Developer-Editable Code</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                No closed black boxes. Every file generated by the CLI is clear, commented, and checked directly into your git repository.
+              </p>
             </div>
-            <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Multi-Model & Adaptive Serving</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Zero-path server with <code className="text-zinc-900 dark:text-zinc-200">/models</code> inventory, type-adaptive web playgrounds (ML forms, RAG chat, LoRA runner), and headless <code className="text-zinc-900 dark:text-zinc-200">--api</code> mode.
-            </p>
-          </div>
 
-          <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
-              <Terminal size={17} />
+            <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
+                <Server size={17} />
+              </div>
+              <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Multi-Model & Adaptive Serving</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Zero-path server with <code className="text-zinc-900 dark:text-zinc-200">/models</code> inventory, type-adaptive web playgrounds (ML forms, RAG chat, LoRA runner), and headless <code className="text-zinc-900 dark:text-zinc-200">--api</code> mode.
+              </p>
             </div>
-            <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Built-in Benchmark Command</h4>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              <code className="text-zinc-900 dark:text-zinc-200">aimlite benchmark</code> executes scripts in <code className="text-zinc-900 dark:text-zinc-200">experiments/</code> with project context injected into Python's path automatically.
-            </p>
+
+            <div className="p-4 sm:p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30 space-y-2.5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+              <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white">
+                <Terminal size={17} />
+              </div>
+              <h4 className="text-sm font-bold text-zinc-950 dark:text-white">Built-in Benchmark Command</h4>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                <code className="text-zinc-900 dark:text-zinc-200">aimlite benchmark</code> executes scripts in <code className="text-zinc-900 dark:text-zinc-200">experiments/</code> with project context injected into Python's path automatically.
+              </p>
+            </div>
           </div>
-        </div>
         </ScrollReveal>
       </section>
 
@@ -1093,58 +1087,58 @@ Running 3 benchmark queries:
       <section className="w-full max-w-4xl px-3 sm:px-6 py-12 sm:py-16">
         <ScrollReveal>
           <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-4 sm:p-8 space-y-5 sm:space-y-6">
-          <div className="space-y-1">
-            <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
-              Quickstart Guide
-            </span>
-            <h3 className="text-xl sm:text-2xl font-bold text-zinc-950 dark:text-white">
-              Launch Your First AIMLite Project in 3 Minutes
-            </h3>
-          </div>
-
-          <div className="space-y-3 sm:space-y-4 font-mono text-xs">
-            {/* Step 1 */}
-            <div className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
-              <div className="flex items-center justify-between text-zinc-500">
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">1. Install AIMLite via pip</span>
-                <span className="text-[10px]">Terminal</span>
-              </div>
-              <div className="text-zinc-900 dark:text-zinc-100 font-semibold overflow-x-auto select-all">$ pip install aimlite</div>
+            <div className="space-y-1">
+              <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-wider font-semibold">
+                Quickstart Guide
+              </span>
+              <h3 className="text-xl sm:text-2xl font-bold text-zinc-950 dark:text-white">
+                Launch Your First AIMLite Project in 3 Minutes
+              </h3>
             </div>
 
-            {/* Step 2 */}
-            <div className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
-              <div className="flex items-center justify-between text-zinc-500">
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">2. Scaffold your RAG Knowledge Base</span>
-                <span className="text-[10px]">Terminal</span>
+            <div className="space-y-3 sm:space-y-4 font-mono text-xs">
+              {/* Step 1 */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
+                <div className="flex items-center justify-between text-zinc-500">
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">1. Install AIMLite via pip</span>
+                  <span className="text-[10px]">Terminal</span>
+                </div>
+                <div className="text-zinc-900 dark:text-zinc-100 font-semibold overflow-x-auto select-all">$ pip install aimlite</div>
               </div>
-              <div className="text-zinc-900 dark:text-zinc-100 font-semibold overflow-x-auto select-all">$ aimlite init my_rag --type rag</div>
-              <div className="text-zinc-500 text-[11px] overflow-x-auto select-all">$ cd my_rag && aimlite install</div>
+
+              {/* Step 2 */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
+                <div className="flex items-center justify-between text-zinc-500">
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">2. Scaffold your RAG Knowledge Base</span>
+                  <span className="text-[10px]">Terminal</span>
+                </div>
+                <div className="text-zinc-900 dark:text-zinc-100 font-semibold overflow-x-auto select-all">$ aimlite init my_rag --type rag</div>
+                <div className="text-zinc-500 text-[11px] overflow-x-auto select-all">$ cd my_rag && aimlite install</div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
+                <div className="flex items-center justify-between text-zinc-500">
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">3. Index documents & start the server</span>
+                  <span className="text-[10px]">Terminal</span>
+                </div>
+                <div className="text-zinc-900 dark:text-zinc-100 font-semibold overflow-x-auto select-all">$ aimlite train && aimlite serve --port 8000</div>
+                <div className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-[11px] leading-relaxed break-words">
+                  # Open http://localhost:8000/chat in your browser for the live Web Chat Playground!
+                </div>
+              </div>
             </div>
 
-            {/* Step 3 */}
-            <div className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/80 border border-zinc-200 dark:border-zinc-800 space-y-1.5">
-              <div className="flex items-center justify-between text-zinc-500">
-                <span className="font-semibold text-zinc-800 dark:text-zinc-200">3. Index documents & start the server</span>
-                <span className="text-[10px]">Terminal</span>
-              </div>
-              <div className="text-zinc-900 dark:text-zinc-100 font-semibold overflow-x-auto select-all">$ aimlite train && aimlite serve --port 8000</div>
-              <div className="text-zinc-500 dark:text-zinc-400 text-[10px] sm:text-[11px] leading-relaxed break-words">
-                # Open http://localhost:8000/chat in your browser for the live Web Chat Playground!
-              </div>
+            <div className="pt-2 flex justify-center sm:justify-end">
+              <button
+                onClick={() => onNavigateToDocs('cli-init')}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors"
+              >
+                <span>View Complete CLI Commands</span>
+                <ArrowRight size={14} />
+              </button>
             </div>
           </div>
-
-          <div className="pt-2 flex justify-center sm:justify-end">
-            <button
-              onClick={() => onNavigateToDocs('cli-init')}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 font-semibold text-xs transition-colors"
-            >
-              <span>View Complete CLI Commands</span>
-              <ArrowRight size={14} />
-            </button>
-          </div>
-        </div>
         </ScrollReveal>
       </section>
 
@@ -1158,7 +1152,7 @@ Running 3 benchmark queries:
               <Boxes size={14} />
             </div>
             <span className="font-bold text-zinc-900 dark:text-zinc-200 text-sm">AIMLite</span>
-            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">v1.0.9 (Apache 2.0)</span>
+            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">v2.0.0 (Apache 2.0)</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-5 gap-y-2 text-xs text-zinc-600 dark:text-zinc-400">

@@ -118,11 +118,10 @@ export default function EndpointDoc({
         <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs overflow-x-auto no-scrollbar">
           <button
             onClick={() => onSelectSection('paradigm-scratch')}
-            className={`shrink-0 flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${
-              section.id === 'paradigm-scratch'
+            className={`shrink-0 flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${section.id === 'paradigm-scratch'
                 ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/60'
-            }`}
+              }`}
           >
             <Layers size={13} className="shrink-0" />
             <span>1. Scratch (Churn)</span>
@@ -132,11 +131,10 @@ export default function EndpointDoc({
 
           <button
             onClick={() => onSelectSection('paradigm-rag')}
-            className={`shrink-0 flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${
-              section.id === 'paradigm-rag'
+            className={`shrink-0 flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${section.id === 'paradigm-rag'
                 ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/60'
-            }`}
+              }`}
           >
             <BookOpen size={13} className="shrink-0" />
             <span>2. RAG (Knowledge QA)</span>
@@ -146,11 +144,10 @@ export default function EndpointDoc({
 
           <button
             onClick={() => onSelectSection('paradigm-adapters')}
-            className={`shrink-0 flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${
-              section.id === 'paradigm-adapters'
+            className={`shrink-0 flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${section.id === 'paradigm-adapters'
                 ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/60'
-            }`}
+              }`}
           >
             <Cpu size={13} className="shrink-0" />
             <span>3. Adapters (LoRA)</span>
@@ -160,11 +157,10 @@ export default function EndpointDoc({
         <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs overflow-x-auto no-scrollbar">
           <button
             onClick={() => onSelectSection('pillar-data')}
-            className={`shrink-0 flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${
-              section.id === 'pillar-data'
+            className={`shrink-0 flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${section.id === 'pillar-data'
                 ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/60'
-            }`}
+              }`}
           >
             <Database size={13} className="shrink-0" />
             <span>1. Data</span>
@@ -174,11 +170,10 @@ export default function EndpointDoc({
 
           <button
             onClick={() => onSelectSection('pillar-model')}
-            className={`shrink-0 flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${
-              section.id === 'pillar-model'
+            className={`shrink-0 flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${section.id === 'pillar-model'
                 ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/60'
-            }`}
+              }`}
           >
             <Cpu size={13} className="shrink-0" />
             <span>2. Model</span>
@@ -188,11 +183,10 @@ export default function EndpointDoc({
 
           <button
             onClick={() => onSelectSection('pillar-lifecycle')}
-            className={`shrink-0 flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${
-              section.id === 'pillar-lifecycle'
+            className={`shrink-0 flex-1 min-w-[90px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${section.id === 'pillar-lifecycle'
                 ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
                 : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/60'
-            }`}
+              }`}
           >
             <RefreshCw size={13} className="shrink-0" />
             <span>3. Lifecycle</span>
@@ -276,22 +270,21 @@ export default function EndpointDoc({
               </h2>
             </div>
             <span className="text-xs text-zinc-900 dark:text-zinc-100 font-mono bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 font-semibold">
-              Latest: v1.0.9
+              Latest: v2.0.0
             </span>
           </div>
 
           {section.conventions && (
             <div className="space-y-4">
               {section.conventions.map((release) => {
-                const isLatest = release.title.includes('1.0.9');
+                const isLatest = release.title.includes('2.0.0');
                 return (
                   <div
                     key={release.title}
-                    className={`p-4 rounded-xl border transition-all ${
-                      isLatest
+                    className={`p-4 rounded-xl border transition-all ${isLatest
                         ? 'bg-zinc-100 dark:bg-zinc-900 border-zinc-400 dark:border-zinc-600 shadow-sm'
                         : 'bg-white dark:bg-zinc-900/40 border-zinc-200 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">

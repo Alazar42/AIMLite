@@ -9,7 +9,7 @@ description: >-
 
 # AIMLite Skill Guide
 
-This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v1.0.9)**.
+This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.0.0)**.
 
 AIMLite operates on **convention over configuration** with **zero-path CLI execution**. Like Django, you organize code into standard modules (`data.py`, `model.py`, `trainer.py`, `evaluator.py`, `inference.py`), and the framework handles discovery, environment resolution, and execution automatically.
 

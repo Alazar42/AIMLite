@@ -119,11 +119,10 @@ export default function Sidebar({
                       <button
                         key={item.id}
                         onClick={() => onSelectSection(item.id)}
-                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] transition-all ${
-                          isActive
+                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] transition-all ${isActive
                             ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
                             : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-1.5 truncate">
                           {itemIcon}
@@ -131,13 +130,12 @@ export default function Sidebar({
                         </div>
                         {item.badge && (
                           <span
-                            className={`text-[8px] font-mono uppercase px-1 rounded border transition-colors ${
-                              isActive
+                            className={`text-[8px] font-mono uppercase px-1 rounded border transition-colors ${isActive
                                 ? 'bg-zinc-800 text-zinc-200 border-zinc-700 dark:bg-zinc-200 dark:text-zinc-800 dark:border-zinc-300 font-semibold'
-                                : item.badge.includes('1.0.9') || item.badge.includes('1.0.8') || item.badge.includes('1.0.7') || item.badge.includes('1.0.6') || item.badge === 'NEW'
-                                ? 'bg-zinc-200 text-zinc-900 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 font-semibold'
-                                : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-800'
-                            }`}
+                                : item.badge.includes('2.0.0') || item.badge.includes('1.0.8') || item.badge.includes('1.0.7') || item.badge.includes('1.0.6') || item.badge === 'NEW'
+                                  ? 'bg-zinc-200 text-zinc-900 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 font-semibold'
+                                  : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-800'
+                              }`}
                           >
                             {item.badge}
                           </span>

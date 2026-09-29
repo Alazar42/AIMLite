@@ -1,17 +1,17 @@
 export interface GuideStep {
-  stepNumber: number;
-  title: string;
-  badge?: string;
-  badgeVariant?: 'pillar' | 'cli' | 'get' | 'post' | 'util';
-  description: string;
-  filename?: string;
-  code: string;
-  language?: 'python' | 'bash' | 'json' | 'markdown';
-  whyCode?: string;
-  externalLink?: {
-    label: string;
-    url: string;
-  };
+    stepNumber: number;
+    title: string;
+    badge?: string;
+    badgeVariant?: 'pillar' | 'cli' | 'get' | 'post' | 'util';
+    description: string;
+    filename?: string;
+    code: string;
+    language?: 'python' | 'bash' | 'json' | 'markdown';
+    whyCode?: string;
+    externalLink?: {
+        label: string;
+        url: string;
+    };
 }
 
 /* ========================================================================= */
@@ -19,7 +19,7 @@ export interface GuideStep {
 /* ========================================================================= */
 
 export const SCRATCH_FILES: Record<string, string> = {
-  'data.py': `"""Customer Churn Prediction (Scratch Model Paradigm): data.py
+    'data.py': `"""Customer Churn Prediction (Scratch Model Paradigm): data.py
 
 Dataset loader for the Kaggle Telecom Churn dataset:
 https://www.kaggle.com/datasets/barun2104/telecom-churn
@@ -145,7 +145,7 @@ class TelecomChurnDataset(Dataset):
         return X, y
 `,
 
-  'model.py': `"""Customer Churn Prediction (Scratch Model Paradigm): model.py
+    'model.py': `"""Customer Churn Prediction (Scratch Model Paradigm): model.py
 
 Classifier model for customer churn prediction.
 Supports scikit-learn (RandomForestClassifier) with pure-Python fallback.
@@ -275,7 +275,7 @@ class ChurnClassifier(Model):
         return []
 `,
 
-  'trainer.py': `"""Customer Churn Prediction (Scratch Model Paradigm): trainer.py
+    'trainer.py': `"""Customer Churn Prediction (Scratch Model Paradigm): trainer.py
 
 Orchestrates data preparation, train/val splitting, classifier fitting,
 and model checkpoint persistence into artifacts/.
@@ -341,7 +341,7 @@ class ChurnTrainer(BaseTrainer):
         }
 `,
 
-  'evaluator.py': `"""Customer Churn Prediction (Scratch Model Paradigm): evaluator.py
+    'evaluator.py': `"""Customer Churn Prediction (Scratch Model Paradigm): evaluator.py
 
 Computes precision, recall, F1-score, and classification accuracy
 on evaluation partitions.
@@ -388,7 +388,7 @@ class ChurnEvaluator(BaseEvaluator):
         }
 `,
 
-  'inference.py': `"""Customer Churn Prediction (Scratch Model Paradigm): inference.py
+    'inference.py': `"""Customer Churn Prediction (Scratch Model Paradigm): inference.py
 
 Production inference handler for customer churn risk scoring and intervention routing.
 """
@@ -442,7 +442,7 @@ class ChurnInference(BaseInference):
         }
 `,
 
-  'aimlite.json': `{
+    'aimlite.json': `{
   "name": "telecom_churn",
   "version": "0.1.0",
   "entrypoint": "telecom_churn",
@@ -458,138 +458,138 @@ class ChurnInference(BaseInference):
 };
 
 export const SCRATCH_GUIDE_STEPS: GuideStep[] = [
-  {
-    stepNumber: 1,
-    title: 'Initialize the Project',
-    badge: 'SCAFFOLD',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Scaffold a clean AIMLite project. Use `aimlite init <name>` to create a new folder, or `./aimlite init .` to initialize directly inside your current directory.',
-    code: `# Option A: Create in a new project folder
+    {
+        stepNumber: 1,
+        title: 'Initialize the Project',
+        badge: 'SCAFFOLD',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Scaffold a clean AIMLite project. Use `aimlite init <name>` to create a new folder, or `./aimlite init .` to initialize directly inside your current directory.',
+        code: `# Option A: Create in a new project folder
 aimlite init telecom_churn
 cd telecom_churn
 
 # Option B: Or scaffold directly inside current directory (.)
 # ./aimlite init .`,
-    whyCode:
-      'Creates the standard zero-path folder layout (data/, models/, experiments/, artifacts/, checkpoints/) and generates the project manifest aimlite.json without requiring boilerplate setup.',
-  },
-  {
-    stepNumber: 2,
-    title: 'Manage .venv & Install Compute Libraries',
-    badge: 'ENV & DEPS',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Run `aimlite install` with your required ML libraries (e.g. scikit-learn, pandas). AIMLite automatically creates and manages `.venv` across Linux, macOS, and Windows (avoiding OS PEP 668 restrictions), and automatically updates `aimlite.json` under `"dependencies"`.',
-    code: `# Install libraries: auto-manages .venv and updates aimlite.json
+        whyCode:
+            'Creates the standard zero-path folder layout (data/, models/, experiments/, artifacts/, checkpoints/) and generates the project manifest aimlite.json without requiring boilerplate setup.',
+    },
+    {
+        stepNumber: 2,
+        title: 'Manage .venv & Install Compute Libraries',
+        badge: 'ENV & DEPS',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Run `aimlite install` with your required ML libraries (e.g. scikit-learn, pandas). AIMLite automatically creates and manages `.venv` across Linux, macOS, and Windows (avoiding OS PEP 668 restrictions), and automatically updates `aimlite.json` under `"dependencies"`.',
+        code: `# Install libraries: auto-manages .venv and updates aimlite.json
 aimlite install scikit-learn pandas
 
 # Later or on a new machine, running with no arguments reinstalls all pinned dependencies:
 # aimlite install`,
-    whyCode:
-      'On modern OSes (Ubuntu 24+, Debian, macOS), installing global python packages is restricted (PEP 668). AIMLite ensures all projects have an isolated, self-managed .venv and tracks dependencies deterministically in aimlite.json.',
-  },
-  {
-    stepNumber: 3,
-    title: 'Acquire Kaggle Telecom Churn Dataset',
-    badge: 'DATASET',
-    badgeVariant: 'pillar',
-    filename: 'data/telecom_churn.csv',
-    language: 'bash',
-    description:
-      'Download the Telecom Churn CSV from Kaggle and place it in your project as `data/telecom_churn.csv`. Then validate dataset conventions with `aimlite data validate`.',
-    code: `# 1. Download dataset from Kaggle:
+        whyCode:
+            'On modern OSes (Ubuntu 24+, Debian, macOS), installing global python packages is restricted (PEP 668). AIMLite ensures all projects have an isolated, self-managed .venv and tracks dependencies deterministically in aimlite.json.',
+    },
+    {
+        stepNumber: 3,
+        title: 'Acquire Kaggle Telecom Churn Dataset',
+        badge: 'DATASET',
+        badgeVariant: 'pillar',
+        filename: 'data/telecom_churn.csv',
+        language: 'bash',
+        description:
+            'Download the Telecom Churn CSV from Kaggle and place it in your project as `data/telecom_churn.csv`. Then validate dataset conventions with `aimlite data validate`.',
+        code: `# 1. Download dataset from Kaggle:
 # https://www.kaggle.com/datasets/barun2104/telecom-churn
 # Place file into: data/telecom_churn.csv
 
 # 2. Validate dataset schema and conventions:
 aimlite data validate`,
-    externalLink: {
-      label: 'Kaggle: Telecom Churn Dataset',
-      url: 'https://www.kaggle.com/datasets/barun2104/telecom-churn',
+        externalLink: {
+            label: 'Kaggle: Telecom Churn Dataset',
+            url: 'https://www.kaggle.com/datasets/barun2104/telecom-churn',
+        },
+        whyCode:
+            'AIMLite validates that data/ contains valid datasets and ensures columns (AccountWeeks, ContractRenewal, DataPlan, CustServCalls, MonthlyCharge, Churn) match expected schema before training begins.',
     },
-    whyCode:
-      'AIMLite validates that data/ contains valid datasets and ensures columns (AccountWeeks, ContractRenewal, DataPlan, CustServCalls, MonthlyCharge, Churn) match expected schema before training begins.',
-  },
-  {
-    stepNumber: 4,
-    title: 'data.py: Ingest & Preprocess Customer Records',
-    badge: 'LOADER',
-    badgeVariant: 'pillar',
-    filename: 'data.py',
-    language: 'python',
-    description:
-      'Implement `TelecomChurnDataset` inheriting from `aimlite.Dataset` with explicit `filename = "telecom_churn.csv"`. Uses pandas for accelerated reading with a pure-Python csv fallback, and populates `self._data` and `self.columns`.',
-    code: SCRATCH_FILES['data.py'],
-    whyCode:
-      'Setting `filename = "telecom_churn.csv"` tells AIMLite exactly which CSV file in `data/` to bind, validate, and partition. Assigning `self._data` and `self.columns` enables AIMLite automated split contracts and pre-flight validation.',
-  },
-  {
-    stepNumber: 5,
-    title: 'model.py: Define ChurnClassifier',
-    badge: 'MODEL',
-    badgeVariant: 'pillar',
-    filename: 'model.py',
-    language: 'python',
-    description:
-      'Define `ChurnClassifier` subclassing `aimlite.Model`. Encapsulates `RandomForestClassifier` with balanced class weights, implements `predict()` and `predict_proba()`, and provides standard pickle serialization.',
-    code: SCRATCH_FILES['model.py'],
-    whyCode:
-      'Inheriting from Model gives you automatic registration with AIMLite discovery. Zero-path commands (train, evaluate, serve) can inspect and instantiate ChurnClassifier by name.',
-  },
-  {
-    stepNumber: 6,
-    title: 'trainer.py: Fit Classifier & Checkpoint Weights',
-    badge: 'TRAINER',
-    badgeVariant: 'pillar',
-    filename: 'trainer.py',
-    language: 'python',
-    description:
-      'Define `ChurnTrainer` subclassing `BaseTrainer`. Performs an 80/20 train/validation split, fits the model, reports train/val accuracy, and saves weights into `artifacts/churn_classifier.pkl`.',
-    code: SCRATCH_FILES['trainer.py'],
-    whyCode:
-      'BaseTrainer standardizes execution lifecycle. AIMLite invokes fit(model, dataset) and guarantees checkpoints are cleanly stored in artifacts/ without ad-hoc path manipulation.',
-  },
-  {
-    stepNumber: 7,
-    title: 'evaluator.py: Benchmark Accuracy & F1-Score',
-    badge: 'EVALUATOR',
-    badgeVariant: 'pillar',
-    filename: 'evaluator.py',
-    language: 'python',
-    description:
-      'Define `ChurnEvaluator` subclassing `BaseEvaluator`. Measures true positives, false positives, accuracy, precision, recall, and F1-score across validation partitions.',
-    code: SCRATCH_FILES['evaluator.py'],
-    whyCode:
-      'Separating evaluation from training allows continuous validation across datasets and regression monitoring before deploying to production.',
-  },
-  {
-    stepNumber: 8,
-    title: 'inference.py: Production HTTP Endpoint & Risk Scoring',
-    badge: 'INFERENCE',
-    badgeVariant: 'pillar',
-    filename: 'inference.py',
-    language: 'python',
-    description:
-      'Define `ChurnInference` subclassing `BaseInference`. Automatically loads weights from `artifacts/churn_classifier.pkl`, calculates churn risk score, and routes customers to retention workflows.',
-    code: SCRATCH_FILES['inference.py'],
-    whyCode:
-      'BaseInference provides production-ready REST API route mapping (POST /predict, GET /health). AIMLite serve uses this class to power low-latency prediction servers.',
-  },
-  {
-    stepNumber: 9,
-    title: 'Execute & Serve with Zero-Path CLI',
-    badge: 'EXECUTION',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Execute the end-to-end machine learning lifecycle using AIMLite CLI commands. Train the model, benchmark metrics, and start the production inference HTTP server.',
-    code: `# 1. Train classifier and write weights to artifacts/
+    {
+        stepNumber: 4,
+        title: 'data.py: Ingest & Preprocess Customer Records',
+        badge: 'LOADER',
+        badgeVariant: 'pillar',
+        filename: 'data.py',
+        language: 'python',
+        description:
+            'Implement `TelecomChurnDataset` inheriting from `aimlite.Dataset` with explicit `filename = "telecom_churn.csv"`. Uses pandas for accelerated reading with a pure-Python csv fallback, and populates `self._data` and `self.columns`.',
+        code: SCRATCH_FILES['data.py'],
+        whyCode:
+            'Setting `filename = "telecom_churn.csv"` tells AIMLite exactly which CSV file in `data/` to bind, validate, and partition. Assigning `self._data` and `self.columns` enables AIMLite automated split contracts and pre-flight validation.',
+    },
+    {
+        stepNumber: 5,
+        title: 'model.py: Define ChurnClassifier',
+        badge: 'MODEL',
+        badgeVariant: 'pillar',
+        filename: 'model.py',
+        language: 'python',
+        description:
+            'Define `ChurnClassifier` subclassing `aimlite.Model`. Encapsulates `RandomForestClassifier` with balanced class weights, implements `predict()` and `predict_proba()`, and provides standard pickle serialization.',
+        code: SCRATCH_FILES['model.py'],
+        whyCode:
+            'Inheriting from Model gives you automatic registration with AIMLite discovery. Zero-path commands (train, evaluate, serve) can inspect and instantiate ChurnClassifier by name.',
+    },
+    {
+        stepNumber: 6,
+        title: 'trainer.py: Fit Classifier & Checkpoint Weights',
+        badge: 'TRAINER',
+        badgeVariant: 'pillar',
+        filename: 'trainer.py',
+        language: 'python',
+        description:
+            'Define `ChurnTrainer` subclassing `BaseTrainer`. Performs an 80/20 train/validation split, fits the model, reports train/val accuracy, and saves weights into `artifacts/churn_classifier.pkl`.',
+        code: SCRATCH_FILES['trainer.py'],
+        whyCode:
+            'BaseTrainer standardizes execution lifecycle. AIMLite invokes fit(model, dataset) and guarantees checkpoints are cleanly stored in artifacts/ without ad-hoc path manipulation.',
+    },
+    {
+        stepNumber: 7,
+        title: 'evaluator.py: Benchmark Accuracy & F1-Score',
+        badge: 'EVALUATOR',
+        badgeVariant: 'pillar',
+        filename: 'evaluator.py',
+        language: 'python',
+        description:
+            'Define `ChurnEvaluator` subclassing `BaseEvaluator`. Measures true positives, false positives, accuracy, precision, recall, and F1-score across validation partitions.',
+        code: SCRATCH_FILES['evaluator.py'],
+        whyCode:
+            'Separating evaluation from training allows continuous validation across datasets and regression monitoring before deploying to production.',
+    },
+    {
+        stepNumber: 8,
+        title: 'inference.py: Production HTTP Endpoint & Risk Scoring',
+        badge: 'INFERENCE',
+        badgeVariant: 'pillar',
+        filename: 'inference.py',
+        language: 'python',
+        description:
+            'Define `ChurnInference` subclassing `BaseInference`. Automatically loads weights from `artifacts/churn_classifier.pkl`, calculates churn risk score, and routes customers to retention workflows.',
+        code: SCRATCH_FILES['inference.py'],
+        whyCode:
+            'BaseInference provides production-ready REST API route mapping (POST /predict, GET /health). AIMLite serve uses this class to power low-latency prediction servers.',
+    },
+    {
+        stepNumber: 9,
+        title: 'Execute & Serve with Zero-Path CLI',
+        badge: 'EXECUTION',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Execute the end-to-end machine learning lifecycle using AIMLite CLI commands. Train the model, benchmark metrics, and start the production inference HTTP server.',
+        code: `# 1. Train classifier and write weights to artifacts/
 aimlite train ChurnClassifier
 
 # 2. Evaluate accuracy, precision, recall, and F1
@@ -613,9 +613,9 @@ curl -X POST http://127.0.0.1:8000/predict \\
     "OverageFee": 9.87,
     "RoamMins": 10.0
   }'`,
-    whyCode:
-      'Zero-path execution automatically connects data.py, model.py, trainer.py, and inference.py without boilerplate wiring code.',
-  },
+        whyCode:
+            'Zero-path execution automatically connects data.py, model.py, trainer.py, and inference.py without boilerplate wiring code.',
+    },
 ];
 
 /* ========================================================================= */
@@ -623,7 +623,7 @@ curl -X POST http://127.0.0.1:8000/predict \\
 /* ========================================================================= */
 
 export const RAG_FILES: Record<string, string> = {
-  'chat_provider.py': `"""Chat Provider & Query Intelligence: chat_provider.py
+    'chat_provider.py': `"""Chat Provider & Query Intelligence: chat_provider.py
 
 Starter code for configuring LLM synthesis, system prompts, and query analysis (HyDE, intent decomposition, expansion).
 All classes, functions, and prompt templates in this file are fully editable by the developer.
@@ -750,7 +750,7 @@ def get_query_analyzer(
     )
 `,
 
-  'store.py': `"""Vector Store & Database Storage: store.py
+    'store.py': `"""Vector Store & Database Storage: store.py
 
 Starter code for semantic vector storage, embeddings, and PostgreSQL ORM records.
 All functions and classes in this file are fully editable by the developer.
@@ -831,7 +831,7 @@ def get_vector_store(
     return MemoryVectorStore(embedding_fn=embed_model, **kwargs)
 `,
 
-  'data.py': `"""Document & Knowledge QA (RAG Paradigm): data.py
+    'data.py': `"""Document & Knowledge QA (RAG Paradigm): data.py
 
 Knowledge base document loader and smart chunker for RAG pipelines.
 Ingests text or Markdown files and splits them into semantically coherent,
@@ -913,7 +913,7 @@ class KnowledgeDocsDataset(Dataset):
         return self.chunker.split_documents(raw_documents)
 `,
 
-  'model.py': `"""Document & Knowledge QA (RAG Paradigm): model.py
+    'model.py': `"""Document & Knowledge QA (RAG Paradigm): model.py
 
 Enterprise Knowledge Base Model with Query Intelligence, Smart Chunking, and Grounded Chat.
 All methods and hooks in this model are fully editable and overrideable by the developer.
@@ -1025,7 +1025,7 @@ class SupportDocRAG(KnowledgeModel):
         return super().postprocess_answer(answer, context_docs)
 `,
 
-  'trainer.py': `"""Document & Knowledge QA (RAG Paradigm): trainer.py
+    'trainer.py': `"""Document & Knowledge QA (RAG Paradigm): trainer.py
 
 Trainer orchestrator building and persisting the semantic vector index.
 All methods and hooks in this file are fully editable by the developer.
@@ -1051,7 +1051,7 @@ class IndexBuilderTrainer(RAGTrainer):
         pass
 `,
 
-  'inference.py': `"""Document & Knowledge QA (RAG Paradigm): inference.py
+    'inference.py': `"""Document & Knowledge QA (RAG Paradigm): inference.py
 
 Production inference endpoint for semantic document query retrieval
 and context-grounded response generation.
@@ -1112,7 +1112,7 @@ class RAGInference(BaseInference):
         }
 `,
 
-  'experiments/benchmark.py': `"""Benchmark & Evaluation Experiment: experiments/benchmark.py
+    'experiments/benchmark.py': `"""Benchmark & Evaluation Experiment: experiments/benchmark.py
 
 Evaluates RAG retrieval precision, latency, and answer synthesis groundedness.
 Run automatically using: aimlite benchmark
@@ -1147,9 +1147,9 @@ if __name__ == "__main__":
     run()
 `,
 
-  'aimlite.json': `{
+    'aimlite.json': `{
   "name": "support_rag",
-  "version": "1.0.9",
+  "version": "2.0.0",
   "entrypoint": "support_rag",
   "type": "rag",
   "dependencies": [
@@ -1165,45 +1165,45 @@ if __name__ == "__main__":
 };
 
 export const RAG_GUIDE_STEPS: GuideStep[] = [
-  {
-    stepNumber: 1,
-    title: 'Initialize the Project',
-    badge: 'SCAFFOLD',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Scaffold a new RAG knowledge retrieval project with AIMLite conventions.',
-    code: `# Create and enter project directory
+    {
+        stepNumber: 1,
+        title: 'Initialize the Project',
+        badge: 'SCAFFOLD',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Scaffold a new RAG knowledge retrieval project with AIMLite conventions.',
+        code: `# Create and enter project directory
 aimlite init support_rag
 cd support_rag`,
-    whyCode:
-      'Sets up standard directory conventions (data/, artifacts/) and initializes aimlite.json.',
-  },
-  {
-    stepNumber: 2,
-    title: 'Install RAG Dependencies & Manage .venv',
-    badge: 'ENV & DEPS',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Install `sentence-transformers` and optional database drivers like `psycopg2-binary`. AIMLite manages `.venv` automatically.',
-    code: `# Install embedding & database libraries into managed .venv:
+        whyCode:
+            'Sets up standard directory conventions (data/, artifacts/) and initializes aimlite.json.',
+    },
+    {
+        stepNumber: 2,
+        title: 'Install RAG Dependencies & Manage .venv',
+        badge: 'ENV & DEPS',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Install `sentence-transformers` and optional database drivers like `psycopg2-binary`. AIMLite manages `.venv` automatically.',
+        code: `# Install embedding & database libraries into managed .venv:
 aimlite install sentence-transformers psycopg2-binary`,
-    whyCode:
-      'SentenceTransformers computes dense vector embeddings for semantic similarity search. TfidfEmbedding acts as a zero-dependency fallback.',
-  },
-  {
-    stepNumber: 3,
-    title: 'Add Knowledge Documents to data/',
-    badge: 'DOCS',
-    badgeVariant: 'pillar',
-    filename: 'data/faq.md',
-    language: 'markdown',
-    description:
-      'Place Markdown (.md) or Text (.txt) articles into the `data/` directory. AIMLite ingests and chunks all documents automatically.',
-    code: `# AIMLite Architecture & Deployment FAQ
+        whyCode:
+            'SentenceTransformers computes dense vector embeddings for semantic similarity search. TfidfEmbedding acts as a zero-dependency fallback.',
+    },
+    {
+        stepNumber: 3,
+        title: 'Add Knowledge Documents to data/',
+        badge: 'DOCS',
+        badgeVariant: 'pillar',
+        filename: 'data/faq.md',
+        language: 'markdown',
+        description:
+            'Place Markdown (.md) or Text (.txt) articles into the `data/` directory. AIMLite ingests and chunks all documents automatically.',
+        code: `# AIMLite Architecture & Deployment FAQ
 
 ### What is Zero-Path Execution?
 AIMLite dynamically discovers data.py, model.py, trainer.py, and inference.py
@@ -1211,71 +1211,71 @@ by inspecting project conventions. No manual routing or wiring is required.
 
 ### How are vector indices and databases stored?
 Checkpoints and vector indices are serialized into artifacts/rag_index.json or synced to PostgreSQL via PostgresVectorStore.`,
-    whyCode:
-      'Raw documentation files in data/ are converted into contextual chunks by SmartChunker without hardcoded text in code.',
-  },
-  {
-    stepNumber: 4,
-    title: 'data.py: Document Chunking with SmartChunker',
-    badge: 'CHUNKER',
-    badgeVariant: 'pillar',
-    filename: 'data.py',
-    language: 'python',
-    description:
-      'Implement `KnowledgeDocsDataset` using AIMLite built-in `SmartChunker` to segment documentation into natural semantic passages with header context.',
-    code: RAG_FILES['data.py'],
-    whyCode:
-      'SmartChunker preserves Markdown heading hierarchy (#, ##) and attaches parent section titles to chunk metadata.',
-  },
-  {
-    stepNumber: 5,
-    title: 'model.py: KnowledgeModel, QueryAnalyzer & ChatProvider',
-    badge: 'MODEL',
-    badgeVariant: 'pillar',
-    filename: 'model.py',
-    language: 'python',
-    description:
-      'Subclass `KnowledgeModel` and configure `QueryAnalyzer`, `BaseChatProvider`, and `PostgresVectorStore`/`MemoryVectorStore` for context-grounded answers.',
-    code: RAG_FILES['model.py'],
-    whyCode:
-      'KnowledgeModel coordinates QueryAnalyzer (intent, multi-query expansion, HyDE) and ChatProvider (OpenAI, Gemini, Claude, Ollama, or local).',
-  },
-  {
-    stepNumber: 6,
-    title: 'trainer.py: Build & Persist Semantic Vector Index',
-    badge: 'INDEXER',
-    badgeVariant: 'pillar',
-    filename: 'trainer.py',
-    language: 'python',
-    description:
-      'Subclass `RAGTrainer` as `IndexBuilderTrainer` to calculate embeddings offline and serialize the vector index to `artifacts/rag_index.json` or database.',
-    code: RAG_FILES['trainer.py'],
-    whyCode:
-      'Pre-indexing document embeddings offline guarantees that user queries during production serving execute with sub-10ms latency.',
-  },
-  {
-    stepNumber: 7,
-    title: 'inference.py: Production Knowledge API Endpoint',
-    badge: 'INFERENCE',
-    badgeVariant: 'pillar',
-    filename: 'inference.py',
-    language: 'python',
-    description:
-      'Define `RAGInference` subclassing `BaseInference` to serve knowledge queries via `POST /predict`.',
-    code: RAG_FILES['inference.py'],
-    whyCode:
-      'Automatically connects to the serialized index in artifacts/rag_index.json and exposes a RESTful API with health checks.',
-  },
-  {
-    stepNumber: 8,
-    title: 'Build Index & Serve Knowledge API',
-    badge: 'EXECUTION',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Build the vector index and start the production knowledge query server.',
-    code: `# 1. Ingest documents and build vector index
+        whyCode:
+            'Raw documentation files in data/ are converted into contextual chunks by SmartChunker without hardcoded text in code.',
+    },
+    {
+        stepNumber: 4,
+        title: 'data.py: Document Chunking with SmartChunker',
+        badge: 'CHUNKER',
+        badgeVariant: 'pillar',
+        filename: 'data.py',
+        language: 'python',
+        description:
+            'Implement `KnowledgeDocsDataset` using AIMLite built-in `SmartChunker` to segment documentation into natural semantic passages with header context.',
+        code: RAG_FILES['data.py'],
+        whyCode:
+            'SmartChunker preserves Markdown heading hierarchy (#, ##) and attaches parent section titles to chunk metadata.',
+    },
+    {
+        stepNumber: 5,
+        title: 'model.py: KnowledgeModel, QueryAnalyzer & ChatProvider',
+        badge: 'MODEL',
+        badgeVariant: 'pillar',
+        filename: 'model.py',
+        language: 'python',
+        description:
+            'Subclass `KnowledgeModel` and configure `QueryAnalyzer`, `BaseChatProvider`, and `PostgresVectorStore`/`MemoryVectorStore` for context-grounded answers.',
+        code: RAG_FILES['model.py'],
+        whyCode:
+            'KnowledgeModel coordinates QueryAnalyzer (intent, multi-query expansion, HyDE) and ChatProvider (OpenAI, Gemini, Claude, Ollama, or local).',
+    },
+    {
+        stepNumber: 6,
+        title: 'trainer.py: Build & Persist Semantic Vector Index',
+        badge: 'INDEXER',
+        badgeVariant: 'pillar',
+        filename: 'trainer.py',
+        language: 'python',
+        description:
+            'Subclass `RAGTrainer` as `IndexBuilderTrainer` to calculate embeddings offline and serialize the vector index to `artifacts/rag_index.json` or database.',
+        code: RAG_FILES['trainer.py'],
+        whyCode:
+            'Pre-indexing document embeddings offline guarantees that user queries during production serving execute with sub-10ms latency.',
+    },
+    {
+        stepNumber: 7,
+        title: 'inference.py: Production Knowledge API Endpoint',
+        badge: 'INFERENCE',
+        badgeVariant: 'pillar',
+        filename: 'inference.py',
+        language: 'python',
+        description:
+            'Define `RAGInference` subclassing `BaseInference` to serve knowledge queries via `POST /predict`.',
+        code: RAG_FILES['inference.py'],
+        whyCode:
+            'Automatically connects to the serialized index in artifacts/rag_index.json and exposes a RESTful API with health checks.',
+    },
+    {
+        stepNumber: 8,
+        title: 'Build Index & Serve Knowledge API',
+        badge: 'EXECUTION',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Build the vector index and start the production knowledge query server.',
+        code: `# 1. Ingest documents and build vector index
 aimlite train SupportDocRAG
 
 # 2. Start knowledge API server
@@ -1285,9 +1285,9 @@ aimlite serve SupportDocRAG --port 8000
 curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
   -d '{"query": "How do session tokens expire?", "top_k": 3}'`,
-    whyCode:
-      'Executes zero-path end-to-end training and launches an enterprise FastAPI-grade server.',
-  },
+        whyCode:
+            'Executes zero-path end-to-end training and launches an enterprise FastAPI-grade server.',
+    },
 ];
 
 /* ========================================================================= */
@@ -1295,7 +1295,7 @@ curl -X POST http://127.0.0.1:8000/predict \\
 /* ========================================================================= */
 
 export const ADAPTER_FILES: Record<string, string> = {
-  'data.py': `"""Instruction Tuning (Adapter Model Paradigm): data.py
+    'data.py': `"""Instruction Tuning (Adapter Model Paradigm): data.py
 
 Dataset loader for instruction fine-tuning prompt-response datasets.
 Ingests JSON or JSONL records containing prompt/instruction/output pairs.
@@ -1383,7 +1383,7 @@ class InstructionDataset(Dataset):
         return formatted
 `,
 
-  'model.py': `"""Instruction Tuning (Adapter Model Paradigm): model.py
+    'model.py': `"""Instruction Tuning (Adapter Model Paradigm): model.py
 
 LoRA / PEFT AdapterModel subclass.
 Attaches lightweight low-rank adaptation layers onto foundation models,
@@ -1491,7 +1491,7 @@ class LoRAInstructionModel(AdapterModel):
         self.base_model_name = cfg.get("base_model_name", self.base_model_name)
 `,
 
-  'trainer.py': `"""Instruction Tuning (Adapter Model Paradigm): trainer.py
+    'trainer.py': `"""Instruction Tuning (Adapter Model Paradigm): trainer.py
 
 LoRA parameter-efficient training pipeline. Freezes foundation model weights
 and optimizes solely adapter matrices, persisting lightweight delta checkpoints.
@@ -1544,7 +1544,7 @@ class AdapterInstructionTrainer(BaseTrainer):
         }
 `,
 
-  'inference.py': `"""Instruction Tuning (Adapter Model Paradigm): inference.py
+    'inference.py': `"""Instruction Tuning (Adapter Model Paradigm): inference.py
 
 Production inference endpoint for serving fine-tuned LoRA adapter weights
 on top of frozen foundation models.
@@ -1584,7 +1584,7 @@ class AdapterInference(BaseInference):
         }
 `,
 
-  'aimlite.json': `{
+    'aimlite.json': `{
   "name": "lora_instructions",
   "version": "0.1.0",
   "entrypoint": "lora_instructions",
@@ -1600,45 +1600,45 @@ class AdapterInference(BaseInference):
 };
 
 export const ADAPTER_GUIDE_STEPS: GuideStep[] = [
-  {
-    stepNumber: 1,
-    title: 'Initialize the Project',
-    badge: 'SCAFFOLD',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Scaffold a new LoRA instruction tuning project.',
-    code: `# Create and enter project directory
+    {
+        stepNumber: 1,
+        title: 'Initialize the Project',
+        badge: 'SCAFFOLD',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Scaffold a new LoRA instruction tuning project.',
+        code: `# Create and enter project directory
 aimlite init lora_instructions
 cd lora_instructions`,
-    whyCode:
-      'Sets up standard project conventions and generates aimlite.json.',
-  },
-  {
-    stepNumber: 2,
-    title: 'Install PyTorch & PEFT Dependencies',
-    badge: 'ENV & DEPS',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Install `torch` and `peft`. AIMLite automatically sets up `.venv` and updates `aimlite.json`.',
-    code: `# Install PEFT fine-tuning dependencies:
+        whyCode:
+            'Sets up standard project conventions and generates aimlite.json.',
+    },
+    {
+        stepNumber: 2,
+        title: 'Install PyTorch & PEFT Dependencies',
+        badge: 'ENV & DEPS',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Install `torch` and `peft`. AIMLite automatically sets up `.venv` and updates `aimlite.json`.',
+        code: `# Install PEFT fine-tuning dependencies:
 aimlite install torch peft`,
-    whyCode:
-      'Hugging Face PEFT and PyTorch provide Low-Rank Adaptation (LoRA) matrix optimization.',
-  },
-  {
-    stepNumber: 3,
-    title: 'Add Instruction Dataset to data/instructions.json',
-    badge: 'DATASET',
-    badgeVariant: 'pillar',
-    filename: 'data/instructions.json',
-    language: 'json',
-    description:
-      'Add instruction/prompt/response JSON records into `data/instructions.json`.',
-    code: `[
+        whyCode:
+            'Hugging Face PEFT and PyTorch provide Low-Rank Adaptation (LoRA) matrix optimization.',
+    },
+    {
+        stepNumber: 3,
+        title: 'Add Instruction Dataset to data/instructions.json',
+        badge: 'DATASET',
+        badgeVariant: 'pillar',
+        filename: 'data/instructions.json',
+        language: 'json',
+        description:
+            'Add instruction/prompt/response JSON records into `data/instructions.json`.',
+        code: `[
   {
     "instruction": "Summarize customer retention feedback.",
     "input": "Customer renewal rate dropped 4% following recent tier updates.",
@@ -1650,71 +1650,71 @@ aimlite install torch peft`,
     "output": "Severity: P1 Critical"
   }
 ]`,
-    whyCode:
-      'Instruction tuning trains base models to reliably follow custom prompt structures.',
-  },
-  {
-    stepNumber: 4,
-    title: 'data.py: Format Instruction Tuning Prompts',
-    badge: 'LOADER',
-    badgeVariant: 'pillar',
-    filename: 'data.py',
-    language: 'python',
-    description:
-      'Subclass `Dataset` as `InstructionDataset` to load prompt pairs and format them into standard prompt templates (`### Instruction: ... ### Response:`).',
-    code: ADAPTER_FILES['data.py'],
-    whyCode:
-      'Standardizes disparate input schemas into uniform training prompt templates.',
-  },
-  {
-    stepNumber: 5,
-    title: 'model.py: LoRAInstructionModel & Frozen Base',
-    badge: 'MODEL',
-    badgeVariant: 'pillar',
-    filename: 'model.py',
-    language: 'python',
-    description:
-      'Subclass `AdapterModel` and attach trainable low-rank delta matrices via `AdapterConfig(r=8, alpha=16.0)` while freezing foundation weights.',
-    code: ADAPTER_FILES['model.py'],
-    whyCode:
-      'AdapterModel calls freeze_base_model() to lock foundation parameters. Saves only ~50KB delta matrices instead of duplicating 14GB+ models.',
-  },
-  {
-    stepNumber: 6,
-    title: 'trainer.py: Optimize Low-Rank Delta Weights',
-    badge: 'TRAINER',
-    badgeVariant: 'pillar',
-    filename: 'trainer.py',
-    language: 'python',
-    description:
-      'Subclass `BaseTrainer` as `AdapterInstructionTrainer` to train adapter matrices and save lightweight delta checkpoints to `artifacts/adapter/`.',
-    code: ADAPTER_FILES['trainer.py'],
-    whyCode:
-      'Reduces GPU VRAM requirements by over 80% and accelerates training loops.',
-  },
-  {
-    stepNumber: 7,
-    title: 'inference.py: Dynamic LoRA Response Serving',
-    badge: 'INFERENCE',
-    badgeVariant: 'pillar',
-    filename: 'inference.py',
-    language: 'python',
-    description:
-      'Subclass `BaseInference` to load delta checkpoints and serve fine-tuned responses via `POST /predict`.',
-    code: ADAPTER_FILES['inference.py'],
-    whyCode:
-      'Allows dynamic adapter swapping on top of a single shared foundation model.',
-  },
-  {
-    stepNumber: 8,
-    title: 'Train Adapters & Serve Fine-Tuned API',
-    badge: 'EXECUTION',
-    badgeVariant: 'cli',
-    filename: 'terminal.sh',
-    language: 'bash',
-    description:
-      'Execute LoRA fine-tuning and start the production inference server.',
-    code: `# 1. Train lightweight delta weights
+        whyCode:
+            'Instruction tuning trains base models to reliably follow custom prompt structures.',
+    },
+    {
+        stepNumber: 4,
+        title: 'data.py: Format Instruction Tuning Prompts',
+        badge: 'LOADER',
+        badgeVariant: 'pillar',
+        filename: 'data.py',
+        language: 'python',
+        description:
+            'Subclass `Dataset` as `InstructionDataset` to load prompt pairs and format them into standard prompt templates (`### Instruction: ... ### Response:`).',
+        code: ADAPTER_FILES['data.py'],
+        whyCode:
+            'Standardizes disparate input schemas into uniform training prompt templates.',
+    },
+    {
+        stepNumber: 5,
+        title: 'model.py: LoRAInstructionModel & Frozen Base',
+        badge: 'MODEL',
+        badgeVariant: 'pillar',
+        filename: 'model.py',
+        language: 'python',
+        description:
+            'Subclass `AdapterModel` and attach trainable low-rank delta matrices via `AdapterConfig(r=8, alpha=16.0)` while freezing foundation weights.',
+        code: ADAPTER_FILES['model.py'],
+        whyCode:
+            'AdapterModel calls freeze_base_model() to lock foundation parameters. Saves only ~50KB delta matrices instead of duplicating 14GB+ models.',
+    },
+    {
+        stepNumber: 6,
+        title: 'trainer.py: Optimize Low-Rank Delta Weights',
+        badge: 'TRAINER',
+        badgeVariant: 'pillar',
+        filename: 'trainer.py',
+        language: 'python',
+        description:
+            'Subclass `BaseTrainer` as `AdapterInstructionTrainer` to train adapter matrices and save lightweight delta checkpoints to `artifacts/adapter/`.',
+        code: ADAPTER_FILES['trainer.py'],
+        whyCode:
+            'Reduces GPU VRAM requirements by over 80% and accelerates training loops.',
+    },
+    {
+        stepNumber: 7,
+        title: 'inference.py: Dynamic LoRA Response Serving',
+        badge: 'INFERENCE',
+        badgeVariant: 'pillar',
+        filename: 'inference.py',
+        language: 'python',
+        description:
+            'Subclass `BaseInference` to load delta checkpoints and serve fine-tuned responses via `POST /predict`.',
+        code: ADAPTER_FILES['inference.py'],
+        whyCode:
+            'Allows dynamic adapter swapping on top of a single shared foundation model.',
+    },
+    {
+        stepNumber: 8,
+        title: 'Train Adapters & Serve Fine-Tuned API',
+        badge: 'EXECUTION',
+        badgeVariant: 'cli',
+        filename: 'terminal.sh',
+        language: 'bash',
+        description:
+            'Execute LoRA fine-tuning and start the production inference server.',
+        code: `# 1. Train lightweight delta weights
 aimlite train LoRAInstructionModel
 
 # 2. Start serving fine-tuned model
@@ -1724,7 +1724,7 @@ aimlite serve LoRAInstructionModel --port 8000
 curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
   -d '{"instruction": "Classify support ticket", "input": "Cannot access billing portal"}'`,
-    whyCode:
-      'Deploys parameter-efficient adapter models using standard zero-path commands.',
-  },
+        whyCode:
+            'Deploys parameter-efficient adapter models using standard zero-path commands.',
+    },
 ];
