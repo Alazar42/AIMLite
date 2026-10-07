@@ -5,6 +5,32 @@ All notable changes to the AIMLite framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-10-07
+
+### Fixed (Major Bug Fixes)
+- **POSIX Binary Collision on Console Scripts**:
+  - Removed `test` and `cli` entry points from `[project.scripts]` in `pyproject.toml`.
+  - Exclusively registers `aimlite = "aimlite.cli.main:main"`, completely preventing overrides of the core POSIX `/bin/test` utility on macOS/Linux and avoiding breakage in developer shells and CI/CD pipelines.
+- **Root `site-packages` Namespace Pollution**:
+  - Relocated CLI source tree from root `src/cli/` to namespaced `src/aimlite/cli/`.
+  - Updated Hatchling wheel configuration (`packages = ["src/aimlite"]`) so `import cli` in user code is never hijacked by AIMLite.
+- **LoRA Adapter Flexible Dataset Vectorization**:
+  - Fixed training crash when fitting LoRA adapters on unstructured text or instruction datasets.
+  - Eliminated rigid requirements for tabular numeric columns and hardcoded `target` columns.
+  - Implemented hash-based vector projection (`_text_to_feature_vector`) and scalar target extraction (`_text_to_scalar_target`), supporting prompt-response instruction pairs (`instruction`/`response`, `prompt`/`completion`, `input`/`output`, `question`/`answer`), arbitrary dicts, raw text strings, and tabular data without zero-gradient dropouts.
+  - Updated `Dataset.validate()` to dynamically discover schema columns for in-memory and custom-loaded datasets.
+- **`aimlite init --clean` Paradigm Selection & Empty Code Scaffolding**:
+  - Fixed `--clean` flag behavior to prompt developers for paradigm selection (`scratch`, `rag`, `adapter`) instead of defaulting unconditionally to scratch.
+  - Clean mode now generates pristine empty code files (`0` bytes) for the chosen paradigm rather than pre-populated demo classes or dummy data.
+- **Canonical 3-Paradigm Alignment (`scratch`, `rag`, `adapter`)**:
+  - Standardized CLI `--type` choices strictly to the three official paradigms: `scratch`, `rag`, and `adapter`.
+  - Added `UnknownParadigmError` providing explicit feedback when an unrecognized paradigm type is provided.
+  - Aligned interactive prompts, docstrings, and agent instructions.
+- **Python Version Recommendation in `doctor.py`**:
+  - Replaced the recommendation for Python `>= 3.14` with `3.10–3.12` to maintain compatibility with PyTorch, CUDA, and TensorFlow binary wheels.
+- **Duplicate Agent Skills Folder Creation**:
+  - Removed duplicate folder generation in `skills/aimlite/SKILL.md` during `aimlite init`, retaining canonical `.agents/skills/aimlite/SKILL.md`.
+
 ## [2.0.0] - 2026-09-29
 
 ### Added

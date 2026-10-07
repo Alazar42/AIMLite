@@ -6,8 +6,8 @@ import time
 from pathlib import Path
 from typing import Any, Optional, Tuple, Type, Union
 
-from cli.discovery import ProjectContext, resolve_project_context
-from cli.ui import C, arrow, check, cross, vite_header
+from aimlite.cli.discovery import ProjectContext, resolve_project_context
+from aimlite.cli.ui import C, arrow, check, cross, vite_header
 from aimlite.data import Dataset
 from aimlite.lifecycle import BaseTrainer, _model_weights_filename
 from aimlite.models import Model
@@ -204,7 +204,7 @@ def run_train(
 
     resumed_from = None
     if resume:
-        from cli.commands.evaluate import _discover_checkpoint
+        from aimlite.cli.commands.evaluate import _discover_checkpoint
         if isinstance(resume, str) and resume.strip():
             resume_path = Path(resume)
             if not resume_path.is_absolute():

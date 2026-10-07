@@ -1,7 +1,8 @@
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 from aimlite import (
     adapters,
+    cli,
     config,
     data,
     lifecycle,
@@ -68,6 +69,7 @@ from aimlite.registry import (
 
 __all__ = [
     "adapters",
+    "cli",
     "config",
     "data",
     "lifecycle",

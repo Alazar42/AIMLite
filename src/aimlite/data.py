@@ -398,10 +398,19 @@ class Dataset:
 
     def validate(self) -> bool:
         """Verifies that dataset exists and contains records."""
+        if not self._data:
+            try:
+                records = self.load()
+                if records and not self._data:
+                    self._data = records
+            except Exception:
+                pass
+
+        if self._data and len(self._data) > 0:
+            if not self.columns and isinstance(self._data[0], dict):
+                self.columns = list(self._data[0].keys())
+            return True
+
         if not self.filename and self.source is None and self.resolved_path is None:
             return False
-        if not self._data:
-            records = self.load()
-            if records and not self._data:
-                self._data = records
         return bool(self._data and len(self._data) > 0)

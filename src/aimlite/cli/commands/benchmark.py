@@ -16,8 +16,8 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from cli.discovery import find_project_root, inject_venv_site_packages
-from cli.ui import C, arrow, check, cross, vite_header
+from aimlite.cli.discovery import find_project_root, inject_venv_site_packages
+from aimlite.cli.ui import C, arrow, check, cross, vite_header
 
 
 def run_benchmark(

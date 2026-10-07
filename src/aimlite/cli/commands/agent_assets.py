@@ -1,4 +1,14 @@
----
+"""Scaffolding assets for coding agent integration in initialized AIMLite projects.
+
+Provides agent skills (.agents/skills/aimlite/SKILL.md), AGENTS.md, and llms.txt.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+
+SKILL_MD_TEMPLATE = """---
 name: aimlite
 description: >-
   Expert guide for AIMLite (The Django for AI & Machine Learning).
@@ -9,7 +19,7 @@ description: >-
 
 # AIMLite Skill Guide
 
-This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.0.0)**.
+This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.1.0)**.
 
 AIMLite operates on **convention over configuration** with **zero-path CLI execution**. Like Django, you organize code into standard modules (`data.py`, `model.py`, `trainer.py`, `evaluator.py`, `inference.py`), and the framework handles discovery, environment resolution, and execution automatically.
 
@@ -21,7 +31,7 @@ Coding agents should use the `aimlite` CLI commands directly via shell tools:
 
 ```bash
 # Initialize a new project layout in current directory or named folder
-aimlite init <project_name | .> [--type <scratch|rag|adapters>] [--clean] [--install] [-y]
+aimlite init <project_name | .> [--type <scratch|rag|adapter>] [--clean] [--install] [-y]
 
 # Synchronize dependencies with .venv from aimlite.json
 aimlite install [package_name ...]
@@ -49,7 +59,7 @@ aimlite benchmark [experiments/benchmark.py]
 - `--clean`: Scaffolds pristine skeletons without dummy CSVs or sample data (contracts + docstrings only).
 - `--api`: Runs the inference server in headless REST JSON mode (disables web UI, ideal for Docker/Kubernetes).
 - `--frontend <dir>`: Mounts a custom SPA build (React, Vue, Vite, Next.js static) on the same port with SPA client routing fallback to `index.html`.
-- `--type <scratch|rag|adapters>`: Sets project paradigm.
+- `--type <scratch|rag|adapter>`: Sets project paradigm.
 
 ---
 
@@ -192,10 +202,10 @@ response = model.predict("What is AIMLite?")
 
 ### Paradigm 3: LoRA & PEFT Fine-Tuning (`aimlite.adapters`)
 Parameter-efficient fine-tuning via low-rank matrix decomposition:
-$$W = W_0 + \frac{\alpha}{r} (B \cdot A)$$
+$$W = W_0 + \\frac{\\alpha}{r} (B \\cdot A)$$
 - **Scaffold**: `aimlite init my_lora --type adapters`
 - **Core Components**:
-  - `LoRALayer(in_features, out_features, r=8, lora_alpha=16)`: Low-rank linear layer with forward ($h = W_0 x + \frac{\alpha}{r} B A x$) and analytical backward updates (`backward_B`, `backward_A`).
+  - `LoRALayer(in_features, out_features, r=8, lora_alpha=16)`: Low-rank linear layer with forward ($h = W_0 x + \\frac{\\alpha}{r} B A x$) and analytical backward updates (`backward_B`, `backward_A`).
   - `AdapterModel(base_model, adapter_config)`: Base adapter wrapper with `merge_weights()`, `unmerge_weights()`, and `get_trainable_parameters()`.
   - `AdapterTrainer`: Executes true gradient backpropagation on LoRA matrices $A$ and $B$ with MSE loss and gradient clipping ($[-1.0, 1.0]$).
   - `MultiAdapterManager`: Hot-swaps multiple adapter weights on top of a shared frozen base model without reloading.
@@ -230,3 +240,116 @@ When `aimlite serve` is executed, it starts a threaded HTTP server (`ThreadingHT
 5. **No Fake Training Results**: Custom trainers must compute real forward passes, real losses, and measurable parameter updates.
 6. **Threaded Concurrency**: If custom HTTP request handling is added, always ensure it is non-blocking (`ThreadingMixIn` or async) so concurrent predictions or health checks are not blocked.
 7. **Clean Code**: Do not leave `TODO` or `FIXME` comments in generated code.
+"""
+
+
+def get_skill_md_content() -> str:
+    """Returns the standardized AIMLite agent skill guide."""
+    return SKILL_MD_TEMPLATE.strip() + "\n"
+
+
+def get_agents_md_content(project_name: str, template_type: str, clean: bool = False) -> str:
+    """Generates project-level AGENTS.md instructions for coding agents."""
+    mode_text = "Clean skeleton (contracts & docstrings only)" if clean else "Interactive starter setup"
+    return f"""# Agent Instructions for {project_name}
+
+Welcome! This repository is an **AIMLite (v2.1.0)** project built on **convention over configuration**.
+AI coding agents (Antigravity, Cursor, Windsurf, Claude Code, GitHub Copilot) working in this workspace should follow these instructions.
+
+## Project Summary
+- **Project Name**: `{project_name}`
+- **Paradigm**: `{template_type}` ({mode_text})
+- **Entrypoint Package**: `{project_name}/`
+- **Manifest**: `aimlite.json`
+- **Application Config**: `{project_name}/config.py`
+
+## Zero-Path CLI Commands
+Always use the zero-path `aimlite` CLI commands directly via your shell tool:
+
+```bash
+# Synchronize dependencies with .venv
+aimlite install
+
+# Validate data schema, types, and partition readiness
+aimlite data validate
+
+# Train / Index the model
+aimlite train
+
+# Evaluate the model against test splits
+aimlite evaluate
+
+# Launch multi-model server & web UI
+aimlite serve --port 8000
+
+# Diagnostic check for dependencies and accelerators
+aimlite doctor
+
+# Run benchmark experiments
+aimlite benchmark
+```
+
+## Directory & Convention Map
+- `{project_name}/data.py`: Dataset ingestion & schema validation (`Dataset`).
+- `{project_name}/model.py`: Model definition subclassing `Model`, `KnowledgeModel`, or `AdapterModel`.
+- `{project_name}/trainer.py`: Training / Indexing pipeline (`BaseTrainer`, `RAGTrainer`, or `AdapterTrainer`).
+- `{project_name}/evaluator.py`: Evaluation metrics (`BaseEvaluator`).
+- `{project_name}/inference.py`: Serving handler (`BaseInference`).
+- `data/`: Ingestion directory for raw datasets, documents, and instructions.
+- `models/`: Checkpoints and serialized model weights (`.pkl`).
+- `artifacts/`: Non-weight artifacts (indexes, configs, vocabularies).
+- `experiments/`: Experiment benchmarks and metric logs.
+
+## Critical Rules for Coding Agents
+1. **Never mock in production paths**: Do not use `MockChatProvider` or fake metric calculations in user-facing code.
+2. **Strict error handling**: If an optional library (`sentence-transformers`, `torch`, `peft`, `psycopg2`) is needed, raise an explicit `ImportError` explaining how to install it. Never silently degrade.
+3. **Deterministic splits**: Always supply `seed=42` and `shuffle=True` in `dataset.split()`.
+4. **No standalone web servers**: AIMLite provides a production multi-threaded server with Swagger docs, health checks, and responsive UI via `aimlite serve`.
+5. **Clean Code**: Do not leave `TODO` or `FIXME` comments in generated code.
+
+## Agent Skills & Reference
+- Detailed skill guide: `.agents/skills/aimlite/SKILL.md`
+- Project LLM index: `llms.txt`
+"""
+
+
+def get_llms_txt_content(project_name: str, template_type: str) -> str:
+    """Generates a project-level llms.txt file."""
+    return f"""# {project_name} (AIMLite v2.1.0)
+
+> Machine learning project built with AIMLite ({template_type} paradigm).
+
+## CLI Quick Reference
+- `aimlite install`: Install project dependencies from aimlite.json
+- `aimlite data validate`: Validate dataset files and partition readiness
+- `aimlite train`: Run training or knowledge indexing
+- `aimlite evaluate`: Run validation and metrics
+- `aimlite serve`: Launch web UI and REST API server
+- `aimlite doctor`: Run accelerator and environment diagnostics
+
+## Key Files
+- [Agent Guidelines](file:///./AGENTS.md)
+- [AIMLite Skill Reference](file:///./.agents/skills/aimlite/SKILL.md)
+- [Manifest](file:///./aimlite.json)
+- [README](file:///./README.md)
+"""
+
+
+def scaffold_agent_customizations(
+    dest_root: Path,
+    project_name: str,
+    template_type: str,
+    clean: bool = False,
+) -> None:
+    """Scaffolds agent skills, AGENTS.md, and llms.txt for coding agent integration."""
+    agents_dir = dest_root / ".agents" / "skills" / "aimlite"
+    agents_dir.mkdir(parents=True, exist_ok=True)
+
+    skill_content = get_skill_md_content()
+    (agents_dir / "SKILL.md").write_text(skill_content, encoding="utf-8")
+
+    agents_md = get_agents_md_content(project_name=project_name, template_type=template_type, clean=clean)
+    (dest_root / "AGENTS.md").write_text(agents_md, encoding="utf-8")
+
+    llms_txt = get_llms_txt_content(project_name=project_name, template_type=template_type)
+    (dest_root / "llms.txt").write_text(llms_txt, encoding="utf-8")

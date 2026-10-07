@@ -11,7 +11,7 @@ from socketserver import ThreadingMixIn
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from cli.ui import C, arrow, cross, vite_header
+from aimlite.cli.ui import C, arrow, cross, vite_header
 from aimlite.lifecycle import BaseInference
 from aimlite.models import Model
 
@@ -151,7 +151,7 @@ def get_openapi_schema(
         "openapi": "3.0.0",
         "info": {
             "title": f"AIMLite API — {active_model_name}",
-            "version": "2.0.0",
+            "version": "2.1.0",
             "description": "Developer-customizable zero-path multi-model inference server.",
         },
         "paths": paths,
@@ -461,7 +461,7 @@ def create_handler_class(
                 payload = {
                     "name": primary_name,
                     "status": "online",
-                    "version": "2.0.0",
+                    "version": "2.1.0",
                     "active_model": primary_name,
                     "models": list(models_dict.keys()),
                     "endpoints": endpoints,

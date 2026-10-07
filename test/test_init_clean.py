@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from cli.commands.init import run_init
+from aimlite.cli.commands.init import run_init
 
 
 def test_init_clean_default_scratch(tmp_path: Path):
@@ -38,33 +38,22 @@ def test_init_clean_default_scratch(tmp_path: Path):
     assert (pkg / "evaluator.py").exists()
     assert (pkg / "inference.py").exists()
 
-    # 3. Verify files contain NO sample/dummy implementations, only skeletons and comments
-    model_content = (pkg / "model.py").read_text(encoding="utf-8")
-    assert "raise NotImplementedError" in model_content
-    assert "class AppModel(Model):" in model_content
-
-    trainer_content = (pkg / "trainer.py").read_text(encoding="utf-8")
-    assert "raise NotImplementedError" in trainer_content
-    assert "class AppTrainer(BaseTrainer):" in trainer_content
-
-    evaluator_content = (pkg / "evaluator.py").read_text(encoding="utf-8")
-    assert "raise NotImplementedError" in evaluator_content
-    assert "class AppEvaluator(BaseEvaluator):" in evaluator_content
-
-    data_content = (pkg / "data.py").read_text(encoding="utf-8")
-    assert "class AppDataset(Dataset):" in data_content
+    # 3. Verify code files are clean empty files with zero dummy/sample code
+    assert (pkg / "model.py").read_text(encoding="utf-8") == ""
+    assert (pkg / "trainer.py").read_text(encoding="utf-8") == ""
+    assert (pkg / "evaluator.py").read_text(encoding="utf-8") == ""
+    assert (pkg / "data.py").read_text(encoding="utf-8") == ""
+    assert (pkg / "inference.py").read_text(encoding="utf-8") == ""
     # Sample dataset CSV should NOT exist in data/
     assert not (target / "data" / "dataset.csv").exists()
     assert (target / "data" / ".gitkeep").exists()
 
     # 4. Root files
-    assert (target / "experiments" / "benchmark.py").exists()
-    assert (target / "client.py").exists()
     assert (target / "README.md").exists()
     assert (target / ".gitignore").exists()
     assert (target / ".env.example").exists()
     assert (target / ".agents" / "skills" / "aimlite" / "SKILL.md").exists()
-    assert (target / "skills" / "aimlite" / "SKILL.md").exists()
+    assert not (target / "skills").exists()
     assert (target / "AGENTS.md").exists()
     assert (target / "llms.txt").exists()
 
@@ -90,6 +79,10 @@ def test_init_clean_with_type_scratch(tmp_path: Path):
     assert not (target / "data" / "dataset.csv").exists()
     assert (target / "data" / ".gitkeep").exists()
 
+    pkg = target / "test_scratch_clean"
+    assert (pkg / "model.py").read_text(encoding="utf-8") == ""
+    assert (pkg / "data.py").read_text(encoding="utf-8") == ""
+
 
 def test_init_clean_with_type_rag(tmp_path: Path):
     target = tmp_path / "test_rag_clean"
@@ -110,11 +103,14 @@ def test_init_clean_with_type_rag(tmp_path: Path):
     assert manifest["template"] == "rag"
     assert manifest["clean"] is True
 
-    # RAG starter code exists
+    # RAG starter code files are empty in clean mode
     pkg = target / "test_rag_clean"
     assert (pkg / "chat_provider.py").exists()
+    assert (pkg / "chat_provider.py").read_text(encoding="utf-8") == ""
     assert (pkg / "store.py").exists()
+    assert (pkg / "store.py").read_text(encoding="utf-8") == ""
     assert (pkg / "model.py").exists()
+    assert (pkg / "model.py").read_text(encoding="utf-8") == ""
 
     # But sample documents in data/ are NOT generated
     assert not (target / "data" / "knowledge_base.md").exists()
@@ -122,13 +118,13 @@ def test_init_clean_with_type_rag(tmp_path: Path):
     assert (target / "data" / ".gitkeep").exists()
 
 
-def test_init_clean_with_type_adapters(tmp_path: Path):
+def test_init_clean_with_type_adapter(tmp_path: Path):
     target = tmp_path / "test_lora_clean"
 
     code = run_init(
         project_name="test_lora_clean",
         target_dir=str(tmp_path),
-        template_type="fine-tuning",
+        template_type="adapter",
         create_venv=False,
         interactive=False,
         install_deps=False,
@@ -138,13 +134,15 @@ def test_init_clean_with_type_adapters(tmp_path: Path):
     assert target.is_dir()
 
     manifest = json.loads((target / "aimlite.json").read_text(encoding="utf-8"))
-    assert manifest["template"] == "fine-tuning"
+    assert manifest["template"] == "adapter"
     assert manifest["clean"] is True
 
-    # Adapter starter code exists
+    # Adapter starter code files are empty in clean mode
     pkg = target / "test_lora_clean"
     assert (pkg / "adapter.py").exists()
+    assert (pkg / "adapter.py").read_text(encoding="utf-8") == ""
     assert (pkg / "model.py").exists()
+    assert (pkg / "model.py").read_text(encoding="utf-8") == ""
 
     # But sample instructions in data/ are NOT generated
     assert not (target / "data" / "instructions.jsonl").exists()
@@ -201,13 +199,13 @@ def test_init_standard_rag_has_samples(tmp_path: Path):
     assert "Knowledge Base" in kb_file.read_text(encoding="utf-8")
 
 
-def test_init_standard_fine_tuning_has_readme(tmp_path: Path):
+def test_init_standard_adapter_has_readme(tmp_path: Path):
     target = tmp_path / "test_standard_lora"
 
     code = run_init(
         project_name="test_standard_lora",
         target_dir=str(tmp_path),
-        template_type="fine-tuning",
+        template_type="adapter",
         create_venv=False,
         interactive=False,
         install_deps=False,
@@ -216,7 +214,11 @@ def test_init_standard_fine_tuning_has_readme(tmp_path: Path):
     assert code == 0
     assert target.is_dir()
 
-    # Standard Fine-Tuning generates README.md and sample instructions
+    manifest = json.loads((target / "aimlite.json").read_text(encoding="utf-8"))
+    assert manifest["template"] == "adapter"
+    assert manifest["clean"] is False
+
+    # Standard Adapter generates README.md and sample instructions
     assert (target / "README.md").exists()
     assert (target / "data" / "instructions.jsonl").exists()
 
@@ -236,11 +238,10 @@ def test_init_scaffolds_agent_skills_and_llms_txt(tmp_path: Path):
     assert code == 0
     assert target.is_dir()
 
-    # 1. Agent Skill Guide in .agents/ and skills/
+    # 1. Agent Skill Guide in .agents/
     agent_skill = target / ".agents" / "skills" / "aimlite" / "SKILL.md"
-    root_skill = target / "skills" / "aimlite" / "SKILL.md"
     assert agent_skill.exists()
-    assert root_skill.exists()
+    assert not (target / "skills").exists()
     skill_text = agent_skill.read_text(encoding="utf-8")
     assert "name: aimlite" in skill_text
     assert "Expert guide for AIMLite" in skill_text
@@ -260,4 +261,37 @@ def test_init_scaffolds_agent_skills_and_llms_txt(tmp_path: Path):
     llms_text = llms_txt.read_text(encoding="utf-8")
     assert "test_agent_rag" in llms_text
     assert "aimlite serve" in llms_text
+
+
+def test_init_unknown_paradigm_raises_exception(tmp_path: Path):
+    import pytest
+    from aimlite.cli.commands.init import UnknownParadigmError
+
+    with pytest.raises(UnknownParadigmError, match="Unknown paradigm type 'invalid_type'"):
+        run_init(
+            project_name="bad_proj",
+            target_dir=str(tmp_path),
+            template_type="invalid_type",
+            interactive=False,
+        )
+
+
+def test_init_clean_accepts_adapters_type_alias(tmp_path: Path):
+    target = tmp_path / "test_clean_adapters_alias"
+    code = run_init(
+        project_name="test_clean_adapters_alias",
+        target_dir=str(tmp_path),
+        template_type="adapters",
+        create_venv=False,
+        interactive=False,
+        clean=True,
+    )
+    assert code == 0
+    manifest = json.loads((target / "aimlite.json").read_text(encoding="utf-8"))
+    assert manifest["template"] == "adapter"
+    assert manifest["clean"] is True
+    pkg = target / "test_clean_adapters_alias"
+    assert (pkg / "adapter.py").exists()
+    assert (pkg / "adapter.py").read_text(encoding="utf-8") == ""
+    assert (pkg / "model.py").read_text(encoding="utf-8") == ""
 

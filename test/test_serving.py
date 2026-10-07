@@ -30,7 +30,7 @@ import pytest
 from aimlite.models import Model
 from aimlite.rag import KnowledgeModel, MockChatProvider
 from aimlite.adapters import AdapterModel
-from cli.server import ThreadingHTTPServer, create_handler_class
+from aimlite.cli.server import ThreadingHTTPServer, create_handler_class
 
 
 # =============================================================================

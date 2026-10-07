@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, List, Optional
 
-from cli.discovery import resolve_project_context
-from cli.ui import C, arrow, check, cross, vite_header
+from aimlite.cli.discovery import resolve_project_context
+from aimlite.cli.ui import C, arrow, check, cross, vite_header
 from aimlite.data import Dataset
 
 SUPPORTED_DATA_EXTENSIONS = {

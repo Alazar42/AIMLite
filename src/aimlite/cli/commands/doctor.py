@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from cli.discovery import find_project_root, get_manifest_path
-from cli.ui import C, arrow, check, cross, vite_header
+from aimlite.cli.discovery import find_project_root, get_manifest_path
+from aimlite.cli.ui import C, arrow, check, cross, vite_header
 from aimlite.config import BaseConfig
 
 
@@ -22,7 +22,8 @@ def run_doctor(project_root: Optional[Path] = None) -> int:
 
     py_ver = sys.version.split()[0]
     py_major, py_minor = sys.version_info.major, sys.version_info.minor
-    is_supported_py = (py_major == 3 and py_minor >= 14) or (py_major > 3)
+    is_supported_py = (py_major == 3 and py_minor >= 10)
+    is_recommended_py = (py_major == 3 and 10 <= py_minor <= 12)
 
     # Hardware accelerator resolution
     root = project_root or find_project_root()
@@ -81,11 +82,15 @@ def run_doctor(project_root: Optional[Path] = None) -> int:
             print(f"  {cross(f'{label:<14} cannot write ({e})')}")
             all_ok = False
 
-    if all_ok and is_supported_py:
+    if not is_supported_py:
+        print(f"\n{cross(f'Python >= 3.10 required (found {py_ver}).')}\n")
+        return 1
+
+    if all_ok and is_recommended_py:
         print(f"\n{check('Environment is ready for zero-path execution.')}\n")
         return 0
     elif all_ok:
-        print(f"\n{check('Environment is ready (Notice: Python >= 3.14 recommended).')}\n")
+        print(f"\n{check('Environment is ready (Notice: Python 3.10–3.12 recommended for ML framework compatibility).')}\n")
         return 0
     else:
         print(f"\n{cross('Directory permission issues detected.')}\n")

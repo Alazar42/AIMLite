@@ -9,7 +9,7 @@ description: >-
 
 # AIMLite Skill Guide
 
-This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.0.0)**.
+This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.1.0)**.
 
 AIMLite operates on **convention over configuration** with **zero-path CLI execution**. Like Django, you organize code into standard modules (`data.py`, `model.py`, `trainer.py`, `evaluator.py`, `inference.py`), and the framework handles discovery, environment resolution, and execution automatically.
 
@@ -21,7 +21,7 @@ Coding agents should use the `aimlite` CLI commands directly via shell tools:
 
 ```bash
 # Initialize a new project layout in current directory or named folder
-aimlite init <project_name | .> [--type <scratch|rag|adapters>] [--clean] [--install] [-y]
+aimlite init <project_name | .> [--type <scratch|rag|adapter>] [--clean] [--install] [-y]
 
 # Synchronize dependencies with .venv from aimlite.json
 aimlite install [package_name ...]
@@ -49,7 +49,7 @@ aimlite benchmark [experiments/benchmark.py]
 - `--clean`: Scaffolds pristine skeletons without dummy CSVs or sample data (contracts + docstrings only).
 - `--api`: Runs the inference server in headless REST JSON mode (disables web UI, ideal for Docker/Kubernetes).
 - `--frontend <dir>`: Mounts a custom SPA build (React, Vue, Vite, Next.js static) on the same port with SPA client routing fallback to `index.html`.
-- `--type <scratch|rag|adapters>`: Sets project paradigm.
+- `--type <scratch|rag|adapter>`: Sets project paradigm.
 
 ---
 

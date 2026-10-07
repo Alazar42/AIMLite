@@ -1,4 +1,4 @@
-# AIMLite (v2.0.0)
+# AIMLite (v2.1.0)
 > The Django for AI & Machine Learning — an opinionated, convention-over-configuration Python framework with zero-path CLI execution, parameter-efficient LoRA fine-tuning, enterprise RAG knowledge bases, and multi-model serving.
 
 AIMLite standardizes the entire machine learning lifecycle (Data, Model, Lifecycle) across three core paradigms (Scratch ML, RAG Knowledge Bases, LoRA Fine-Tuning). It eliminates repetitive boilerplate, fragile relative path configurations, and unstandardized project layouts.
@@ -11,7 +11,7 @@ All commands run anywhere inside an AIMLite project directory with zero path arg
 
 ```bash
 # Initialize a new project layout (<50ms, Vite/Django inspired)
-aimlite init <project_name | .> [--type <scratch|rag|adapters>] [--clean] [--install] [-y]
+aimlite init <project_name | .> [--type <scratch|rag|adapter>] [--clean] [--install] [-y]
 
 # Manage project dependencies into managed .venv directly from aimlite.json
 aimlite install [package_name ...]

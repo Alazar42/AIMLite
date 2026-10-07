@@ -6,7 +6,7 @@ import argparse
 import sys
 from typing import List, Optional
 
-from cli.commands import (
+from aimlite.cli.commands import (
     run_benchmark,
     run_data_validate,
     run_doctor,
@@ -16,9 +16,9 @@ from cli.commands import (
     run_serve,
     run_train,
 )
-from cli.ui import C, vite_header
+from aimlite.cli.ui import C, vite_header
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 
 
 def print_custom_help() -> None:
@@ -73,9 +73,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--type",
         "--template",
         dest="template_type",
-        choices=["rag", "fine-tuning", "adapter", "scratch", "default"],
+        choices=["scratch", "rag", "adapter"],
         default=None,
-        help="System paradigm template: rag, fine-tuning, or scratch",
+        help="System paradigm template: scratch, rag, adapter",
     )
     init_parser.add_argument(
         "--chat-provider",
@@ -109,7 +109,7 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser.add_argument(
         "--clean",
         action="store_true",
-        help="Generate clean scratch project with no sample code or dummy datasets (only guiding comments and class contracts)",
+        help="Generate clean project with empty code files and zero sample data",
     )
     init_parser.add_argument("-y", "--yes", "--non-interactive", dest="non_interactive", action="store_true", help="Non-interactive mode")
 

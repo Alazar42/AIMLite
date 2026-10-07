@@ -7,10 +7,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from cli.commands.evaluate import _discover_checkpoint
-from cli.discovery import _is_framework_class, resolve_project_context
-from cli.server import run_inference_server
-from cli.ui import C, cross
+from aimlite.cli.commands.evaluate import _discover_checkpoint
+from aimlite.cli.discovery import _is_framework_class, resolve_project_context
+from aimlite.cli.server import run_inference_server
+from aimlite.cli.ui import C, cross
 
 
 class FallbackEchoModel:

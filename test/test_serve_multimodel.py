@@ -6,8 +6,8 @@ import urllib.request
 import threading
 from pathlib import Path
 
-from cli.commands.serve import detect_model_type, discover_feature_names
-from cli.server import ThreadingHTTPServer, _load_template, create_handler_class, get_openapi_schema
+from aimlite.cli.commands.serve import detect_model_type, discover_feature_names
+from aimlite.cli.server import ThreadingHTTPServer, _load_template, create_handler_class, get_openapi_schema
 from aimlite.models import Model
 from aimlite.rag import KnowledgeModel, MockChatProvider
 from aimlite.adapters import AdapterModel

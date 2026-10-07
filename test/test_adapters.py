@@ -475,3 +475,66 @@ class TestAdapterSaveLoad:
             model.save(td)
             weights_file = Path(td) / "adapter_model.pkl"
             assert weights_file.is_file(), "adapter_model.pkl must be written"
+
+
+class TestAdapterFlexibleDataTraining:
+    """Tests for flexible dataset formats (text instructions, prompt/response, arbitrary columns)."""
+
+    def test_adapter_trainer_fit_text_instruction_dataset(self):
+        """AdapterTrainer.fit() must succeed on instruction/response text datasets."""
+        model = SimpleAdapterModel()
+        records = [
+            {"instruction": "Explain LoRA fine-tuning.", "response": "LoRA freezes foundation parameters and trains low-rank delta matrices."},
+            {"instruction": "What is zero-path execution?", "response": "Zero-path discovery eliminates boilerplate configuration."},
+            {"instruction": "How to deploy model checkpoints?", "response": "Use aimlite serve to deploy multi-model endpoints."},
+        ]
+        ds = Dataset(name="instruction_dataset")
+        ds._data = records
+        ds.load = lambda **kw: records  # type: ignore
+
+        trainer = AdapterTrainer()
+        metrics = trainer.fit(model, ds, epochs=3, lr=1e-4)
+
+        assert metrics["status"] == "completed"
+        assert metrics["parameters_updated"] is True
+        assert len(metrics["loss_history"]) == 3
+        # Verify lora_B parameters updated from zero
+        for layer in model.lora_layers.values():
+            non_zero = any(abs(val) > 1e-10 for row in layer.lora_B for val in row)
+            assert non_zero, "LoRA B matrix must have updated non-zero weights"
+
+    def test_adapter_trainer_fit_arbitrary_unstructured_columns(self):
+        """AdapterTrainer.fit() must handle arbitrary non-numeric dicts without predefined columns."""
+        model = SimpleAdapterModel()
+        records = [
+            {"query": "Translate English to French", "completion": "Bonjour le monde"},
+            {"query": "Summarize article", "completion": "Short summary text"},
+            {"query": "Code review check", "completion": "Approved without issues"},
+        ]
+        ds = Dataset(name="arbitrary_dict_dataset")
+        ds._data = records
+        ds.load = lambda **kw: records  # type: ignore
+
+        trainer = AdapterTrainer()
+        metrics = trainer.fit(model, ds, epochs=2, lr=1e-4)
+
+        assert metrics["status"] == "completed"
+        assert metrics["parameters_updated"] is True
+
+    def test_adapter_trainer_fit_raw_string_list(self):
+        """AdapterTrainer.fit() must handle raw string records flexibly."""
+        model = SimpleAdapterModel()
+        records = [
+            "Machine learning enables automated pattern recognition.",
+            "Deep learning uses multilayer artificial neural networks.",
+            "LoRA performs parameter efficient adaptation.",
+        ]
+        ds = Dataset(name="string_dataset")
+        ds._data = records
+        ds.load = lambda **kw: records  # type: ignore
+
+        trainer = AdapterTrainer()
+        metrics = trainer.fit(model, ds, epochs=2, lr=1e-4)
+
+        assert metrics["status"] == "completed"
+        assert metrics["parameters_updated"] is True
