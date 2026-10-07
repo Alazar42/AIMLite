@@ -6,7 +6,7 @@ Production inference handler for customer churn risk scoring and intervention ro
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from aimlite import BaseInference, Model
 
@@ -16,13 +16,27 @@ class ChurnInference(BaseInference):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.checkpoint_path = Path("artifacts") / "churn_classifier.pkl"
+        self.checkpoint_path = self._resolve_checkpoint()
+
+    def _resolve_checkpoint(self) -> Optional[Path]:
+        candidates = [
+            Path("artifacts") / "churn_classifier.pkl",
+            Path("models") / "churn_classifier.pkl",
+            Path(__file__).resolve().parent.parent / "artifacts" / "churn_classifier.pkl",
+            Path(__file__).resolve().parent.parent / "models" / "churn_classifier.pkl",
+        ]
+        for c in candidates:
+            if c.is_file():
+                return c
+        return None
 
     def run(self, model: Model, raw_input: Any, **kwargs: Any) -> Dict[str, Any]:
         """Runs churn prediction on incoming customer attributes."""
         # Ensure model weights are loaded if checkpoint exists
-        if self.checkpoint_path.is_file():
-            model.load(self.checkpoint_path)
+        if getattr(model, "pure_clf", None) is None and getattr(model, "estimator", None) is None:
+            ckpt = self.checkpoint_path or self._resolve_checkpoint()
+            if ckpt and ckpt.is_file():
+                model.load(ckpt)
 
         # Compute predictions and probability
         preds = model.predict(raw_input)

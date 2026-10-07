@@ -1,17 +1,14 @@
 {
   "model_name": "ChurnClassifier",
   "model_class": "ChurnClassifier",
-  "weights_file": "/home/micky_codes/Documents/PythonProjects/ModelKit/examples/telecom_churn/models/churn_classifier.pkl",
+  "weights_file": "/home/mickycodes/Projects/PythonProjects/AIMLite/examples/telecom_churn/models/churn_classifier.pkl",
   "step": null,
-  "timestamp": 1789936578.163889,
+  "timestamp": 1791368277.4558744,
   "config": {
     "name": "telecom_churn",
     "version": "0.1.0",
     "entrypoint": "telecom_churn",
-    "dependencies": [
-      "pandas",
-      "scikit-learn"
-    ],
+    "dependencies": [],
     "config": {
       "device": "auto",
       "batch_size": 32

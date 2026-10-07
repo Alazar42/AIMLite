@@ -112,7 +112,7 @@ export default function EndpointDoc({
   };
 
   return (
-    <div className="w-full max-w-3xl py-6 px-4 lg:px-6 space-y-6 select-text">
+    <div className="w-full py-6 space-y-6 select-text">
       {/* Top Switcher: 3 Paradigms for Guides, 3 Pillars for Core API */}
       {isGuideSection ? (
         <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs overflow-x-auto no-scrollbar">
@@ -270,14 +270,14 @@ export default function EndpointDoc({
               </h2>
             </div>
             <span className="text-xs text-zinc-900 dark:text-zinc-100 font-mono bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 font-semibold">
-              Latest: v2.0.0
+              Latest: v2.1.0
             </span>
           </div>
 
           {section.conventions && (
             <div className="space-y-4">
               {section.conventions.map((release) => {
-                const isLatest = release.title.includes('2.0.0');
+                const isLatest = release.title.includes('2.1.0');
                 return (
                   <div
                     key={release.title}

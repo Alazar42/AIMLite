@@ -121,7 +121,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'Releases & Changelog',
     items: [
-      { id: 'changelog', label: 'Version Changelog', badge: 'v2.0.0', badgeVariant: 'util' },
+      { id: 'changelog', label: 'Version Changelog', badge: 'v2.1.0', badgeVariant: 'util' },
     ],
   },
 ];
@@ -493,11 +493,11 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
     subtitle: 'Vite-inspired interactive wizard scaffolding modular AI projects in <50ms.',
-    badge: { label: 'CLI v2.0.0', variant: 'cli' },
-    signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapters>] [--clean] [--install] [-y]',
+    badge: { label: 'CLI v2.1.0', variant: 'cli' },
+    signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapter>] [--clean] [--install] [-y]',
     breadcrumbs: ['CLI', 'init'],
     overview:
-      'Scaffolds a new project directory with Vite-inspired terminal prompts powered by questionary and rich, rendered with a pyfiglet ASCII banner. Generates standard layout: data/ (strictly clean), artifacts/, experiments/, and modular starter files. Supports --clean to generate a pure scratch project with zero sample code or dummy datasets (only class skeletons, contracts, and guiding comments). Features an interactive package search prompt (+) to select additional dependencies, instantaneous (<50ms) project generation (heavy downloads are deferred), and generates aimlite.json as the single source of truth.',
+      'Scaffolds a new project directory with Vite-inspired terminal prompts powered by questionary and rich, rendered with a pyfiglet ASCII banner. Generates standard layout: data/ (strictly clean), artifacts/, experiments/, and modular starter files. Supports --clean to generate a pristine project with empty code files (0 bytes) and zero sample datasets for the selected paradigm (scratch, rag, or adapter). Features an interactive package search prompt (+) to select additional dependencies, instantaneous (<50ms) project generation (heavy downloads are deferred), and generates aimlite.json as the single source of truth.',
     djangoAnalogy:
       'Direct equivalent of create-vite or django-admin startproject <name>. Scaffolds 100% developer-editable code with zero hidden boilerplate.',
     parametersTitle: 'CLI Flags & Options',
@@ -511,16 +511,16 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
       },
       {
         name: '--type, -t',
-        type: 'scratch | rag | adapters',
+        type: 'scratch | rag | adapter',
         required: false,
-        description: 'Selects the AI paradigm template directly without opening the interactive menu.',
+        description: 'Selects the canonical AI paradigm template: scratch, rag, or adapter.',
       },
       {
         name: '--clean',
         type: 'boolean flag',
         required: false,
         defaultValue: 'false',
-        description: 'Generates a pure scratch project with zero sample code or dummy datasets (only class contracts and guiding comments).',
+        description: 'Generates clean project with empty code files (0 bytes) and zero sample datasets for the chosen paradigm.',
       },
       {
         name: '--chat-provider',
@@ -551,17 +551,17 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
       },
     ],
     snippets: {
-      cli: `# Clean scratch project (zero sample code, comments & contracts only):
-aimlite init my_project --clean
+      cli: `# Clean project with empty code files for adapter paradigm:
+aimlite init my_adapter --clean --type adapter
 
-# Interactive Vite-style wizard (recommended):
+# Interactive Vite-style wizard:
 aimlite init my_rag
 
 # Non-interactive CLI flag setup for RAG:
 aimlite init my_rag --type rag --chat-provider gemini --vector-db memory
 
 # Scaffold in current directory with immediate dependency install:
-aimlite init . --type adapters --install`,
+aimlite init . --type adapter --install`,
     },
     defaultPayload: '{\n  "command": "aimlite init my_rag",\n  "type": "rag",\n  "chat_provider": "openai"\n}',
     defaultResponse: {
@@ -589,7 +589,7 @@ aimlite init . --type adapters --install`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
     subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
-    badge: { label: 'CLI v2.0.0', variant: 'cli' },
+    badge: { label: 'CLI v2.1.0', variant: 'cli' },
     signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
@@ -676,7 +676,7 @@ aimlite train ChurnClassifier`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
     subtitle: 'Zero-path multi-model inference server with type-adaptive Web Playgrounds, Swagger UI, and headless --api mode.',
-    badge: { label: 'CLI v2.0.0', variant: 'cli' },
+    badge: { label: 'CLI v2.1.0', variant: 'cli' },
     signatureOrPath: 'aimlite serve [ModelName] [--api] [--checkpoint <path>] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
@@ -888,7 +888,7 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
     signatureOrPath: 'uv run aimlite doctor',
     breadcrumbs: ['CLI', 'doctor'],
     overview:
-      'Diagnoses Python runtime version, hardware accelerators (CUDA/MPS/CPU), and directory read/write permissions for data/, models/, experiments/, and checkpoints/.',
+      'Diagnoses Python runtime version (verifying Python >= 3.10 and recommending 3.10–3.12 for ML ecosystem compatibility), hardware accelerators (CUDA/MPS/CPU), manifest location, and directory read/write permissions.',
     djangoAnalogy:
       'Comprehensive environment diagnostic check.',
     snippets: {
@@ -896,8 +896,9 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
     },
     defaultPayload: '{}',
     defaultResponse: {
-      python_version: '3.14.4',
-      device: 'CUDA',
+      python_version: '3.12.8 (x86_64 linux)',
+      recommended_python: '3.10–3.12',
+      device: 'CPU',
       directories_ok: true,
     },
   },
@@ -1424,8 +1425,8 @@ const ragResult = await fetch('/models/SupportDocRAG/predict', {
       cli: `# 1. Install dependencies & auto-manage .venv
 aimlite install scikit-learn pandas
 
-# 2. Initialize project (or in current folder with .)
-aimlite init telecom_churn
+# 2. Initialize project (scratch paradigm)
+aimlite init telecom_churn --type scratch
 cd telecom_churn
 
 # 3. Download Kaggle dataset to data/telecom_churn.csv:
@@ -1582,8 +1583,8 @@ aimlite serve ChurnClassifier --port 8000`,
 aimlite install sentence-transformers psycopg2-binary
 # or pip install sentence-transformers psycopg2-binary
 
-# 2. Scaffold RAG project
-aimlite init support_rag
+# 2. Scaffold RAG project (rag paradigm)
+aimlite init support_rag --type rag
 cd support_rag
 
 # 3. Add knowledge documents to data/ (e.g. data/faq.md)
@@ -1677,8 +1678,8 @@ aimlite serve SupportDocRAG --port 8000`,
       cli: `# 1. Install dependencies into managed .venv
 aimlite install torch peft
 
-# 2. Initialize project
-aimlite init lora_instructions
+# 2. Initialize project (adapter paradigm)
+aimlite init lora_instructions --type adapter
 cd lora_instructions
 
 # 3. Add instruction dataset to data/instructions.json
@@ -1864,15 +1865,19 @@ class CustomSupportRAG(KnowledgeModel):
     id: 'changelog',
     category: 'Releases & Changelog',
     title: 'Framework Changelog & Releases',
-    subtitle: 'Release history and upgrade guide for AIMLite (v2.0.0 latest).',
-    badge: { label: 'v2.0.0', variant: 'util' },
-    signatureOrPath: 'pip install --upgrade aimlite==2.0.0',
-    breadcrumbs: ['Releases', 'v2.0.0'],
+    subtitle: 'Release history and upgrade guide for AIMLite (v2.1.0 latest).',
+    badge: { label: 'v2.1.0', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==2.1.0',
+    breadcrumbs: ['Releases', 'v2.1.0'],
     overview:
-      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.0.0, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.1.0, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
     djangoAnalogy:
       'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
     conventions: [
+      {
+        title: 'Release [2.1.0] - 2026-10-07 (Major Packaging & LoRA Flexibility Fixes)',
+        description: 'POSIX Binary Collision Resolved: Removed global test and cli script entries in pyproject.toml; only aimlite is registered to prevent overrides of POSIX /bin/test. Root Namespace Pollution Eliminated: Moved cli into aimlite.cli and configured Hatchling packaging. Flexible LoRA Dataset Training: Vectorizer supports instruction pairs (instruction/response, prompt/completion), arbitrary dictionaries, and raw text strings without crashing on non-numeric columns. Canonical 3-Paradigm Alignment: Standardized choices strictly to scratch, rag, and adapter with UnknownParadigmError. aimlite init --clean Paradigm Scaffolding: --clean prompts for paradigm and provisions 0-byte pristine empty code files. doctor Python Version Check: Recommends Python 3.10–3.12 for ML ecosystem wheel compatibility. 113 passing tests.',
+      },
       {
         title: 'Release [2.0.0] - 2026-09-29 (Production-Readiness Implementation)',
         description: 'Real LoRA Gradient Training Engine: Replaced simulated curves with true analytical backpropagation (MSE loss, backward_A & backward_B updates, gradient clipping, zero-gradient assertion). Semantic & Hierarchical SmartChunker: Recursive multi-tier document splitting across Markdown headers, paragraphs, sentences, words, and character fallback with max_chunk_size guarantees and chunk_overlap. Strict Chat Provider Requirement: Mandates explicit chat_provider for KnowledgeModel and RAGModel (no silent Mock fallbacks in production). Zero Silent Fallbacks: SentenceTransformerEmbedding raises explicit ImportError when dependencies are missing; DocumentLoader.load_directory raises RuntimeError for corrupt files. Deterministic Dataset Partitioning: Dataset.split with seeded random shuffling and ratio validation. Threaded Concurrent Server: ThreadingHTTPServer (ThreadingMixIn) for non-blocking concurrent inference and health checks. 107 passing tests.',
@@ -1921,20 +1926,20 @@ pip install --upgrade aimlite
 # Verify installation & diagnostic health:
 aimlite doctor`,
     },
-    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.0.0",\n  "channel": "pypi"\n}',
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.1.0",\n  "channel": "pypi"\n}',
     defaultResponse: {
       package: 'aimlite',
-      installed_version: '2.0.0',
-      latest_pypi_version: '2.0.0',
-      release_date: '2026-09-29',
+      installed_version: '2.1.0',
+      latest_pypi_version: '2.1.0',
+      release_date: '2026-10-07',
       status: 'up_to_date',
       highlights: [
-        'Production LoRA Real Gradient Training with analytical backprop and MSE loss',
-        'Hierarchical SmartChunker (Markdown -> Paragraph -> Sentence -> Word -> Char)',
-        'Strict Chat Provider requirements and zero silent fallbacks in production paths',
-        'Deterministic Dataset.split with seeded shuffling and ratio sum validation',
-        'Threaded Concurrent Multi-Model Server (ThreadingHTTPServer)',
-        '107 comprehensive tests passing across all ML paradigms',
+        'POSIX binary collision resolved (removed test and cli entrypoints; exclusively aimlite exposed)',
+        'Site-packages root namespace pollution fixed: cli encapsulated cleanly into aimlite.cli',
+        'Flexible LoRA dataset training supporting text instruction pairs, prompt/response, arbitrary dicts, and raw strings',
+        'Canonical 3-paradigm alignment: scratch, rag, and adapter',
+        'aimlite init --clean prompts for paradigm and scaffolds 0-byte pristine code files',
+        'doctor recommends Python 3.10–3.12 for broad PyTorch/CUDA/TensorFlow wheel compatibility',
       ],
     },
   },

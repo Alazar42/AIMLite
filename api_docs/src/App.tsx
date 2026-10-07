@@ -11,7 +11,7 @@ import { X, Code2 } from 'lucide-react';
 export default function App() {
   const [viewMode, setViewMode] = useState<'landing' | 'docs'>('landing');
   const [activeSectionId, setActiveSectionId] = useState<string>('pillar-data');
-  const [version, setVersion] = useState<string>('v2.0.0');
+  const [version, setVersion] = useState<string>('v2.1.0');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
   const [isMobileConsoleOpen, setIsMobileConsoleOpen] = useState<boolean>(false);
@@ -79,10 +79,10 @@ export default function App() {
           <LandingPage onNavigateToDocs={handleNavigateToDocs} />
         </main>
       ) : (
-        /* Main 3-Column Documentation Layout Container */
-        <div className="flex-1 flex w-full max-w-[1440px] mx-auto overflow-hidden">
-          {/* Left Column: Sticky Sidebar (~224px) */}
-          <div className="hidden lg:block w-56 shrink-0 sticky top-13 h-[calc(100vh-3.25rem)]">
+        /* Main 3-Column Documentation Layout Container (Full Width matching Navbar) */
+        <div className="flex-1 flex w-full overflow-hidden">
+          {/* Left Column: Sticky Sidebar (~256px, flush to screen left) */}
+          <div className="hidden lg:block w-64 shrink-0 sticky top-13 h-[calc(100vh-3.25rem)] border-r border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-[#09090b]/50">
             <Sidebar
               activeSectionId={activeSectionId}
               onSelectSection={(id) => {
@@ -96,10 +96,10 @@ export default function App() {
             />
           </div>
 
-          {/* Center Column: Main Documentation (~640px) */}
+          {/* Center Column: Main Documentation (Fills screen width fluidly) */}
           <main
             ref={mainScrollRef}
-            className="flex-1 min-w-0 overflow-y-auto h-[calc(100vh-3.25rem)] flex justify-center pb-16"
+            className="flex-1 min-w-0 overflow-y-auto h-[calc(100vh-3.25rem)] pb-16 px-4 sm:px-8 lg:px-12"
           >
             <EndpointDoc
               section={currentSection}
@@ -109,9 +109,9 @@ export default function App() {
             />
           </main>
 
-          {/* Right Column: Code Playground (~380px, sticky, hidable) */}
+          {/* Right Column: Code Playground (~400px, flush to screen right) */}
           {isConsoleVisible && (
-            <div className="hidden xl:block w-[380px] shrink-0 sticky top-13 h-[calc(100vh-3.25rem)] transition-all">
+            <div className="hidden xl:block w-[400px] 2xl:w-[460px] shrink-0 sticky top-13 h-[calc(100vh-3.25rem)] border-l border-zinc-200 dark:border-zinc-800 transition-all bg-white/50 dark:bg-[#09090b]/50">
               <CodePlayground
                 section={currentSection}
                 onClose={() => setIsConsoleVisible(false)}

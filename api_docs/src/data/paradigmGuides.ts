@@ -148,16 +148,86 @@ class TelecomChurnDataset(Dataset):
     'model.py': `"""Customer Churn Prediction (Scratch Model Paradigm): model.py
 
 Classifier model for customer churn prediction.
-Supports scikit-learn (RandomForestClassifier) with pure-Python fallback.
+Supports scikit-learn (RandomForestClassifier) with a genuine pure-Python LogisticRegression fallback.
 """
 
 from __future__ import annotations
 
+import math
 import pickle
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from aimlite import Model
+
+
+class PureLogisticClassifier:
+    """Zero-dependency pure-Python Logistic Regression classifier.
+
+    Standardizes inputs via z-score normalization and optimizes weights
+    via batch gradient descent with sigmoid activation.
+    Provides mathematically genuine probabilities and predictions.
+    """
+
+    def __init__(self, lr: float = 0.5, epochs: int = 200) -> None:
+        self.lr = lr
+        self.epochs = epochs
+        self.weights: List[float] = []
+        self.bias: float = 0.0
+        self.mean: List[float] = []
+        self.std: List[float] = []
+
+    def fit(self, X: List[List[float]], y: List[int]) -> PureLogisticClassifier:
+        n_samples = len(X)
+        if n_samples == 0:
+            return self
+        n_features = len(X[0])
+
+        self.mean = [sum(X[i][j] for i in range(n_samples)) / n_samples for j in range(n_features)]
+        self.std = [
+            math.sqrt(sum((X[i][j] - self.mean[j]) ** 2 for i in range(n_samples)) / n_samples) or 1.0
+            for j in range(n_features)
+        ]
+
+        X_scaled = [
+            [(X[i][j] - self.mean[j]) / self.std[j] for j in range(n_features)]
+            for i in range(n_samples)
+        ]
+        self.weights = [0.0] * n_features
+        self.bias = 0.0
+
+        for _ in range(self.epochs):
+            dw = [0.0] * n_features
+            db = 0.0
+            for i in range(n_samples):
+                z = sum(w * x for w, x in zip(self.weights, X_scaled[i])) + self.bias
+                z = max(min(z, 20.0), -20.0)
+                pred = 1.0 / (1.0 + math.exp(-z))
+                error = pred - y[i]
+                for j in range(n_features):
+                    dw[j] += error * X_scaled[i][j]
+                db += error
+            for j in range(n_features):
+                self.weights[j] -= (self.lr / n_samples) * dw[j]
+            self.bias -= (self.lr / n_samples) * db
+        return self
+
+    def predict_proba(self, X: List[List[float]]) -> List[float]:
+        probs = []
+        n_features = len(self.weights) if self.weights else 0
+        for row in X:
+            if not self.weights or len(row) < n_features:
+                probs.append(0.5)
+                continue
+            scaled = [(row[j] - self.mean[j]) / self.std[j] for j in range(n_features)]
+            z = sum(w * x for w, x in zip(self.weights, scaled)) + self.bias
+            z = max(min(z, 20.0), -20.0)
+            probs.append(round(1.0 / (1.0 + math.exp(-z)), 4))
+        return probs
+
+    def predict(self, X: List[List[float]]) -> List[int]:
+        probs = self.predict_proba(X)
+        return [1 if p >= 0.5 else 0 for p in probs]
 
 
 class ChurnClassifier(Model):
@@ -175,6 +245,14 @@ class ChurnClassifier(Model):
         self.n_estimators = n_estimators
         self.random_state = random_state
         self.estimator: Optional[Any] = None
+        self.pure_clf: Optional[PureLogisticClassifier] = None
+
+        try:
+            from data import FEATURE_COLUMNS
+            self.feature_names = FEATURE_COLUMNS
+        except ImportError:
+            self.feature_names = []
+
         self._init_estimator()
 
     def _init_estimator(self) -> None:
@@ -198,7 +276,8 @@ class ChurnClassifier(Model):
         if self.estimator is not None:
             self.estimator.fit(X, y)
         else:
-            self._baseline_threshold = sum(y) / len(y) if y else 0.5
+            self.pure_clf = PureLogisticClassifier()
+            self.pure_clf.fit(X, y)
         return self
 
     def predict(self, inputs: Any, **kwargs: Any) -> List[int]:
@@ -210,6 +289,9 @@ class ChurnClassifier(Model):
         if self.estimator is not None and hasattr(self.estimator, "predict"):
             preds = self.estimator.predict(X)
             return [int(p) for p in preds]
+
+        if self.pure_clf is not None:
+            return self.pure_clf.predict(X)
 
         return [0 for _ in X]
 
@@ -227,18 +309,32 @@ class ChurnClassifier(Model):
                 return [float(p[idx_1]) for p in probs]
             return [float(p[-1]) for p in probs]
 
-        return [0.15 for _ in X]
+        if self.pure_clf is not None:
+            return self.pure_clf.predict_proba(X)
+
+        return [0.5 for _ in X]
 
     def save(self, destination: Union[str, Path], **kwargs: Any) -> None:
         """Serializes model weights and parameters to disk."""
         dest_path = Path(destination)
         dest_path.parent.mkdir(parents=True, exist_ok=True)
 
+        pure_data = None
+        if self.pure_clf is not None:
+            pure_data = {
+                "weights": self.pure_clf.weights,
+                "bias": self.pure_clf.bias,
+                "mean": self.pure_clf.mean,
+                "std": self.pure_clf.std,
+            }
+
         payload = {
             "name": self.name,
             "n_estimators": self.n_estimators,
             "random_state": self.random_state,
             "estimator": self.estimator,
+            "pure_data": pure_data,
+            "feature_names": getattr(self, "feature_names", []),
         }
         with open(dest_path, "wb") as f:
             pickle.dump(payload, f)
@@ -256,13 +352,32 @@ class ChurnClassifier(Model):
         self.n_estimators = payload.get("n_estimators", self.n_estimators)
         self.random_state = payload.get("random_state", self.random_state)
         self.estimator = payload.get("estimator", None)
+        
+        pure_data = payload.get("pure_data")
+        if pure_data:
+            self.pure_clf = PureLogisticClassifier()
+            self.pure_clf.weights = pure_data.get("weights", [])
+            self.pure_clf.bias = pure_data.get("bias", 0.0)
+            self.pure_clf.mean = pure_data.get("mean", [])
+            self.pure_clf.std = pure_data.get("std", [])
+        else:
+            self.pure_clf = payload.get("pure_clf", None)
+
+        if "feature_names" in payload:
+            self.feature_names = payload["feature_names"]
 
     def _normalize_inputs(self, inputs: Any) -> List[List[float]]:
         """Converts diverse input formats into 2D float feature matrix."""
-        from data import FEATURE_COLUMNS
+        try:
+            from data import FEATURE_COLUMNS
+        except ImportError:
+            FEATURE_COLUMNS = getattr(self, "feature_names", [])
 
         if isinstance(inputs, dict):
+            if "features" in inputs:
+                return self._normalize_inputs(inputs["features"])
             return [[float(inputs.get(col, 0.0)) for col in FEATURE_COLUMNS]]
+
         if isinstance(inputs, list):
             if not inputs:
                 return []
@@ -272,6 +387,7 @@ class ChurnClassifier(Model):
                 return [[float(x) for x in inputs]]
             if isinstance(inputs[0], list):
                 return [[float(x) for x in row] for row in inputs]
+
         return []
 `,
 
@@ -391,12 +507,17 @@ class ChurnEvaluator(BaseEvaluator):
     'inference.py': `"""Customer Churn Prediction (Scratch Model Paradigm): inference.py
 
 Production inference handler for customer churn risk scoring and intervention routing.
+Developers can customize:
+1. Input payloads: accept structured dicts ({"CustServCalls": 7, ...}) or arrays ({"features": [...]})
+2. Active model selection: dynamically route between registered models or load specific checkpoints
+3. Response schema: format human-readable decisions, probabilities, and retention actions
+4. Custom HTTP routes: expose additional endpoints via get_routes()
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from aimlite import BaseInference, Model
 
@@ -406,27 +527,49 @@ class ChurnInference(BaseInference):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.checkpoint_path = Path("artifacts") / "churn_classifier.pkl"
+        self.checkpoint_path = self._resolve_checkpoint()
+
+    def _resolve_checkpoint(self) -> Optional[Path]:
+        candidates = [
+            Path("artifacts") / "churn_classifier.pkl",
+            Path("models") / "churn_classifier.pkl",
+            Path(__file__).resolve().parent.parent / "artifacts" / "churn_classifier.pkl",
+            Path(__file__).resolve().parent.parent / "models" / "churn_classifier.pkl",
+        ]
+        for c in candidates:
+            if c.is_file():
+                return c
+        return None
 
     def run(self, model: Model, raw_input: Any, **kwargs: Any) -> Dict[str, Any]:
-        """Runs churn prediction on incoming customer attributes."""
+        """Runs churn prediction on incoming customer attributes.
+        
+        Args:
+            model: The active Model instance resolved by the AIMLite server.
+            raw_input: Raw JSON payload sent from HTTP client or the served web UI.
+                       Can be a dict of customer attributes or {"features": [...]}.
+        """
         # Ensure model weights are loaded if checkpoint exists
-        if self.checkpoint_path.is_file():
-            model.load(self.checkpoint_path)
+        if getattr(model, "pure_clf", None) is None and getattr(model, "estimator", None) is None:
+            ckpt = self.checkpoint_path or self._resolve_checkpoint()
+            if ckpt and ckpt.is_file():
+                model.load(ckpt)
 
-        # Compute predictions and probability
+        # 1. Compute discrete class prediction (0 = retain, 1 = churn)
         preds = model.predict(raw_input)
         churn_pred = preds[0] if preds else 0
 
+        # 2. Compute continuous risk probability
         risk_score = 0.5
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(raw_input)
             if probs:
                 risk_score = round(probs[0], 4)
 
-        # Retention decision threshold
+        # 3. Apply business logic threshold for retention intervention
         decision = "Intervene (High Churn Risk)" if risk_score >= 0.5 else "Retain (Low Risk)"
 
+        # 4. Return structured response (the served web UI highlights 'decision' and 'churn_risk')
         return {
             "churn_prediction": int(churn_pred),
             "churn_risk": risk_score,
@@ -435,7 +578,7 @@ class ChurnInference(BaseInference):
         }
 
     def get_routes(self) -> Dict[str, Any]:
-        """Declares HTTP route mappings for AIMLite server."""
+        """Declares custom HTTP route mappings for the AIMLite server."""
         return {
             "POST /predict": self.run,
             "GET /health": self.health,
@@ -466,13 +609,16 @@ export const SCRATCH_GUIDE_STEPS: GuideStep[] = [
         filename: 'terminal.sh',
         language: 'bash',
         description:
-            'Scaffold a clean AIMLite project. Use `aimlite init <name>` to create a new folder, or `./aimlite init .` to initialize directly inside your current directory.',
+            'Scaffold a clean AIMLite project with the scratch paradigm. Use `aimlite init <name> --type scratch` to create a new folder, or `aimlite init . --type scratch` to initialize inside your current directory. Use `--clean` if you want pristine 0-byte starting files.',
         code: `# Option A: Create in a new project folder
-aimlite init telecom_churn
+aimlite init telecom_churn --type scratch
 cd telecom_churn
 
-# Option B: Or scaffold directly inside current directory (.)
-# ./aimlite init .`,
+# Option B: Scaffold directly inside current directory (.)
+# aimlite init . --type scratch
+
+# Option C: Use --clean to scaffold pristine 0-byte starting files
+# aimlite init telecom_churn --type scratch --clean`,
         whyCode:
             'Creates the standard zero-path folder layout (data/, models/, experiments/, artifacts/, checkpoints/) and generates the project manifest aimlite.json without requiring boilerplate setup.',
     },
@@ -569,36 +715,36 @@ aimlite data validate`,
     },
     {
         stepNumber: 8,
-        title: 'inference.py: Production HTTP Endpoint & Risk Scoring',
+        title: 'inference.py: Production HTTP Endpoint & Custom Prediction Logic',
         badge: 'INFERENCE',
         badgeVariant: 'pillar',
         filename: 'inference.py',
         language: 'python',
         description:
-            'Define `ChurnInference` subclassing `BaseInference`. Automatically loads weights from `artifacts/churn_classifier.pkl`, calculates churn risk score, and routes customers to retention workflows.',
+            'Subclass `BaseInference` to define how incoming HTTP requests map to model predictions. You can accept named attributes or feature vectors in `raw_input`, customize model execution, shape returned JSON fields (`decision`, `churn_risk`), and register custom endpoints via `get_routes()`.',
         code: SCRATCH_FILES['inference.py'],
         whyCode:
-            'BaseInference provides production-ready REST API route mapping (POST /predict, GET /health). AIMLite serve uses this class to power low-latency prediction servers.',
+            'Inference acts as the gateway between HTTP clients / the served UI and your model. You can normalize diverse inputs, invoke multiple candidate models, and output rich decisions without altering core model logic.',
     },
     {
         stepNumber: 9,
-        title: 'Execute & Serve with Zero-Path CLI',
+        title: 'Execute, Serve & Customize Web Templates',
         badge: 'EXECUTION',
         badgeVariant: 'cli',
         filename: 'terminal.sh',
         language: 'bash',
         description:
-            'Execute the end-to-end machine learning lifecycle using AIMLite CLI commands. Train the model, benchmark metrics, and start the production inference HTTP server.',
+            'Train your classifier, benchmark metrics, and launch the production server. The served dashboard automatically features a styled model dropdown switcher, dark/light themeing, and real-time inference. Override templates by placing `app.html` in `<project_root>/templates/` or serve custom frontends via `--frontend`.',
         code: `# 1. Train classifier and write weights to artifacts/
 aimlite train ChurnClassifier
 
 # 2. Evaluate accuracy, precision, recall, and F1
 aimlite evaluate ChurnClassifier
 
-# 3. Start production inference REST server
+# 3. Start production inference REST server + interactive web UI
 aimlite serve ChurnClassifier --port 8000
 
-# 4. Test inference endpoint (in another terminal):
+# 4. Test inference endpoint via REST API:
 curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -607,14 +753,20 @@ curl -X POST http://127.0.0.1:8000/predict \\
     "DataPlan": 1,
     "DataUsage": 2.7,
     "CustServCalls": 1,
-    "DayMins": 265.1,
-    "DayCalls": 110,
-    "MonthlyCharge": 89.0,
-    "OverageFee": 9.87,
-    "RoamMins": 10.0
-  }'`,
+    "DayMins": 160.0,
+    "DayCalls": 100,
+    "MonthlyCharge": 60.0,
+    "OverageFee": 5.0,
+    "RoamMins": 8.0
+  }'
+
+# 5. (Optional) Customize the served web UI:
+# Place a custom HTML template in <project_root>/templates/app.html
+# AIMLite discovers project templates first (Django-style template override)!
+# Or host a custom React/Vite/Next build:
+# aimlite serve ChurnClassifier --frontend ./frontend/dist`,
         whyCode:
-            'Zero-path execution automatically connects data.py, model.py, trainer.py, and inference.py without boilerplate wiring code.',
+            'Zero-path execution wires your training and serving pipelines instantly. The served UI connects dynamically to GET /models, allowing seamless model switching and custom template customization.',
     },
 ];
 
@@ -1149,7 +1301,7 @@ if __name__ == "__main__":
 
     'aimlite.json': `{
   "name": "support_rag",
-  "version": "2.0.0",
+  "version": "0.1.0",
   "entrypoint": "support_rag",
   "type": "rag",
   "dependencies": [
@@ -1173,10 +1325,13 @@ export const RAG_GUIDE_STEPS: GuideStep[] = [
         filename: 'terminal.sh',
         language: 'bash',
         description:
-            'Scaffold a new RAG knowledge retrieval project with AIMLite conventions.',
+            'Scaffold a new RAG knowledge retrieval project with the rag paradigm. Use `--clean` to initialize with pristine 0-byte starting files.',
         code: `# Create and enter project directory
-aimlite init support_rag
-cd support_rag`,
+aimlite init support_rag --type rag
+cd support_rag
+
+# Optional: Add --clean to scaffold pristine 0-byte starting files
+# aimlite init support_rag --type rag --clean`,
         whyCode:
             'Sets up standard directory conventions (data/, artifacts/) and initializes aimlite.json.',
     },
@@ -1255,38 +1410,47 @@ Checkpoints and vector indices are serialized into artifacts/rag_index.json or s
     },
     {
         stepNumber: 7,
-        title: 'inference.py: Production Knowledge API Endpoint',
+        title: 'inference.py: Production Knowledge API Endpoint & Retrieval Routing',
         badge: 'INFERENCE',
         badgeVariant: 'pillar',
         filename: 'inference.py',
         language: 'python',
         description:
-            'Define `RAGInference` subclassing `BaseInference` to serve knowledge queries via `POST /predict`.',
+            'Define `RAGInference` subclassing `BaseInference`. Accepts queries in `raw_input`, formats generative synthesis responses, and registers both full generative QA (`POST /predict`) and fast semantic search (`POST /search`) endpoints via `get_routes()`.',
         code: RAG_FILES['inference.py'],
         whyCode:
-            'Automatically connects to the serialized index in artifacts/rag_index.json and exposes a RESTful API with health checks.',
+            'Enables complete control over incoming query payload structures, semantic chunk reranking, custom citation formatting, and direct vector search without invoking generative LLMs.',
     },
     {
         stepNumber: 8,
-        title: 'Build Index & Serve Knowledge API',
+        title: 'Build Index, Serve Knowledge API & Customize UI',
         badge: 'EXECUTION',
         badgeVariant: 'cli',
         filename: 'terminal.sh',
         language: 'bash',
         description:
-            'Build the vector index and start the production knowledge query server.',
+            'Build the semantic index and start the production knowledge query server. Serves an offline-first monochromatic chat playground with real-time citations and source inspectability. Customize templates via `<project_root>/templates/chat.html` or pass `--frontend`.',
         code: `# 1. Ingest documents and build vector index
 aimlite train SupportDocRAG
 
-# 2. Start knowledge API server
+# 2. Start knowledge API server with interactive chat playground
 aimlite serve SupportDocRAG --port 8000
 
-# 3. Query the knowledge base
+# 3. Query the knowledge base via REST API:
 curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
-  -d '{"query": "How do session tokens expire?", "top_k": 3}'`,
+  -d '{"query": "How do session tokens expire?", "top_k": 3}'
+
+# 4. Direct semantic search (retrieval-only without LLM):
+curl -X POST http://127.0.0.1:8000/search \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "session token timeout", "top_k": 5}'
+
+# 5. (Optional) Customize the served chat interface:
+# Override <project_root>/templates/chat.html or provide a custom frontend:
+# aimlite serve SupportDocRAG --frontend ./frontend/dist`,
         whyCode:
-            'Executes zero-path end-to-end training and launches an enterprise FastAPI-grade server.',
+            'Executes zero-path end-to-end training and launches an enterprise-grade server with styled model chooser, offline typography, and customizable web UI.',
     },
 ];
 
@@ -1608,10 +1772,13 @@ export const ADAPTER_GUIDE_STEPS: GuideStep[] = [
         filename: 'terminal.sh',
         language: 'bash',
         description:
-            'Scaffold a new LoRA instruction tuning project.',
+            'Scaffold a new LoRA instruction tuning project using the adapter paradigm. Use `--clean` to initialize with pristine 0-byte starting files.',
         code: `# Create and enter project directory
-aimlite init lora_instructions
-cd lora_instructions`,
+aimlite init lora_instructions --type adapter
+cd lora_instructions
+
+# Optional: Add --clean to scaffold pristine 0-byte starting files
+# aimlite init lora_instructions --type adapter --clean`,
         whyCode:
             'Sets up standard project conventions and generates aimlite.json.',
     },
@@ -1694,37 +1861,46 @@ aimlite install torch peft`,
     },
     {
         stepNumber: 7,
-        title: 'inference.py: Dynamic LoRA Response Serving',
+        title: 'inference.py: Dynamic LoRA Response Serving & Adapter Selection',
         badge: 'INFERENCE',
         badgeVariant: 'pillar',
         filename: 'inference.py',
         language: 'python',
         description:
-            'Subclass `BaseInference` to load delta checkpoints and serve fine-tuned responses via `POST /predict`.',
+            'Subclass `BaseInference` to load delta checkpoints and serve fine-tuned responses via `POST /predict`. You can dynamically switch adapter weights per request or pass domain parameters in `raw_input`.',
         code: ADAPTER_FILES['inference.py'],
         whyCode:
-            'Allows dynamic adapter swapping on top of a single shared foundation model.',
+            'Allows dynamic adapter swapping on top of a single shared foundation model, drastically cutting memory while enabling task-specific specialization.',
     },
     {
         stepNumber: 8,
-        title: 'Train Adapters & Serve Fine-Tuned API',
+        title: 'Train Adapters, Serve Fine-Tuned API & Customize UI',
         badge: 'EXECUTION',
         badgeVariant: 'cli',
         filename: 'terminal.sh',
         language: 'bash',
         description:
-            'Execute LoRA fine-tuning and start the production inference server.',
+            'Execute LoRA fine-tuning and start the production inference server. Switch between base model and fine-tuned adapters effortlessly from the served UI or API.',
         code: `# 1. Train lightweight delta weights
 aimlite train LoRAInstructionModel
 
-# 2. Start serving fine-tuned model
+# 2. Start serving fine-tuned model + web dashboard
 aimlite serve LoRAInstructionModel --port 8000
 
-# 3. Test generation endpoint
+# 3. Test generation endpoint:
 curl -X POST http://127.0.0.1:8000/predict \\
   -H "Content-Type: application/json" \\
-  -d '{"instruction": "Classify support ticket", "input": "Cannot access billing portal"}'`,
+  -d '{"instruction": "Classify support ticket", "input": "Cannot access billing portal"}'
+
+# 4. Target specific registered model via REST:
+curl -X POST http://127.0.0.1:8000/models/LoRAInstructionModel/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"instruction": "Summarize issue", "input": "Connection timeout on login"}'
+
+# 5. (Optional) Customize the served web UI:
+# Override <project_root>/templates/app.html or specify a custom frontend build:
+# aimlite serve LoRAInstructionModel --frontend ./frontend/dist`,
         whyCode:
-            'Deploys parameter-efficient adapter models using standard zero-path commands.',
+            'Deploys parameter-efficient adapter models using standard zero-path commands, with full template override and multi-model routing support.',
     },
 ];

@@ -1,73 +1,83 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AIMLite — Interactive Inference & Model Playground</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
   <style>
-    :root {
-      --bg-base: #090d16;
-      --bg-surface: #0f172a;
-      --bg-surface-elevated: #1e293b;
-      --bg-input: #131d33;
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(255, 255, 255, 0.25);
-      --border-accent: rgba(56, 189, 248, 0.4);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --accent-primary: #38bdf8;
-      --accent-success: #10b981;
-      --accent-warning: #f59e0b;
+    /* ========================================================================= */
+    /* DESIGN TOKENS (MINIMAL MONOCHROMATIC ZINC PALETTE)                         */
+    /* ========================================================================= */
+    :root, [data-theme="dark"] {
+      --bg-base: #09090b;
+      --bg-surface: #121215;
+      --bg-surface-elevated: #18181b;
+      --bg-input: #18181b;
+      --bg-card: #121215;
+      --border-subtle: #27272a;
+      --border-focus: #52525b;
+      --border-accent: #71717a;
+      --text-main: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+
+      --btn-primary-bg: #fafafa;
+      --btn-primary-text: #09090b;
+      --btn-primary-hover: #e4e4e7;
+
+      --accent-success: #22c55e;
       --accent-danger: #ef4444;
-      --accent-badge-bg: rgba(56, 189, 248, 0.12);
-      --badge-ml: #38bdf8;
-      --badge-rag: #a855f7;
-      --badge-adapter: #10b981;
-      --user-bubble: #1e3a8a;
-      --ai-bubble: #1e293b;
-      --radius-lg: 14px;
+
+      --user-bubble: #27272a;
+      --user-bubble-text: #fafafa;
+      --ai-bubble: #18181b;
+      --ai-bubble-text: #fafafa;
+
+      --radius-lg: 12px;
       --radius-md: 8px;
-      --radius-sm: 5px;
-      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+      --radius-sm: 6px;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
     }
 
     [data-theme="light"] {
-      --bg-base: #f8fafc;
+      --bg-base: #fafafa;
       --bg-surface: #ffffff;
-      --bg-surface-elevated: #f1f5f9;
+      --bg-surface-elevated: #f4f4f5;
       --bg-input: #ffffff;
-      --border-subtle: rgba(0, 0, 0, 0.08);
-      --border-focus: rgba(0, 0, 0, 0.3);
-      --border-accent: rgba(2, 132, 199, 0.4);
-      --text-main: #0f172a;
-      --text-muted: #475569;
-      --text-dim: #94a3b8;
-      --accent-primary: #0284c7;
-      --accent-success: #059669;
-      --accent-warning: #d97706;
+      --bg-card: #ffffff;
+      --border-subtle: #e4e4e7;
+      --border-focus: #a1a1aa;
+      --border-accent: #71717a;
+      --text-main: #09090b;
+      --text-muted: #52525b;
+      --text-dim: #a1a1aa;
+
+      --btn-primary-bg: #09090b;
+      --btn-primary-text: #fafafa;
+      --btn-primary-hover: #27272a;
+
+      --accent-success: #16a34a;
       --accent-danger: #dc2626;
-      --accent-badge-bg: rgba(2, 132, 199, 0.08);
-      --user-bubble: #0284c7;
-      --ai-bubble: #e2e8f0;
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+      --user-bubble: #18181b;
+      --user-bubble-text: #ffffff;
+      --ai-bubble: #f4f4f5;
+      --ai-bubble-text: #09090b;
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.07);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg-base);
       color: var(--text-main);
       height: 100vh;
@@ -77,15 +87,17 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Top Navigation */
+    /* ========================================================================= */
+    /* TOP NAVIGATION                                                            */
+    /* ========================================================================= */
     header {
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 10px 20px;
+      padding: 10px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
       z-index: 20;
       flex-shrink: 0;
     }
@@ -93,7 +105,7 @@
     .brand-section {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       text-decoration: none;
       color: inherit;
     }
@@ -102,17 +114,14 @@
       background: var(--text-main);
       color: var(--bg-base);
       font-weight: 800;
-      font-size: 13px;
-      padding: 4px 9px;
+      font-size: 11px;
+      padding: 3px 7px;
       border-radius: var(--radius-sm);
       letter-spacing: 0.5px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
 
     .brand-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       letter-spacing: -0.3px;
     }
@@ -121,70 +130,91 @@
     .model-selector-wrapper {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       background: var(--bg-surface-elevated);
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: var(--radius-md);
       border: 1px solid var(--border-subtle);
+    }
+
+    .model-selector-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 6px 3px 10px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
     }
 
     .model-selector-label {
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
       color: var(--text-dim);
     }
 
     .model-select {
-      background: transparent;
-      border: none;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-color: var(--bg-surface);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 12px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
       color: var(--text-main);
       font-family: inherit;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       outline: none;
-      padding-right: 8px;
+      padding: 4px 26px 4px 10px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    }
+
+    .model-select:hover {
+      border-color: var(--border-focus);
+    }
+
+    .model-select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px var(--border-subtle);
     }
 
     .model-select option {
-      background: var(--bg-surface);
+      background-color: var(--bg-surface-elevated);
+      color: var(--text-main);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    select option {
+      background-color: var(--bg-surface-elevated);
       color: var(--text-main);
     }
 
     .type-pill {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 9999px;
-    }
-
-    .type-pill.ml {
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--badge-ml);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-    }
-
-    .type-pill.rag {
-      background: rgba(168, 85, 247, 0.15);
-      color: var(--badge-rag);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-    }
-
-    .type-pill.adapter {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--badge-adapter);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: var(--bg-base);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
     }
 
     /* Nav Actions */
     .nav-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .status-indicator {
@@ -192,11 +222,11 @@
       align-items: center;
       gap: 6px;
       font-size: 12px;
-      color: var(--accent-success);
-      background: rgba(16, 185, 129, 0.1);
-      padding: 4px 10px;
+      color: var(--text-muted);
+      background: var(--bg-surface-elevated);
+      padding: 4px 9px;
       border-radius: 9999px;
-      border: 1px solid rgba(16, 185, 129, 0.2);
+      border: 1px solid var(--border-subtle);
     }
 
     .status-dot {
@@ -211,7 +241,7 @@
       background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
       color: var(--text-muted);
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: var(--radius-sm);
       font-size: 12px;
       font-weight: 500;
@@ -227,7 +257,43 @@
       border-color: var(--border-focus);
     }
 
-    /* Main Container */
+    /* Theme Segmented Switcher */
+    .theme-segmented-toggle {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .theme-toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      color: var(--text-main);
+    }
+
+    .theme-toggle-btn.active {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ========================================================================= */
+    /* MAIN CONTAINER & VIEWS                                                    */
+    /* ========================================================================= */
     main {
       flex: 1;
       display: flex;
@@ -235,7 +301,6 @@
       position: relative;
     }
 
-    /* View Containers */
     .view-container {
       display: none;
       width: 100%;
@@ -246,24 +311,48 @@
       display: flex;
     }
 
+    /* Buttons */
+    .primary-btn {
+      background: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+      border: 1px solid transparent;
+      padding: 9px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .primary-btn:hover {
+      background: var(--btn-primary-hover);
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* ========================================================================= */
-    /* ML TABULAR / PREDICTION PLAYGROUND                                         */
+    /* 1. ML TABULAR / PREDICTION PLAYGROUND                                     */
     /* ========================================================================= */
     .ml-layout {
       width: 100%;
       height: 100%;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0;
       overflow: hidden;
     }
 
     .ml-panel {
-      padding: 24px 30px;
+      padding: 22px 26px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
     }
 
     .ml-panel.left {
@@ -282,7 +371,7 @@
     }
 
     .section-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text-main);
       display: flex;
@@ -304,7 +393,7 @@
       color: var(--text-dim);
       font-size: 11px;
       font-weight: 600;
-      padding: 4px 10px;
+      padding: 4px 9px;
       border-radius: 4px;
       cursor: pointer;
     }
@@ -333,21 +422,20 @@
       color: var(--text-muted);
       font-size: 11px;
       font-weight: 500;
-      padding: 3px 9px;
+      padding: 4px 9px;
       border-radius: var(--radius-sm);
       cursor: pointer;
     }
 
     .preset-chip:hover {
-      color: var(--accent-primary);
-      border-color: var(--border-accent);
+      color: var(--text-main);
+      border-color: var(--border-focus);
     }
 
-    /* Grid Form */
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
     }
 
     .feature-item {
@@ -368,68 +456,41 @@
       background: var(--bg-input);
       border: 1px solid var(--border-subtle);
       color: var(--text-main);
-      padding: 8px 12px;
+      padding: 7px 11px;
       border-radius: var(--radius-sm);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 13px;
       outline: none;
     }
 
     .feature-input:focus {
-      border-color: var(--accent-primary);
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+      border-color: var(--border-focus);
     }
 
-    /* JSON Mode Area */
     .json-editor {
       width: 100%;
-      height: 320px;
+      height: 300px;
       background: var(--bg-input);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
       color: var(--text-main);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 13px;
-      padding: 14px;
+      padding: 12px;
       outline: none;
       resize: vertical;
       line-height: 1.5;
     }
 
     .json-editor:focus {
-      border-color: var(--accent-primary);
+      border-color: var(--border-focus);
     }
 
-    .primary-btn {
-      background: var(--text-main);
-      color: var(--bg-base);
-      border: none;
-      padding: 12px 20px;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .primary-btn:hover {
-      opacity: 0.9;
-    }
-
-    .primary-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Results Card */
     .result-card {
-      background: var(--bg-surface-elevated);
+      background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 24px;
+      border-radius: var(--radius-md);
+      padding: 18px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -437,73 +498,109 @@
 
     .result-hero {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 16px;
+      padding-bottom: 14px;
     }
 
     .result-label {
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.6px;
       color: var(--text-dim);
+      font-weight: 600;
     }
 
     .result-value-big {
-      font-size: 32px;
+      font-size: 26px;
       font-weight: 700;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--accent-primary);
+      color: var(--text-main);
+      margin-top: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .result-metrics-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+    }
+
+    .metric-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .metric-chip-label {
+      color: var(--text-dim);
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+
+    .metric-chip-value {
+      color: var(--text-main);
+      font-weight: 600;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
     .metric-pills {
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }
 
     .metric-pill {
-      background: var(--bg-input);
+      background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      padding: 6px 12px;
+      padding: 4px 9px;
       border-radius: var(--radius-sm);
       font-size: 12px;
+      color: var(--text-muted);
       display: flex;
-      align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .raw-output-box {
       background: var(--bg-input);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 14px;
-      font-family: 'JetBrains Mono', monospace;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 12px;
-      overflow-x: auto;
-      max-height: 240px;
-      white-space: pre-wrap;
       color: var(--text-muted);
+      max-height: 240px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     /* ========================================================================= */
-    /* RAG PLAYGROUND                                                            */
+    /* 2. RAG GROUNDED CHAT PLAYGROUND                                          */
     /* ========================================================================= */
     .rag-layout {
       width: 100%;
       height: 100%;
       display: grid;
-      grid-template-columns: 280px 1fr;
+      grid-template-columns: 260px 1fr;
       overflow: hidden;
     }
 
     .rag-sidebar {
       background: var(--bg-surface);
       border-right: 1px solid var(--border-subtle);
-      padding: 20px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
       overflow-y: auto;
     }
 
@@ -517,16 +614,16 @@
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 24px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
 
     .message-row {
       display: flex;
       gap: 12px;
-      max-width: 80%;
+      max-width: 82%;
     }
 
     .message-row.user {
@@ -539,30 +636,31 @@
     }
 
     .avatar {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       flex-shrink: 0;
     }
 
     .avatar.user {
       background: var(--user-bubble);
-      color: white;
+      color: var(--user-bubble-text);
+      border: 1px solid var(--border-subtle);
     }
 
     .avatar.ai {
       background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      color: var(--accent-primary);
+      color: var(--text-main);
     }
 
     .bubble {
-      padding: 12px 16px;
+      padding: 11px 15px;
       border-radius: var(--radius-lg);
       font-size: 14px;
       line-height: 1.5;
@@ -570,113 +668,87 @@
 
     .message-row.user .bubble {
       background: var(--user-bubble);
-      color: white;
+      color: var(--user-bubble-text);
       border-bottom-right-radius: 4px;
+      border: 1px solid var(--border-subtle);
     }
 
     .message-row.ai .bubble {
       background: var(--ai-bubble);
-      color: var(--text-main);
+      color: var(--ai-bubble-text);
       border-bottom-left-radius: 4px;
       border: 1px solid var(--border-subtle);
     }
 
-    /* Markdown Styles in Chat Bubbles */
     .markdown-content {
       font-size: 14px;
       line-height: 1.6;
-      color: var(--text-main);
+      color: inherit;
       word-break: break-word;
     }
 
-    .markdown-content > *:first-child {
-      margin-top: 0 !important;
-    }
+    .markdown-content > *:first-child { margin-top: 0 !important; }
+    .markdown-content > *:last-child { margin-bottom: 0 !important; }
 
-    .markdown-content > *:last-child {
-      margin-bottom: 0 !important;
-    }
-
-    .markdown-content p {
-      margin: 0 0 10px 0;
-      line-height: 1.6;
-    }
-
+    .markdown-content p { margin: 0 0 10px 0; }
     .markdown-content h1,
     .markdown-content h2,
     .markdown-content h3,
-    .markdown-content h4,
-    .markdown-content h5,
-    .markdown-content h6 {
-      margin: 16px 0 8px 0;
+    .markdown-content h4 {
+      margin: 14px 0 6px 0;
       font-weight: 600;
-      color: var(--text-main);
       line-height: 1.3;
     }
-
-    .markdown-content h1 { font-size: 1.35em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px; }
-    .markdown-content h2 { font-size: 1.2em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px; }
-    .markdown-content h3 { font-size: 1.08em; }
-    .markdown-content h4 { font-size: 1.0em; }
+    .markdown-content h1 { font-size: 1.3em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px; }
+    .markdown-content h2 { font-size: 1.15em; border-bottom: 1px solid var(--border-subtle); padding-bottom: 4px; }
+    .markdown-content h3 { font-size: 1.05em; }
 
     .markdown-content ul,
     .markdown-content ol {
       margin: 6px 0 10px 20px;
       padding: 0;
     }
-
-    .markdown-content li {
-      margin-bottom: 4px;
-      line-height: 1.5;
-    }
+    .markdown-content li { margin-bottom: 4px; }
 
     .markdown-content blockquote {
-      margin: 10px 0;
-      padding: 8px 14px;
-      border-left: 3px solid var(--accent-primary);
-      background: rgba(56, 189, 248, 0.08);
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin: 8px 0;
+      padding: 6px 12px;
+      border-left: 3px solid var(--border-focus);
+      background: var(--bg-surface-elevated);
       color: var(--text-muted);
       font-style: italic;
     }
 
     .markdown-content code {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       font-size: 0.88em;
-      padding: 2px 6px;
+      padding: 2px 5px;
       border-radius: var(--radius-sm);
-      background: var(--bg-surface);
+      background: var(--bg-surface-elevated);
       border: 1px solid var(--border-subtle);
-      color: var(--accent-primary);
+      color: var(--text-main);
     }
 
     .markdown-content pre {
       margin: 10px 0;
-      padding: 12px 14px;
-      background: #050811;
+      padding: 10px 12px;
+      background: var(--bg-input);
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       overflow-x: auto;
       max-width: 100%;
-    }
-
-    [data-theme="light"] .markdown-content pre {
-      background: #0f172a;
-      color: #f8fafc;
     }
 
     .markdown-content pre code {
       background: transparent;
       border: none;
       padding: 0;
-      font-size: 12.5px;
-      line-height: 1.5;
-      color: #e2e8f0;
-      display: block;
+      font-size: 12px;
+      color: var(--text-main);
     }
 
     .markdown-content a {
-      color: var(--accent-primary);
+      color: var(--text-main);
       text-decoration: underline;
       text-underline-offset: 2px;
     }
@@ -684,20 +756,20 @@
     .markdown-content hr {
       border: none;
       border-top: 1px solid var(--border-subtle);
-      margin: 14px 0;
+      margin: 12px 0;
     }
 
     .markdown-content table {
       width: 100%;
       border-collapse: collapse;
-      margin: 10px 0;
+      margin: 8px 0;
       font-size: 13px;
     }
 
     .markdown-content th,
     .markdown-content td {
       border: 1px solid var(--border-subtle);
-      padding: 6px 10px;
+      padding: 5px 8px;
       text-align: left;
     }
 
@@ -706,52 +778,57 @@
       font-weight: 600;
     }
 
-    .markdown-content tr:nth-child(even) {
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    .markdown-content strong {
-      font-weight: 600;
-      color: var(--text-main);
-    }
-
     .sources-box {
       margin-top: 10px;
       border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-sm);
       overflow: hidden;
       font-size: 12px;
     }
 
     .sources-header {
       background: var(--bg-surface-elevated);
-      padding: 8px 12px;
+      padding: 7px 11px;
       cursor: pointer;
       display: flex;
+      align-items: center;
       justify-content: space-between;
       color: var(--text-muted);
+      user-select: none;
+    }
+
+    .sources-header:hover {
+      color: var(--text-main);
+    }
+
+    .sources-header-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .sources-list {
-      padding: 10px;
+      padding: 9px;
       background: var(--bg-input);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .source-chunk {
-      border-left: 2px solid var(--badge-rag);
+      border-left: 2px solid var(--border-focus);
       padding-left: 8px;
       color: var(--text-dim);
+      font-size: 11.5px;
+      line-height: 1.4;
     }
 
     .chat-input-wrapper {
-      padding: 16px 24px;
+      padding: 14px 20px;
       background: var(--bg-surface);
       border-top: 1px solid var(--border-subtle);
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
 
     .chat-input {
@@ -760,19 +837,19 @@
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
       color: var(--text-main);
-      padding: 10px 14px;
+      padding: 9px 12px;
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13.5px;
       outline: none;
       resize: none;
     }
 
     .chat-input:focus {
-      border-color: var(--accent-primary);
+      border-color: var(--border-focus);
     }
 
     /* ========================================================================= */
-    /* ADAPTER / LORA PLAYGROUND                                                 */
+    /* 3. ADAPTER / LORA PLAYGROUND                                              */
     /* ========================================================================= */
     .adapter-layout {
       width: 100%;
@@ -782,7 +859,9 @@
       overflow: hidden;
     }
 
-    /* Responsive */
+    /* ========================================================================= */
+    /* RESPONSIVENESS ACROSS SCREEN TYPES                                        */
+    /* ========================================================================= */
     @media (max-width: 900px) {
       .ml-layout, .adapter-layout {
         grid-template-columns: 1fr;
@@ -799,13 +878,39 @@
         border-bottom: 1px solid var(--border-subtle);
       }
     }
+
+    @media (max-width: 640px) {
+      header {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .brand-title {
+        display: none;
+      }
+      .status-indicator span#serverStatusText {
+        display: none;
+      }
+      .ml-panel {
+        padding: 16px 14px;
+      }
+      .chat-messages {
+        padding: 14px 12px;
+      }
+      .message-row {
+        max-width: 94%;
+      }
+      .chat-input-wrapper {
+        padding: 10px 12px;
+      }
+    }
   </style>
 </head>
 <body>
 
   <!-- Top Navbar -->
   <header>
-    <div style="display: flex; align-items: center; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
       <a href="/" class="brand-section">
         <span class="brand-badge">AIML</span>
         <span class="brand-title">AIMLite</span>
@@ -817,7 +922,7 @@
         <select class="model-select" id="modelSelect" onchange="switchModel(this.value)">
           <!-- Injected dynamically via JS from /models -->
         </select>
-        <span class="type-pill ml" id="modelTypePill">ML</span>
+        <span class="type-pill" id="modelTypePill">ML</span>
       </div>
     </div>
 
@@ -829,18 +934,43 @@
       </div>
 
       <a href="/docs" target="_blank" class="nav-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
           <polyline points="14 2 14 8 20 8"></polyline>
           <line x1="16" y1="13" x2="8" y2="13"></line>
           <line x1="16" y1="17" x2="8" y2="17"></line>
         </svg>
-        Swagger Docs
+        <span>Docs</span>
       </a>
 
-      <button class="nav-btn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
-        <span id="themeIcon">🌓</span>
-      </button>
+      <!-- Minimal 3-Way Monochromatic Theme Toggle -->
+      <div class="theme-segmented-toggle" role="radiogroup" aria-label="Theme preference">
+        <button type="button" class="theme-toggle-btn" data-theme-btn="light" title="Light theme" onclick="setThemeMode('light')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path>
+            <path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="m6.34 17.66-1.41 1.41"></path>
+            <path d="m19.07 4.93-1.41 1.41"></path>
+          </svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-btn="system" title="System theme" onclick="setThemeMode('system')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="14" x="2" y="3" rx="2"></rect>
+            <line x1="8" x2="16" y1="21" y2="21"></line>
+            <line x1="12" x2="12" y1="17" y2="21"></line>
+          </svg>
+        </button>
+        <button type="button" class="theme-toggle-btn" data-theme-btn="dark" title="Dark theme" onclick="setThemeMode('dark')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -863,7 +993,7 @@
             </div>
           </div>
 
-          <!-- Sample presets -->
+          <!-- Feature Presets -->
           <div class="sample-bar">
             <span>Presets:</span>
             <button class="preset-chip" onclick="applyPreset('default')">Sample 1</button>
@@ -887,10 +1017,10 @@
           </div>
 
           <button class="primary-btn" id="runMlBtn" onclick="runMlInference()">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
-            Execute Model Prediction
+            <span>Execute Model Prediction</span>
           </button>
         </div>
 
@@ -901,20 +1031,23 @@
             <div class="metric-pills">
               <div class="metric-pill">
                 <span>Latency:</span>
-                <strong id="mlLatency" style="color: var(--accent-primary);">-- ms</strong>
+                <strong id="mlLatency" style="color: var(--text-main);">-- ms</strong>
               </div>
             </div>
           </div>
 
-          <!-- Big Result Card -->
+          <!-- Result Card -->
           <div class="result-card">
             <div class="result-hero">
               <div>
                 <div class="result-label">Result / Class</div>
                 <div class="result-value-big" id="mlResultHero">--</div>
               </div>
-              <div id="mlStatusBadge" class="type-pill ml">Ready</div>
+              <div id="mlStatusBadge" class="type-pill">Ready</div>
             </div>
+
+            <!-- Dynamic Metrics Bar -->
+            <div class="result-metrics-bar" id="mlResultMetrics" style="display: none;"></div>
 
             <div>
               <div class="result-label" style="margin-bottom: 6px;">Raw JSON Response</div>
@@ -924,7 +1057,7 @@
 
           <!-- Endpoint Details -->
           <div style="font-size: 12px; color: var(--text-dim);">
-            Active Model Endpoint: <code id="mlEndpointCode" style="color: var(--accent-primary); font-family: 'JetBrains Mono', monospace;">POST /predict</code>
+            Active Model Endpoint: <code id="mlEndpointCode" style="color: var(--text-main); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">POST /predict</code>
           </div>
         </div>
       </div>
@@ -950,13 +1083,13 @@
 
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600;">Sample Queries</div>
-            <button class="preset-chip" style="text-align: left;" onclick="setRagQuery('Summarize key concepts in the documents.')">"Summarize key concepts..."</button>
-            <button class="preset-chip" style="text-align: left;" onclick="setRagQuery('What are the system configuration steps?')">"Configuration steps?"</button>
-            <button class="preset-chip" style="text-align: left;" onclick="setRagQuery('Provide an overview of the architecture.')">"Architecture overview"</button>
+            <button class="preset-chip" style="text-align: left;" onclick="setRagQuery('Summarize key concepts in the documents.')">Summarize key concepts</button>
+            <button class="preset-chip" style="text-align: left;" onclick="setRagQuery('What are the system configuration steps?')">Configuration steps</button>
+            <button class="preset-chip" style="text-align: left;" onclick="setRagQuery('Provide an overview of the architecture.')">Architecture overview</button>
           </div>
 
           <div style="margin-top: auto; font-size: 11px; color: var(--text-dim);">
-            Endpoint: <code style="color: var(--badge-rag);">POST /predict</code>
+            Endpoint: <code style="color: var(--text-main);">POST /predict</code>
           </div>
         </aside>
 
@@ -975,8 +1108,8 @@
 
           <div class="chat-input-wrapper">
             <textarea class="chat-input" id="ragInput" rows="1" placeholder="Ask a question about your knowledge documents..." onkeydown="handleRagKey(event)"></textarea>
-            <button class="primary-btn" onclick="sendRagMessage()" style="padding: 10px 18px;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <button class="primary-btn" onclick="sendRagMessage()" style="padding: 9px 16px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
@@ -995,7 +1128,7 @@
           </div>
           <textarea class="json-editor" id="adapterPrompt" style="height: 220px;" placeholder="Enter generation prompt here..."></textarea>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="feature-item">
               <span class="feature-label">Max Tokens</span>
               <input type="number" class="feature-input" id="adapterMaxTokens" value="128">
@@ -1032,17 +1165,48 @@
     let currentModel = null;
     let currentMlMode = "form";
     let activeFeatureNames = [];
+    let currentThemeMode = localStorage.getItem("aimlite_theme") || "system";
 
-    // Theme Toggle
-    function toggleTheme() {
-      const html = document.documentElement;
-      const current = html.getAttribute("data-theme") || "dark";
-      const next = current === "dark" ? "light" : "dark";
-      html.setAttribute("data-theme", next);
-      document.getElementById("themeIcon").innerText = next === "dark" ? "🌓" : "☀️";
+    // =========================================================================
+    // THEME CONTROLLER (LIGHT / DARK / SYSTEM WITH ZERO EXTERNAL LIBS)
+    // =========================================================================
+    function applyTheme(mode) {
+      currentThemeMode = mode;
+      localStorage.setItem("aimlite_theme", mode);
+
+      let isDark = false;
+      if (mode === "dark") {
+        isDark = true;
+      } else if (mode === "light") {
+        isDark = false;
+      } else {
+        isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      }
+
+      document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+
+      document.querySelectorAll("[data-theme-btn]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-theme-btn") === mode);
+      });
     }
 
-    // Initialize Models from Server
+    function setThemeMode(mode) {
+      applyTheme(mode);
+    }
+
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+        if (currentThemeMode === "system") {
+          applyTheme("system");
+        }
+      });
+    }
+
+    applyTheme(currentThemeMode);
+
+    // =========================================================================
+    // INITIALIZE MODELS FROM SERVER
+    // =========================================================================
     async function initModels() {
       try {
         const res = await fetch("/models");
@@ -1095,7 +1259,6 @@
       // Update Pill
       const pill = document.getElementById("modelTypePill");
       pill.innerText = type.toUpperCase();
-      pill.className = `type-pill ${type}`;
 
       // Update Active Viewport
       document.querySelectorAll(".view-container").forEach(el => el.classList.remove("active"));
@@ -1112,7 +1275,7 @@
     }
 
     // =========================================================================
-    // ML Form & Execution Logic
+    // ML FORM & EXECUTION LOGIC
     // =========================================================================
     function setMlMode(mode) {
       currentMlMode = mode;
@@ -1165,10 +1328,9 @@
         } else if (preset === "random") {
           inp.value = (Math.random() * 10).toFixed(2);
         } else if (preset === "alternate") {
-          inp.value = (idx % 2 === 0 ? 1 : 0);
+          inp.value = (idx % 2 === 0 ? "1.0" : "0.0");
         } else {
-          // Default realistic gradient
-          inp.value = (idx + 1) * 1.5;
+          inp.value = ((idx + 1) * 1.5).toFixed(1);
         }
       });
       syncFormToJson();
@@ -1177,7 +1339,7 @@
     async function runMlInference() {
       const btn = document.getElementById("runMlBtn");
       btn.disabled = true;
-      btn.innerText = "Computing...";
+      btn.querySelector("span").innerText = "Computing...";
 
       let payload = {};
       if (currentMlMode === "form") {
@@ -1192,7 +1354,7 @@
         } catch (e) {
           alert("Invalid JSON payload: " + e.message);
           btn.disabled = false;
-          btn.innerText = "Execute Model Prediction";
+          btn.querySelector("span").innerText = "Execute Model Prediction";
           return;
         }
       }
@@ -1213,31 +1375,98 @@
         document.getElementById("mlRawOutput").innerText = JSON.stringify(data, null, 2);
 
         if (res.ok) {
-          let heroVal = data.result;
-          if (Array.isArray(heroVal)) {
-            heroVal = heroVal.length === 1 ? heroVal[0] : `[${heroVal.join(", ")}]`;
-          } else if (typeof heroVal === "object" && heroVal !== null) {
-            heroVal = heroVal.prediction !== undefined ? heroVal.prediction : (heroVal.class !== undefined ? heroVal.class : JSON.stringify(heroVal));
+          let heroVal = "--";
+          const metricsList = [];
+          const resObj = data.result;
+
+          if (typeof resObj === "object" && resObj !== null && !Array.isArray(resObj)) {
+            // 1. Determine primary hero text dynamically for any project
+            if (resObj.decision !== undefined) {
+              heroVal = String(resObj.decision);
+            } else if (resObj.label !== undefined) {
+              heroVal = String(resObj.label);
+            } else if (resObj.class !== undefined || resObj.class_name !== undefined) {
+              heroVal = String(resObj.class !== undefined ? resObj.class : resObj.class_name);
+            } else if (resObj.prediction !== undefined) {
+              heroVal = typeof resObj.prediction === "number" ? `Class ${resObj.prediction}` : String(resObj.prediction);
+            } else if (resObj.category !== undefined) {
+              heroVal = String(resObj.category);
+            } else if (resObj.output !== undefined) {
+              heroVal = typeof resObj.output === "object" ? JSON.stringify(resObj.output) : String(resObj.output);
+            } else {
+              const predEntry = Object.entries(resObj).find(([k]) => k.endsWith("_prediction") || k.endsWith("_class"));
+              if (predEntry) {
+                heroVal = typeof predEntry[1] === "number" ? `Class ${predEntry[1]}` : String(predEntry[1]);
+              } else {
+                const firstScalar = Object.entries(resObj).find(([k, v]) => typeof v === "string" || typeof v === "number");
+                heroVal = firstScalar ? `${firstScalar[1]}` : "Complete";
+              }
+            }
+
+            // 2. Extract secondary metric chips
+            for (const [k, v] of Object.entries(resObj)) {
+              if (k === "status" || k === "type") continue;
+              if (typeof v === "number") {
+                let formatted = v;
+                if (k.toLowerCase().includes("risk") || k.toLowerCase().includes("prob") || k.toLowerCase().includes("confidence") || k.toLowerCase().includes("score")) {
+                  if (v >= 0 && v <= 1) {
+                    formatted = (v * 100).toFixed(1) + "%";
+                  } else {
+                    formatted = Number(v.toFixed(4));
+                  }
+                }
+                const labelName = k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+                metricsList.push({ label: labelName, value: formatted });
+              } else if (typeof v === "string" && v !== heroVal) {
+                const labelName = k.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+                metricsList.push({ label: labelName, value: v });
+              }
+            }
+          } else if (Array.isArray(resObj)) {
+            heroVal = resObj.length === 1 ? resObj[0] : `[${resObj.join(", ")}]`;
+          } else if (resObj !== undefined && resObj !== null) {
+            heroVal = String(resObj);
           }
+
           document.getElementById("mlResultHero").innerText = heroVal;
           document.getElementById("mlStatusBadge").innerText = "Success";
           document.getElementById("mlStatusBadge").style.color = "var(--accent-success)";
+
+          const metricsContainer = document.getElementById("mlResultMetrics");
+          if (metricsContainer) {
+            if (metricsList.length > 0) {
+              metricsContainer.style.display = "flex";
+              metricsContainer.innerHTML = metricsList.map(m => `
+                <div class="metric-chip">
+                  <span class="metric-chip-label">${escapeHtml(m.label)}:</span>
+                  <span class="metric-chip-value">${escapeHtml(String(m.value))}</span>
+                </div>
+              `).join("");
+            } else {
+              metricsContainer.style.display = "none";
+              metricsContainer.innerHTML = "";
+            }
+          }
         } else {
           document.getElementById("mlResultHero").innerText = "Error";
           document.getElementById("mlStatusBadge").innerText = `HTTP ${res.status}`;
           document.getElementById("mlStatusBadge").style.color = "var(--accent-danger)";
+          const metricsContainer = document.getElementById("mlResultMetrics");
+          if (metricsContainer) { metricsContainer.style.display = "none"; metricsContainer.innerHTML = ""; }
         }
       } catch (err) {
         document.getElementById("mlResultHero").innerText = "Error";
         document.getElementById("mlRawOutput").innerText = `Connection error: ${err.message}`;
+        const metricsContainer = document.getElementById("mlResultMetrics");
+        if (metricsContainer) { metricsContainer.style.display = "none"; metricsContainer.innerHTML = ""; }
       } finally {
         btn.disabled = false;
-        btn.innerText = "Execute Model Prediction";
+        btn.querySelector("span").innerText = "Execute Model Prediction";
       }
     }
 
     // =========================================================================
-    // RAG Logic
+    // RAG CHAT LOGIC
     // =========================================================================
     function setRagQuery(text) {
       document.getElementById("ragInput").value = text;
@@ -1296,8 +1525,20 @@
         if (sources && Array.isArray(sources) && sources.length) {
           sourcesHtml = `
             <div class="sources-box">
-              <div class="sources-header">📚 ${sources.length} Retrieved Context Sources ▼</div>
-              <div class="sources-list">
+              <div class="sources-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'flex' : 'none'">
+                <div class="sources-header-left">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+                    <path d="M6 6h10"></path>
+                    <path d="M6 10h10"></path>
+                  </svg>
+                  <span>Retrieved Context Sources (${sources.length})</span>
+                </div>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+              <div class="sources-list" style="display: none;">
                 ${sources.map((s, i) => `<div class="source-chunk"><strong>Source #${i+1}:</strong> ${escapeHtml(s.content || JSON.stringify(s))}</div>`).join("")}
               </div>
             </div>
@@ -1315,7 +1556,7 @@
     }
 
     // =========================================================================
-    // Adapter Logic
+    // ADAPTER LOGIC
     // =========================================================================
     async function runAdapterGeneration() {
       const prompt = document.getElementById("adapterPrompt").value.trim();
@@ -1345,6 +1586,9 @@
       }
     }
 
+    // =========================================================================
+    // OFFLINE-READY MARKDOWN PARSER & ESCAPING (ZERO CDN DEPENDENCIES)
+    // =========================================================================
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, function(m) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
@@ -1355,29 +1599,26 @@
       if (md === null || md === undefined) return "";
       const text = String(md);
 
-      // 1. If marked.js is available from CDN, use it for full GFM support
+      // If marked.js is locally available, use it
       if (window.marked && typeof window.marked.parse === "function") {
         try {
           return window.marked.parse(text, { gfm: true, breaks: true });
-        } catch (e) {
-          console.warn("marked.parse error, using built-in renderer fallback:", e);
-        }
+        } catch (e) {}
       }
 
-      // 2. Built-in lightweight, reliable markdown parser fallback
+      // Self-contained pure JS markdown parser fallback (works offline 100%)
       let s = text;
 
-      // Extract and protect fenced code blocks
+      // Code blocks
       const codeBlocks = [];
       s = s.replace(/```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g, function(match, lang, code) {
         const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
         const escapedCode = escapeHtml(code.replace(/\n$/, ""));
-        const langAttr = lang ? ` class="language-${escapeHtml(lang)}"` : "";
-        codeBlocks.push(`<pre><code${langAttr}>${escapedCode}</code></pre>`);
+        codeBlocks.push(`<pre><code>${escapedCode}</code></pre>`);
         return placeholder;
       });
 
-      // Extract and protect inline code
+      // Inline code
       const inlineCodes = [];
       s = s.replace(/`([^`\n]+)`/g, function(match, code) {
         const placeholder = `__INLINE_CODE_${inlineCodes.length}__`;
@@ -1385,10 +1626,9 @@
         return placeholder;
       });
 
-      // Escape remaining general HTML for safety
       s = escapeHtml(s);
 
-      // Headers (# Heading)
+      // Headers
       s = s.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
       s = s.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
       s = s.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
@@ -1396,14 +1636,14 @@
       s = s.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
       s = s.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
 
-      // Horizontal rules
+      // Horizontal rule
       s = s.replace(/^(?:---|\*\*\*|___)\s*$/gm, '<hr>');
 
-      // Blockquotes
+      // Blockquote
       s = s.replace(/^>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
       s = s.replace(/<\/blockquote>\n<blockquote>/g, '<br>');
 
-      // Bold, Italic, Strikethrough
+      // Bold & Italic
       s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
       s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       s = s.replace(/__(.+?)__/g, '<strong>$1</strong>');
@@ -1412,10 +1652,10 @@
       s = s.replace(/~~(.+?)~~/g, '<del>$1</del>');
 
       // Links & Images
-      s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%; border-radius:6px;">');
+      s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%; border-radius:4px;">');
       s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
-      // Markdown Tables
+      // Tables
       s = s.replace(/((?:\|[^\n]+\|\r?\n?)+)/g, function(tableMatch) {
         const rows = tableMatch.trim().split(/\r?\n/).filter(r => r.trim());
         if (rows.length < 2) return tableMatch;
@@ -1440,7 +1680,7 @@
         return html;
       });
 
-      // Lists (Unordered & Ordered)
+      // Lists
       s = s.replace(/(?:^|\n)((?:[\t ]*[-*+]\s+[^\n]+\n?)+)/g, function(m, listContent) {
         const items = listContent.trim().split(/\n/).map(line => {
           return `<li>${line.replace(/^[\t ]*[-*+]\s+/, "")}</li>`;
@@ -1455,7 +1695,7 @@
         return `\n<ol>${items}</ol>\n`;
       });
 
-      // Paragraphs & Line Breaks
+      // Paragraphs
       const paras = s.split(/\n{2,}/);
       s = paras.map(p => {
         p = p.trim();
@@ -1466,15 +1706,9 @@
         return `<p>${p.replace(/\n/g, '<br>')}</p>`;
       }).join("\n");
 
-      // Restore inline code
-      s = s.replace(/__INLINE_CODE_(\d+)__/g, function(match, id) {
-        return inlineCodes[Number(id)] || "";
-      });
-
-      // Restore code blocks
-      s = s.replace(/__CODE_BLOCK_(\d+)__/g, function(match, id) {
-        return codeBlocks[Number(id)] || "";
-      });
+      // Restore inline code & code blocks
+      s = s.replace(/__INLINE_CODE_(\d+)__/g, (m, id) => inlineCodes[Number(id)] || "");
+      s = s.replace(/__CODE_BLOCK_(\d+)__/g, (m, id) => codeBlocks[Number(id)] || "");
 
       return s;
     }
