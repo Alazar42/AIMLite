@@ -1,12 +1,13 @@
 """Customer Churn Prediction (Scratch Model Paradigm): model.py
 
-Classifier model for customer churn prediction.
-Supports scikit-learn (RandomForestClassifier) with a genuine pure-Python LogisticRegression fallback.
+Classifier model for customer churn prediction using scikit-learn.
+Bring Your Own Framework: AIMLite executes user-defined models seamlessly.
+Install dependencies into your project with:
+    aimlite install scikit-learn pandas
 """
 
 from __future__ import annotations
 
-import math
 import pickle
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -28,78 +29,6 @@ DEFAULT_FEATURE_COLUMNS: List[str] = [
 ]
 
 
-class PureLogisticClassifier:
-    """Zero-dependency pure-Python Logistic Regression classifier.
-
-    Standardizes inputs via z-score normalization and optimizes weights
-    via batch gradient descent with sigmoid activation.
-    Provides mathematically genuine probabilities and predictions.
-    """
-
-    def __init__(self, lr: float = 0.5, epochs: int = 300) -> None:
-        self.lr = lr
-        self.epochs = epochs
-        self.weights: List[float] = []
-        self.bias: float = 0.0
-        self.mean: List[float] = []
-        self.std: List[float] = []
-
-    def fit(self, X: List[List[float]], y: List[int]) -> PureLogisticClassifier:
-        n_samples = len(X)
-        if n_samples == 0:
-            return self
-        n_features = len(X[0])
-
-        # Compute feature means and standard deviations
-        self.mean = [sum(X[i][j] for i in range(n_samples)) / n_samples for j in range(n_features)]
-        self.std = [
-            math.sqrt(sum((X[i][j] - self.mean[j]) ** 2 for i in range(n_samples)) / n_samples) or 1.0
-            for j in range(n_features)
-        ]
-
-        # Standardize training matrix
-        X_scaled = [
-            [(X[i][j] - self.mean[j]) / self.std[j] for j in range(n_features)]
-            for i in range(n_samples)
-        ]
-        self.weights = [0.0] * n_features
-        self.bias = 0.0
-
-        # Gradient descent optimization
-        for _ in range(self.epochs):
-            dw = [0.0] * n_features
-            db = 0.0
-            for i in range(n_samples):
-                z = sum(w * x for w, x in zip(self.weights, X_scaled[i])) + self.bias
-                z = max(min(z, 20.0), -20.0)
-                pred = 1.0 / (1.0 + math.exp(-z))
-                error = pred - y[i]
-                for j in range(n_features):
-                    dw[j] += error * X_scaled[i][j]
-                db += error
-            for j in range(n_features):
-                self.weights[j] -= (self.lr / n_samples) * dw[j]
-            self.bias -= (self.lr / n_samples) * db
-        return self
-
-    def predict_proba(self, X: List[List[float]]) -> List[float]:
-        probs = []
-        n_features = len(self.weights) if self.weights else 0
-        for row in X:
-            if not self.weights or len(row) < n_features:
-                probs.append(0.5)
-                continue
-            scaled = [(row[j] - self.mean[j]) / self.std[j] for j in range(n_features)]
-            z = sum(w * x for w, x in zip(self.weights, scaled)) + self.bias
-            z = max(min(z, 20.0), -20.0)
-            probs.append(round(1.0 / (1.0 + math.exp(-z)), 4))
-        return probs
-
-    def predict(self, X: List[List[float]]) -> List[int]:
-        probs = self.predict_proba(X)
-        return [1 if p >= 0.5 else 0 for p in probs]
-
-
 class ChurnClassifier(Model):
     """Customer Churn classifier model predicting whether a customer will churn (0 or 1)."""
 
@@ -115,7 +44,7 @@ class ChurnClassifier(Model):
         self.n_estimators = n_estimators
         self.random_state = random_state
         self.estimator: Optional[Any] = None
-        self.pure_clf: Optional[PureLogisticClassifier] = None
+        self.is_fitted: bool = False
 
         try:
             from telecom_churn.data import FEATURE_COLUMNS
@@ -130,7 +59,7 @@ class ChurnClassifier(Model):
         self._init_estimator()
 
     def _init_estimator(self) -> None:
-        """Initializes underlying classifier engine."""
+        """Initializes underlying scikit-learn classifier engine."""
         try:
             from sklearn.ensemble import RandomForestClassifier
 
@@ -139,19 +68,21 @@ class ChurnClassifier(Model):
                 random_state=self.random_state,
                 class_weight="balanced",
             )
-        except ImportError:
-            self.estimator = None
+        except ImportError as e:
+            raise ImportError(
+                "scikit-learn is required to initialize ChurnClassifier. "
+                "Install it into your project using: aimlite install scikit-learn"
+            ) from e
 
     def fit(self, X: List[List[float]], y: List[int]) -> ChurnClassifier:
         """Fits classifier on numeric feature matrix X and label vector y."""
         if not X:
             return self
 
-        if self.estimator is not None:
-            self.estimator.fit(X, y)
-        else:
-            self.pure_clf = PureLogisticClassifier()
-            self.pure_clf.fit(X, y)
+        if self.estimator is None:
+            self._init_estimator()
+        self.estimator.fit(X, y)
+        self.is_fitted = True
         return self
 
     def predict(self, inputs: Any, **kwargs: Any) -> List[int]:
@@ -160,14 +91,11 @@ class ChurnClassifier(Model):
         if not X:
             return []
 
-        if self.estimator is not None and hasattr(self.estimator, "predict"):
-            preds = self.estimator.predict(X)
-            return [int(p) for p in preds]
+        if self.estimator is None:
+            raise RuntimeError("ChurnClassifier is not trained or loaded. Call fit() or load() first.")
 
-        if self.pure_clf is not None:
-            return self.pure_clf.predict(X)
-
-        return [0 for _ in X]
+        preds = self.estimator.predict(X)
+        return [int(p) for p in preds]
 
     def predict_proba(self, inputs: Any) -> List[float]:
         """Computes probability of churn (risk score between 0.0 and 1.0)."""
@@ -175,39 +103,26 @@ class ChurnClassifier(Model):
         if not X:
             return []
 
-        if self.estimator is not None and hasattr(self.estimator, "predict_proba"):
-            probs = self.estimator.predict_proba(X)
-            classes = list(getattr(self.estimator, "classes_", [0, 1]))
-            if 1 in classes:
-                idx_1 = classes.index(1)
-                return [float(p[idx_1]) for p in probs]
-            return [float(p[-1]) for p in probs]
+        if self.estimator is None:
+            raise RuntimeError("ChurnClassifier is not trained or loaded. Call fit() or load() first.")
 
-        if self.pure_clf is not None:
-            return self.pure_clf.predict_proba(X)
-
-        return [0.5 for _ in X]
+        probs = self.estimator.predict_proba(X)
+        classes = list(getattr(self.estimator, "classes_", [0, 1]))
+        if 1 in classes:
+            idx_1 = classes.index(1)
+            return [float(p[idx_1]) for p in probs]
+        return [float(p[-1]) for p in probs]
 
     def save(self, destination: Union[str, Path], **kwargs: Any) -> None:
         """Serializes model weights and parameters to disk."""
         dest_path = Path(destination)
         dest_path.parent.mkdir(parents=True, exist_ok=True)
 
-        pure_data = None
-        if self.pure_clf is not None:
-            pure_data = {
-                "weights": self.pure_clf.weights,
-                "bias": self.pure_clf.bias,
-                "mean": self.pure_clf.mean,
-                "std": self.pure_clf.std,
-            }
-
         payload = {
             "name": self.name,
             "n_estimators": self.n_estimators,
             "random_state": self.random_state,
             "estimator": self.estimator,
-            "pure_data": pure_data,
             "feature_names": getattr(self, "feature_names", []),
         }
         with open(dest_path, "wb") as f:
@@ -226,16 +141,7 @@ class ChurnClassifier(Model):
         self.n_estimators = payload.get("n_estimators", self.n_estimators)
         self.random_state = payload.get("random_state", self.random_state)
         self.estimator = payload.get("estimator", None)
-        
-        pure_data = payload.get("pure_data")
-        if pure_data:
-            self.pure_clf = PureLogisticClassifier()
-            self.pure_clf.weights = pure_data.get("weights", [])
-            self.pure_clf.bias = pure_data.get("bias", 0.0)
-            self.pure_clf.mean = pure_data.get("mean", [])
-            self.pure_clf.std = pure_data.get("std", [])
-        else:
-            self.pure_clf = payload.get("pure_clf", None)
+        self.is_fitted = self.estimator is not None
 
         if "feature_names" in payload:
             self.feature_names = payload["feature_names"]

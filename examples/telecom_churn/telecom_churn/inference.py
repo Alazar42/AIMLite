@@ -33,7 +33,7 @@ class ChurnInference(BaseInference):
     def run(self, model: Model, raw_input: Any, **kwargs: Any) -> Dict[str, Any]:
         """Runs churn prediction on incoming customer attributes."""
         # Ensure model weights are loaded if checkpoint exists
-        if getattr(model, "pure_clf", None) is None and getattr(model, "estimator", None) is None:
+        if not getattr(model, "is_fitted", False):
             ckpt = self.checkpoint_path or self._resolve_checkpoint()
             if ckpt and ckpt.is_file():
                 model.load(ckpt)
