@@ -54,8 +54,8 @@ def test_init_clean_default_scratch(tmp_path: Path):
     assert (target / ".env.example").exists()
     assert (target / ".agents" / "skills" / "aimlite" / "SKILL.md").exists()
     assert not (target / "skills").exists()
-    assert (target / "AGENTS.md").exists()
-    assert (target / "llms.txt").exists()
+    assert not (target / "AGENTS.md").exists()
+    assert not (target / "llms.txt").exists()
 
 
 def test_init_clean_with_type_scratch(tmp_path: Path):
@@ -247,20 +247,9 @@ def test_init_scaffolds_agent_skills_and_llms_txt(tmp_path: Path):
     assert "Expert guide for AIMLite" in skill_text
     assert "aimlite train" in skill_text
 
-    # 2. AGENTS.md at workspace root
-    agents_md = target / "AGENTS.md"
-    assert agents_md.exists()
-    agents_text = agents_md.read_text(encoding="utf-8")
-    assert "test_agent_rag" in agents_text
-    assert "rag" in agents_text
-    assert "Zero-Path CLI Commands" in agents_text
-
-    # 3. llms.txt at workspace root
-    llms_txt = target / "llms.txt"
-    assert llms_txt.exists()
-    llms_text = llms_txt.read_text(encoding="utf-8")
-    assert "test_agent_rag" in llms_text
-    assert "aimlite serve" in llms_text
+    # 2. Workspace root remains clean (no redundant AGENTS.md or llms.txt)
+    assert not (target / "AGENTS.md").exists()
+    assert not (target / "llms.txt").exists()
 
 
 def test_init_unknown_paradigm_raises_exception(tmp_path: Path):

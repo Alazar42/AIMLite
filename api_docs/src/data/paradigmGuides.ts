@@ -1555,11 +1555,11 @@ self.adapter_weights = {
     def predict(self, inputs: Any, ** kwargs: Any) -> Dict[str, Any]:
 """Generates fine-tuned response for input instruction/prompt."""
 if isinstance(inputs, dict):
-    instruction = inputs.get("instruction", "")
-user_input = inputs.get("input", "")
-        else:
-instruction = str(inputs)
-user_input = ""
+    instruction = inputs.get("instruction") or inputs.get("prompt") or inputs.get("text") or ""
+    user_input = inputs.get("input", "")
+else:
+    instruction = str(inputs)
+    user_input = ""
 
 if user_input:
     prompt_header = f"### Instruction:\\n{instruction}\\n\\n### Input:\\n{user_input}\\n\\n### Response:"

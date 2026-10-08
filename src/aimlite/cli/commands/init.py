@@ -489,7 +489,7 @@ class Config(BaseConfig):
         _scaffold_scratch(package_dir, dest_root, project_name, package_name=pkg)
 
     scaffold_agent_customizations(dest_root, project_name, template_type, clean=clean, package_name=pkg)
-    print(f"  {check('Agent Ready', '.agents/skills/aimlite/SKILL.md, AGENTS.md, llms.txt')}")
+    print(f"  {check('Agent Ready', '.agents/skills/aimlite/SKILL.md')}")
 
 
 
@@ -1536,7 +1536,16 @@ class LoRAInstructionModel(AdapterModel):
         super().__init__(name=name, adapter_config=adapter_cfg, config=config, **kwargs)
 
     def predict(self, inputs: Any, **kwargs: Any) -> Dict[str, Any]:
-        prompt = inputs.get("instruction", str(inputs)) if isinstance(inputs, dict) else str(inputs)
+        if isinstance(inputs, dict):
+            prompt = (
+                inputs.get("prompt")
+                or inputs.get("instruction")
+                or inputs.get("text")
+                or inputs.get("input")
+                or str(inputs)
+            )
+        else:
+            prompt = str(inputs)
         active_name = self.adapter_manager.active_adapter_name if hasattr(self, "adapter_manager") else "default"
         return {{
             "instruction": prompt,

@@ -62,7 +62,12 @@ class LoRAInstructionModel(AdapterModel):
     def predict(self, inputs: Any, **kwargs: Any) -> Dict[str, Any]:
         """Generates fine-tuned response for input instruction/prompt."""
         if isinstance(inputs, dict):
-            instruction = inputs.get("instruction", "")
+            instruction = (
+                inputs.get("instruction")
+                or inputs.get("prompt")
+                or inputs.get("text")
+                or ""
+            )
             user_input = inputs.get("input", "")
         else:
             instruction = str(inputs)

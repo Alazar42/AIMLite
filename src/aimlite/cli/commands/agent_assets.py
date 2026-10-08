@@ -353,20 +353,9 @@ def scaffold_agent_customizations(
     clean: bool = False,
     package_name: Optional[str] = None,
 ) -> None:
-    """Scaffolds agent skills, AGENTS.md, and llms.txt for coding agent integration."""
+    """Scaffolds agent skills (.agents/skills/aimlite/SKILL.md) for coding agent integration."""
     agents_dir = dest_root / ".agents" / "skills" / "aimlite"
     agents_dir.mkdir(parents=True, exist_ok=True)
 
     skill_content = get_skill_md_content()
     (agents_dir / "SKILL.md").write_text(skill_content, encoding="utf-8")
-
-    agents_md = get_agents_md_content(
-        project_name=project_name,
-        template_type=template_type,
-        clean=clean,
-        package_name=package_name,
-    )
-    (dest_root / "AGENTS.md").write_text(agents_md, encoding="utf-8")
-
-    llms_txt = get_llms_txt_content(project_name=project_name, template_type=template_type)
-    (dest_root / "llms.txt").write_text(llms_txt, encoding="utf-8")
