@@ -20,7 +20,15 @@
 
 ---
 
-## PyPI Installation
+## Installation
+
+### One-Line Install (Linux, macOS, Windows WSL / Git Bash)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Alazar42/AIMLite/main/install.sh | bash
+```
+
+### PyPI Installation
 
 ```bash
 pip install aimlite
