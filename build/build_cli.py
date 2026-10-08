@@ -32,19 +32,21 @@ def build_executable(output_name: str = "aimlite") -> Path:
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
 
-        # Copy src/cli and src/aimlite into staging directory
-        for pkg in ["cli", "aimlite"]:
-            src_pkg = src_dir / pkg
-            dst_pkg = tmp_path / pkg
-            if src_pkg.is_dir():
-                shutil.copytree(src_pkg, dst_pkg)
+        # Copy src/aimlite into staging directory
+        src_aimlite = src_dir / "aimlite"
+        if src_aimlite.is_dir():
+            shutil.copytree(src_aimlite, tmp_path / "aimlite")
+
+        # Also provide backward-compatible 'cli' package alias
+        if (src_aimlite / "cli").is_dir():
+            shutil.copytree(src_aimlite / "cli", tmp_path / "cli")
 
         # Create zipapp archive with compressed bytecode and interpreter shebang
         zipapp.create_archive(
             source=tmp_path,
             target=output_bin,
             interpreter="/usr/bin/env python3",
-            main="cli.main:main",
+            main="aimlite.cli.main:main",
             compressed=True,
         )
 

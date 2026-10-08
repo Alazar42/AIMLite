@@ -9,6 +9,8 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import json
+import keyword
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +21,27 @@ from aimlite.data import Dataset
 from aimlite.lifecycle import BaseEvaluator, BaseInference, BaseTrainer
 from aimlite.models import Model
 from aimlite.registry import get_all
+
+
+def sanitize_package_name(name: str) -> str:
+    """Sanitizes an arbitrary project name or folder path into a valid Python package identifier.
+    
+    Ensures the resulting identifier contains only alphanumeric characters and underscores,
+    does not start with a digit, and is not a Python reserved keyword.
+    """
+    if not name:
+        return "my_ai"
+    base = Path(name).name.strip()
+    cleaned = base.lstrip(".")
+    cleaned = re.sub(r"[^a-zA-Z0-9_]", "_", cleaned)
+    cleaned = re.sub(r"_+", "_", cleaned).strip("_")
+    if not cleaned:
+        return "my_ai"
+    if not cleaned[0].isalpha() and cleaned[0] != "_":
+        cleaned = f"pkg_{cleaned}"
+    if keyword.iskeyword(cleaned):
+        cleaned = f"{cleaned}_pkg"
+    return cleaned
 
 
 @dataclass
@@ -173,11 +196,51 @@ def resolve_project_context(
     config = BaseConfig(config_path=config_file)
 
     # Determine target module
-    target_module = manifest.get("entrypoint") or manifest.get("name") or "my_ai"
+    raw_target = manifest.get("entrypoint") or manifest.get("name") or "my_ai"
+    target_module = sanitize_package_name(raw_target)
+
+    # Auto-heal project directory and manifest if package was scaffolded with leading dot or invalid identifier
+    if raw_target != target_module:
+        old_dir = root_dir / raw_target
+        new_dir = root_dir / target_module
+        if old_dir.is_dir() and not new_dir.exists():
+            try:
+                old_dir.rename(new_dir)
+                manifest["entrypoint"] = target_module
+                if manifest_file and manifest_file.is_file():
+                    try:
+                        with open(manifest_file, "w", encoding="utf-8") as f:
+                            json.dump(manifest, f, indent=2)
+                    except Exception:
+                        pass
+                # Update any Python source files referencing the old invalid package name
+                for py_file in root_dir.rglob("*.py"):
+                    if ".venv" in py_file.parts or "__pycache__" in py_file.parts:
+                        continue
+                    try:
+                        txt = py_file.read_text(encoding="utf-8")
+                        new_txt = txt.replace(f"from .{target_module}.", f"from {target_module}.")
+                        new_txt = new_txt.replace(f"from {raw_target}.", f"from {target_module}.")
+                        new_txt = new_txt.replace(f"import {raw_target}.", f"import {target_module}.")
+                        if new_txt != txt:
+                            py_file.write_text(new_txt, encoding="utf-8")
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
     entrypoint_dir = root_dir / target_module
-    if not entrypoint_dir.is_dir() and (root_dir / "data.py").is_file():
-        # Flat project structure where modules reside in root
-        entrypoint_dir = root_dir
+    if not entrypoint_dir.is_dir():
+        if (root_dir / raw_target).is_dir():
+            entrypoint_dir = root_dir / raw_target
+        elif (root_dir / "data.py").is_file():
+            # Flat project structure where modules reside in root
+            entrypoint_dir = root_dir
+
+    if entrypoint_dir.is_dir():
+        entry_str = str(entrypoint_dir)
+        if entry_str not in sys.path:
+            sys.path.insert(0, entry_str)
 
     # Import target modules to trigger automatic registry discovery
     _import_project_modules(root_dir, target_module, entrypoint_dir)
@@ -190,8 +253,7 @@ def resolve_project_context(
     project_datasets = {}
     for name, cls in get_all("dataset").items():
         if issubclass(cls, Dataset) and cls is not Dataset and not _is_framework_class(cls):
-            mod = getattr(cls, "__module__", "")
-            if mod.startswith(f"{target_module}.") or mod == target_module or mod in ("data", "__main__"):
+            if _is_project_class(cls, target_module, root_dir):
                 project_datasets[cls.__name__] = cls
 
     if not project_datasets and not manifest:
@@ -203,8 +265,7 @@ def resolve_project_context(
     project_models = {}
     for name, cls in get_all("model").items():
         if issubclass(cls, Model) and cls is not Model and not _is_framework_class(cls):
-            mod = getattr(cls, "__module__", "")
-            if mod.startswith(f"{target_module}.") or mod == target_module or mod in ("model", "__main__"):
+            if _is_project_class(cls, target_module, root_dir):
                 project_models[cls.__name__] = cls
 
     if not project_models and not manifest:
@@ -216,8 +277,7 @@ def resolve_project_context(
     project_trainers = {}
     for name, cls in get_all("trainer").items():
         if issubclass(cls, BaseTrainer) and cls is not BaseTrainer and not _is_framework_class(cls):
-            mod = getattr(cls, "__module__", "")
-            if mod.startswith(f"{target_module}.") or mod == target_module or mod in ("trainer", "__main__"):
+            if _is_project_class(cls, target_module, root_dir):
                 project_trainers[cls.__name__] = cls
 
     if not project_trainers and not manifest:
@@ -295,10 +355,29 @@ def resolve_project_context(
     )
 
 
+def _is_project_class(cls: Type[Any], target_module: str, root_dir: Path) -> bool:
+    """Checks whether a registered class belongs to the active project."""
+    mod = getattr(cls, "__module__", "")
+    if mod.startswith(f"{target_module}.") or mod == target_module or mod in (
+        "data", "model", "trainer", "evaluator", "inference", "store", "chat_provider", "adapter", "__main__"
+    ):
+        return True
+    mod_obj = sys.modules.get(mod)
+    if mod_obj and getattr(mod_obj, "__file__", None):
+        try:
+            return Path(mod_obj.__file__).resolve().is_relative_to(root_dir.resolve())
+        except Exception:
+            pass
+    return False
+
+
 def _import_project_modules(root_dir: Path, module_name: str, entrypoint_dir: Path) -> None:
     """Attempts to import standard project component modules."""
     module_candidates = [
         "config",
+        "chat_provider",
+        "store",
+        "adapter",
         "data",
         "model",
         "trainer",
@@ -308,15 +387,21 @@ def _import_project_modules(root_dir: Path, module_name: str, entrypoint_dir: Pa
     ]
 
     for mod in module_candidates:
-        full_name = f"{module_name}.{mod}" if entrypoint_dir != root_dir else mod
+        full_name = (
+            f"{module_name}.{mod}"
+            if (entrypoint_dir != root_dir and module_name and module_name.isidentifier())
+            else mod
+        )
+        target_file = entrypoint_dir / f"{mod}.py"
         try:
             importlib.import_module(full_name)
-        except ModuleNotFoundError as exc:
-            target_file = entrypoint_dir / f"{mod}.py"
-            if target_file.is_file():
-                _import_file_directly(target_file, full_name, parent_package=module_name)
         except Exception:
-            pass
+            if target_file.is_file():
+                _import_file_directly(
+                    target_file,
+                    full_name,
+                    parent_package=module_name if (module_name and module_name.isidentifier()) else None,
+                )
 
 
 def _import_file_directly(
@@ -359,12 +444,25 @@ def _register_bare_module_aliases(module_name: str, entrypoint_dir: Path) -> Non
     unrelated system 'data' module (e.g. matplotlib.dates shim) instead of
     the project's data.py.
     """
-    bare_names = ["config", "data", "model", "trainer", "evaluator", "inference", "serve"]
+    bare_names = [
+        "config",
+        "chat_provider",
+        "store",
+        "adapter",
+        "data",
+        "model",
+        "trainer",
+        "evaluator",
+        "inference",
+        "serve",
+    ]
     for mod in bare_names:
         full_name = f"{module_name}.{mod}"
         # Only alias if the full-qualified module was successfully loaded
         if full_name in sys.modules and mod not in sys.modules:
             sys.modules[mod] = sys.modules[full_name]
+        elif mod in sys.modules and full_name not in sys.modules:
+            sys.modules[full_name] = sys.modules[mod]
 
 
 def _resolve_registered_class(category: str, base_cls: Type[Any]) -> Optional[Type[Any]]:

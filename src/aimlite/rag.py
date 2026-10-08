@@ -634,10 +634,8 @@ class APIEmbedding(BaseEmbedding):
                         r = client.embeddings(model=self.model, prompt=t)
                         res.append(r.get("embedding", [0.0] * self.dim))
                     return res
-            except ImportError:
+            except (ImportError, Exception):
                 pass
-            except Exception as e:
-                raise RuntimeError(f"Ollama SDK Embedding Error ({self.model}): {e}") from e
 
             # Fallback to REST HTTP: Try /api/embed batch endpoint first, then /api/embeddings
             embed_url = f"{host}/api/embed"
@@ -1128,12 +1126,15 @@ class OllamaChatProvider(BaseChatProvider):
         base_url: Optional[str] = None,
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
+        timeout: Optional[float] = None,
         **kwargs: Any,
     ) -> None:
         resolved_model = model or os.environ.get("OLLAMA_MODEL") or "llama3.2"
         super().__init__(model=resolved_model, system_prompt=system_prompt, temperature=temperature, **kwargs)
         resolved_url = base_url or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
         self.base_url = resolved_url.rstrip("/")
+        env_timeout = os.environ.get("OLLAMA_TIMEOUT")
+        self.timeout = float(timeout if timeout is not None else (env_timeout if env_timeout else 300.0))
 
     def generate(
         self,
@@ -1145,29 +1146,24 @@ class OllamaChatProvider(BaseChatProvider):
     ) -> str:
         sys_p = system_prompt or self.system_prompt
         t_val = self.temperature if temperature is None else temperature
+        options_dict: Dict[str, Any] = {"temperature": t_val}
+        if max_tokens is not None:
+            options_dict["num_predict"] = max_tokens
 
         # 1. Try official Ollama SDK
         try:
             import ollama  # type: ignore
 
-            client = ollama.Client(host=self.base_url)
+            client = ollama.Client(host=self.base_url, timeout=self.timeout)
             resp = client.generate(
                 model=self.model,
                 prompt=prompt,
                 system=sys_p,
-                options={"temperature": t_val},
+                options=options_dict,
             )
             return resp.get("response", "")
-        except ImportError:
+        except (ImportError, Exception):
             pass
-        except Exception as e:
-            err_str = str(e)
-            if "111" in err_str or "Connection refused" in err_str:
-                raise ConnectionError(
-                    f"Ollama Connection Error: Could not connect to Ollama server at '{self.base_url}'. "
-                    f"Please make sure Ollama is running ('ollama serve') and model '{self.model}' is downloaded ('ollama pull {self.model}')."
-                ) from e
-            raise RuntimeError(f"Ollama SDK Error ({self.model}): {e}") from e
 
         # 2. Fallback to native REST API
         url = f"{self.base_url}/api/generate"
@@ -1176,9 +1172,7 @@ class OllamaChatProvider(BaseChatProvider):
             "prompt": prompt,
             "system": sys_p,
             "stream": False,
-            "options": {
-                "temperature": t_val,
-            },
+            "options": options_dict,
         }
         try:
             req = urllib.request.Request(
@@ -1187,7 +1181,7 @@ class OllamaChatProvider(BaseChatProvider):
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=90) as resp:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 return data.get("response", "")
         except urllib.error.HTTPError as e:
@@ -1197,6 +1191,11 @@ class OllamaChatProvider(BaseChatProvider):
             ) from e
         except Exception as e:
             err_msg = str(e)
+            if "timed out" in err_msg.lower() or "timeout" in err_msg.lower():
+                raise TimeoutError(
+                    f"Ollama generation timed out after {self.timeout}s for model '{self.model}'. "
+                    f"Set OLLAMA_TIMEOUT to a larger value or select a faster/smaller model."
+                ) from e
             if "111" in err_msg or "Connection refused" in err_msg or "urlopen error" in err_msg:
                 raise ConnectionError(
                     f"Ollama Connection Error: Could not connect to Ollama server at '{self.base_url}'. "
@@ -1325,7 +1324,11 @@ class QueryAnalyzer:
         prompt = f"Query: {query}\n\nDeconstruct this query according to the instructions."
 
         try:
-            raw_response = self.chat_provider.generate(prompt, system_prompt=self.system_prompt)
+            raw_response = self.chat_provider.generate(
+                prompt,
+                system_prompt=self.system_prompt,
+                max_tokens=256,
+            )
             # Try parsing JSON from LLM response
             json_match = re.search(r"\{.*\}", raw_response, re.DOTALL)
             if json_match:
@@ -1952,6 +1955,31 @@ class KnowledgeModel(RAGModel):
             top_k=top_k,
             **kwargs,
         )
+        self.sync_config(config)
+
+    def sync_config(self, config: Optional[Dict[str, Any]] = None) -> None:
+        """Synchronizes model runtime (active LLM model, prompt, parameters) with project configuration."""
+        cfg = config
+        if cfg is None:
+            try:
+                from aimlite.config import BaseConfig
+
+                cfg = BaseConfig.load_active().to_dict()
+            except Exception:
+                cfg = {}
+        inner = cfg.get("config", {}) if isinstance(cfg.get("config"), dict) else {}
+        rag_cfg = {**(inner.get("rag") or {}), **(cfg.get("rag") or {})}
+        new_model = rag_cfg.get("model_name") or rag_cfg.get("model")
+        if new_model and hasattr(self, "chat_provider"):
+            if getattr(self.chat_provider, "model", None) != new_model:
+                self.chat_provider.model = new_model
+            if hasattr(self, "query_analyzer") and hasattr(getattr(self, "query_analyzer"), "chat_provider"):
+                self.query_analyzer.chat_provider.model = new_model
+        if "top_k" in rag_cfg:
+            try:
+                self.top_k = int(rag_cfg["top_k"])
+            except (ValueError, TypeError):
+                pass
 
     def chunk_documents(self, documents: Sequence[Document]) -> List[Document]:
         """Hook for developers to customize document splitting and chunking."""

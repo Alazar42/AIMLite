@@ -295,3 +295,37 @@ def test_init_clean_accepts_adapters_type_alias(tmp_path: Path):
     assert (pkg / "adapter.py").read_text(encoding="utf-8") == ""
     assert (pkg / "model.py").read_text(encoding="utf-8") == ""
 
+
+def test_init_with_leading_dot_and_special_chars(tmp_path: Path):
+    from aimlite.cli.discovery import resolve_project_context, sanitize_package_name
+
+    assert sanitize_package_name(".my_ai") == "my_ai"
+    assert sanitize_package_name("my-project") == "my_project"
+    assert sanitize_package_name("123app") == "pkg_123app"
+
+    code = run_init(
+        project_name=".custom_rag",
+        target_dir=str(tmp_path),
+        template_type="rag",
+        create_venv=False,
+        interactive=False,
+        clean=False,
+    )
+    assert code == 0
+    target = tmp_path / ".custom_rag"
+    assert target.is_dir()
+    manifest = json.loads((target / "aimlite.json").read_text(encoding="utf-8"))
+    assert manifest["name"] == ".custom_rag"
+    assert manifest["entrypoint"] == "custom_rag"
+
+    pkg_dir = target / "custom_rag"
+    assert pkg_dir.is_dir()
+    assert (pkg_dir / "model.py").exists()
+    assert "from custom_rag.chat_provider import" in (pkg_dir / "model.py").read_text(encoding="utf-8")
+
+    ctx = resolve_project_context(start_dir=target)
+    assert ctx.model_cls is not None
+    assert ctx.dataset_cls is not None
+    assert ctx.model_cls.__name__ == "SupportDocRAG"
+
+

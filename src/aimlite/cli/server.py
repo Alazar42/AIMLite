@@ -220,6 +220,27 @@ def create_handler_class(
     def execute_model_inference(m_entry: Dict[str, Any], payload: Any) -> Any:
         m_inst = m_entry["instance"]
         m_inf = m_entry.get("inference") or active_inference
+
+        # Dynamically sync model with any changes in aimlite.json
+        if hasattr(m_inst, "sync_config"):
+            try:
+                m_inst.sync_config()
+            except Exception:
+                pass
+        elif hasattr(m_inst, "chat_provider"):
+            try:
+                from aimlite.config import BaseConfig
+
+                cfg = BaseConfig.load_active().to_dict()
+                rag_cfg = cfg.get("rag") or cfg.get("config", {}).get("rag") or {}
+                new_model = rag_cfg.get("model_name") or rag_cfg.get("model")
+                if new_model and getattr(m_inst.chat_provider, "model", None) != new_model:
+                    m_inst.chat_provider.model = new_model
+                if hasattr(m_inst, "query_analyzer") and hasattr(getattr(m_inst, "query_analyzer"), "chat_provider"):
+                    m_inst.query_analyzer.chat_provider.model = new_model
+            except Exception:
+                pass
+
         # Allow inference handler or direct model predict
         if hasattr(m_inf, "run"):
             return m_inf.run(m_inst, payload)
@@ -521,7 +542,13 @@ def create_handler_class(
                     try:
                         result = execute_model_inference(m_entry, payload)
                     except Exception as e:
-                        self._send_json(500, {"status": "error", "model": target_model_name, "message": str(e)})
+                        print(f"  {C.RED}Error executing inference on {target_model_name}: {e}{C.RESET}")
+                        self._send_json(500, {
+                            "status": "error",
+                            "model": target_model_name,
+                            "message": str(e),
+                            "error": str(e),
+                        })
                         return
 
                     latency = round((time.perf_counter() - start_t) * 1000, 2)
@@ -550,7 +577,13 @@ def create_handler_class(
                 try:
                     result = execute_model_inference(m_entry, payload)
                 except Exception as e:
-                    self._send_json(500, {"status": "error", "model": target_m_name, "message": str(e)})
+                    print(f"  {C.RED}Error executing inference on {target_m_name}: {e}{C.RESET}")
+                    self._send_json(500, {
+                        "status": "error",
+                        "model": target_m_name,
+                        "message": str(e),
+                        "error": str(e),
+                    })
                     return
 
                 latency = round((time.perf_counter() - start_t) * 1000, 2)

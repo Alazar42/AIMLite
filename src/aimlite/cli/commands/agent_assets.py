@@ -248,8 +248,15 @@ def get_skill_md_content() -> str:
     return SKILL_MD_TEMPLATE.strip() + "\n"
 
 
-def get_agents_md_content(project_name: str, template_type: str, clean: bool = False) -> str:
+def get_agents_md_content(
+    project_name: str,
+    template_type: str,
+    clean: bool = False,
+    package_name: Optional[str] = None,
+) -> str:
     """Generates project-level AGENTS.md instructions for coding agents."""
+    from aimlite.cli.discovery import sanitize_package_name
+    pkg = package_name or sanitize_package_name(project_name)
     mode_text = "Clean skeleton (contracts & docstrings only)" if clean else "Interactive starter setup"
     return f"""# Agent Instructions for {project_name}
 
@@ -259,9 +266,9 @@ AI coding agents (Antigravity, Cursor, Windsurf, Claude Code, GitHub Copilot) wo
 ## Project Summary
 - **Project Name**: `{project_name}`
 - **Paradigm**: `{template_type}` ({mode_text})
-- **Entrypoint Package**: `{project_name}/`
+- **Entrypoint Package**: `{pkg}/`
 - **Manifest**: `aimlite.json`
-- **Application Config**: `{project_name}/config.py`
+- **Application Config**: `{pkg}/config.py`
 
 ## Zero-Path CLI Commands
 Always use the zero-path `aimlite` CLI commands directly via your shell tool:
@@ -290,11 +297,11 @@ aimlite benchmark
 ```
 
 ## Directory & Convention Map
-- `{project_name}/data.py`: Dataset ingestion & schema validation (`Dataset`).
-- `{project_name}/model.py`: Model definition subclassing `Model`, `KnowledgeModel`, or `AdapterModel`.
-- `{project_name}/trainer.py`: Training / Indexing pipeline (`BaseTrainer`, `RAGTrainer`, or `AdapterTrainer`).
-- `{project_name}/evaluator.py`: Evaluation metrics (`BaseEvaluator`).
-- `{project_name}/inference.py`: Serving handler (`BaseInference`).
+- `{pkg}/data.py`: Dataset ingestion & schema validation (`Dataset`).
+- `{pkg}/model.py`: Model definition subclassing `Model`, `KnowledgeModel`, or `AdapterModel`.
+- `{pkg}/trainer.py`: Training / Indexing pipeline (`BaseTrainer`, `RAGTrainer`, or `AdapterTrainer`).
+- `{pkg}/evaluator.py`: Evaluation metrics (`BaseEvaluator`).
+- `{pkg}/inference.py`: Serving handler (`BaseInference`).
 - `data/`: Ingestion directory for raw datasets, documents, and instructions.
 - `models/`: Checkpoints and serialized model weights (`.pkl`).
 - `artifacts/`: Non-weight artifacts (indexes, configs, vocabularies).
@@ -340,6 +347,7 @@ def scaffold_agent_customizations(
     project_name: str,
     template_type: str,
     clean: bool = False,
+    package_name: Optional[str] = None,
 ) -> None:
     """Scaffolds agent skills, AGENTS.md, and llms.txt for coding agent integration."""
     agents_dir = dest_root / ".agents" / "skills" / "aimlite"
@@ -348,7 +356,12 @@ def scaffold_agent_customizations(
     skill_content = get_skill_md_content()
     (agents_dir / "SKILL.md").write_text(skill_content, encoding="utf-8")
 
-    agents_md = get_agents_md_content(project_name=project_name, template_type=template_type, clean=clean)
+    agents_md = get_agents_md_content(
+        project_name=project_name,
+        template_type=template_type,
+        clean=clean,
+        package_name=package_name,
+    )
     (dest_root / "AGENTS.md").write_text(agents_md, encoding="utf-8")
 
     llms_txt = get_llms_txt_content(project_name=project_name, template_type=template_type)

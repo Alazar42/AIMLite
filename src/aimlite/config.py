@@ -127,6 +127,57 @@ class BaseConfig:
         app_configs = self._config.get("app_configs", {})
         return dict(app_configs.get(app_name, {}))
 
+    def __getitem__(self, key: str) -> Any:
+        return self._config[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self._config[key] = value
+
+    def __contains__(self, key: str) -> bool:
+        return key in self._config
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Returns configuration value by key or fallback default."""
+        return self._config.get(key, default)
+
+    def reload(self) -> Dict[str, Any]:
+        """Re-reads configuration from aimlite.json on disk and updates active state."""
+        self._config = self._load_config()
+        return self._config
+
+    def get_rag_config(self) -> Dict[str, Any]:
+        """Resolves RAG configuration from top-level or config block in aimlite.json."""
+        inner = self._config.get("config", {}) if isinstance(self._config.get("config"), dict) else {}
+        rag_from_inner = inner.get("rag", {}) if isinstance(inner.get("rag"), dict) else {}
+        rag_from_root = self._config.get("rag", {}) if isinstance(self._config.get("rag"), dict) else {}
+        merged = {**rag_from_inner, **rag_from_root}
+        return merged
+
+    def get_adapter_config(self) -> Dict[str, Any]:
+        """Resolves LoRA / adapter configuration from top-level or config block in aimlite.json."""
+        inner = self._config.get("config", {}) if isinstance(self._config.get("config"), dict) else {}
+        adapter_from_inner = inner.get("adapter", {}) if isinstance(inner.get("adapter"), dict) else {}
+        adapter_from_root = self._config.get("adapter", {}) if isinstance(self._config.get("adapter"), dict) else {}
+        merged = {**adapter_from_inner, **adapter_from_root}
+        return merged
+
+    def get_model_config(self) -> Dict[str, Any]:
+        """Resolves model-specific hyperparameter configuration."""
+        inner = self._config.get("config", {}) if isinstance(self._config.get("config"), dict) else {}
+        model_from_inner = inner.get("model", {}) if isinstance(inner.get("model"), dict) else {}
+        model_from_root = self._config.get("model", {}) if isinstance(self._config.get("model"), dict) else {}
+        return {**model_from_inner, **model_from_root}
+
+    @classmethod
+    def load_active(cls, start_dir: Optional[Union[str, Path]] = None) -> BaseConfig:
+        """Discovers project root and loads active BaseConfig instance."""
+        target_dir = Path(start_dir) if start_dir else Path.cwd()
+        for directory in [target_dir, *target_dir.parents]:
+            candidate = directory / "aimlite.json"
+            if candidate.is_file():
+                return cls(config_path=candidate)
+        return cls()
+
     def _load_config(self) -> Dict[str, Any]:
         """Loads configuration from config_path or searches for aimlite.json in parent directories."""
         target_path: Optional[Path] = self.config_path

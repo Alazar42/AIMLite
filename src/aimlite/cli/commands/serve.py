@@ -200,9 +200,27 @@ def run_serve(
                 is_ready = getattr(instance, "weights", None) is not None
 
         if is_ready or (target and custom_app is not None):
+            # Sync model parameters with aimlite.json if changed
+            if hasattr(instance, "sync_config"):
+                try:
+                    instance.sync_config(ctx.config.to_dict())
+                except Exception:
+                    pass
+            rag_cfg = ctx.config.get_rag_config() if hasattr(ctx.config, "get_rag_config") else (ctx.config.to_dict().get("rag") or ctx.config.to_dict().get("config", {}).get("rag") or {})
+            target_model = rag_cfg.get("model_name") or rag_cfg.get("model")
+            if target_model and hasattr(instance, "chat_provider"):
+                if getattr(instance.chat_provider, "model", None) != target_model:
+                    instance.chat_provider.model = target_model
+                if hasattr(instance, "query_analyzer") and hasattr(getattr(instance, "query_analyzer"), "chat_provider"):
+                    instance.query_analyzer.chat_provider.model = target_model
+
             m_type = detect_model_type(m_cls, instance)
             features = discover_feature_names(ctx, m_cls, instance) if m_type == "ml" else []
             doc = m_cls.__doc__.strip().split("\n")[0] if m_cls.__doc__ else f"{m_name} ({m_type.upper()})"
+            if m_type == "rag" and hasattr(instance, "chat_provider"):
+                provider_desc = getattr(instance.chat_provider, "model", "")
+                if provider_desc:
+                    doc = f"{doc} [{provider_desc}]"
             inference_handler = ctx.inference_cls() if ctx.inference_cls else None
             ready_models[m_name] = {
                 "class": m_cls,

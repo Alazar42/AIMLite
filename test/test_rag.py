@@ -445,3 +445,28 @@ class TestDocumentLoader:
             docs = DocumentLoader.load_directory(td, extensions=[".txt"])
             assert len(docs) >= 1
             assert any("valid text" in d.content for d in docs)
+
+
+# =============================================================================
+# OllamaChatProvider & KnowledgeModel Dynamic Config Sync
+# =============================================================================
+
+
+class TestOllamaChatProviderConfig:
+    def test_timeout_and_options(self):
+        from aimlite.rag import OllamaChatProvider
+
+        provider = OllamaChatProvider(model="qwen3:0.6b", timeout=120.0)
+        assert provider.timeout == 120.0
+        assert provider.model == "qwen3:0.6b"
+
+    def test_sync_config_updates_model(self):
+        from aimlite.rag import KnowledgeModel, MockChatProvider
+
+        km = KnowledgeModel(name="doc_rag", chat_provider=MockChatProvider(model="old-model"))
+        assert km.chat_provider.model == "old-model"
+
+        km.sync_config({"rag": {"model_name": "qwen3:0.6b", "top_k": 5}})
+        assert km.chat_provider.model == "qwen3:0.6b"
+        assert km.top_k == 5
+

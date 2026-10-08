@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from aimlite.cli.commands.agent_assets import scaffold_agent_customizations
 from aimlite.cli.commands.install import run_install
+from aimlite.cli.discovery import sanitize_package_name
 from aimlite.cli.ui import (
     C,
     arrow,
@@ -119,6 +120,7 @@ def run_init(
         dest_root = Path.cwd() / project_name
 
     dest_root.mkdir(parents=True, exist_ok=True)
+    package_name = sanitize_package_name(project_name)
 
     # 2. System Paradigm / Template Selection
     if template_type is not None:
@@ -304,7 +306,7 @@ def run_init(
     manifest_data: Dict[str, Any] = {
         "name": project_name,
         "version": "0.1.0",
-        "entrypoint": project_name,
+        "entrypoint": package_name,
         "template": template_type,
         "clean": clean,
         "dependencies": dependencies,
@@ -328,10 +330,19 @@ def run_init(
         json.dump(manifest_data, f, indent=2)
 
     # 6. Scaffold Python application package
-    package_dir = dest_root / project_name
+    package_dir = dest_root / package_name
     package_dir.mkdir(parents=True, exist_ok=True)
 
-    _scaffold_paradigm_files(package_dir, dest_root, project_name, template_type, rag_config, adapter_config, clean=clean)
+    _scaffold_paradigm_files(
+        package_dir,
+        dest_root,
+        project_name,
+        template_type,
+        rag_config,
+        adapter_config,
+        clean=clean,
+        package_name=package_name,
+    )
 
     type_label = template_type.upper()
     mode_label = f"CLEAN {type_label}" if clean else type_label
@@ -441,8 +452,10 @@ def _scaffold_paradigm_files(
     rag_config: Dict[str, Any],
     adapter_config: Dict[str, Any],
     clean: bool = False,
+    package_name: Optional[str] = None,
 ) -> None:
     """Generates customized Python source files and starter datasets according to the paradigm."""
+    pkg = package_name or sanitize_package_name(project_name)
     config_content = f'''"""AIMLite App Configuration: config.py"""
 
 from pathlib import Path
@@ -464,24 +477,32 @@ class Config(BaseConfig):
     batch_size: int = 32
 '''
     (package_dir / "config.py").write_text(config_content, encoding="utf-8")
-    (package_dir / "__init__.py").write_text(f'"""{project_name} AIMLite Package."""\n', encoding="utf-8")
+    (package_dir / "__init__.py").write_text(f'"""{pkg} AIMLite Package."""\n', encoding="utf-8")
 
     if clean:
-        _scaffold_clean_project(package_dir, dest_root, project_name, template_type)
+        _scaffold_clean_project(package_dir, dest_root, project_name, template_type, package_name=pkg)
     elif template_type == "rag":
-        _scaffold_rag(package_dir, dest_root, project_name, rag_config, clean=clean)
+        _scaffold_rag(package_dir, dest_root, project_name, rag_config, clean=clean, package_name=pkg)
     elif template_type == "adapter":
-        _scaffold_adapter(package_dir, dest_root, project_name, adapter_config, clean=clean)
+        _scaffold_adapter(package_dir, dest_root, project_name, adapter_config, clean=clean, package_name=pkg)
     else:
-        _scaffold_scratch(package_dir, dest_root, project_name)
+        _scaffold_scratch(package_dir, dest_root, project_name, package_name=pkg)
 
-    scaffold_agent_customizations(dest_root, project_name, template_type, clean=clean)
+    scaffold_agent_customizations(dest_root, project_name, template_type, clean=clean, package_name=pkg)
     print(f"  {check('Agent Ready', '.agents/skills/aimlite/SKILL.md, AGENTS.md, llms.txt')}")
 
 
 
-def _scaffold_rag(package_dir: Path, dest_root: Path, project_name: str, rag_config: Dict[str, Any], clean: bool = False) -> None:
+def _scaffold_rag(
+    package_dir: Path,
+    dest_root: Path,
+    project_name: str,
+    rag_config: Dict[str, Any],
+    clean: bool = False,
+    package_name: Optional[str] = None,
+) -> None:
     """Generates RAG & Knowledge Model files with modular chat provider, storage, and developer-editable hooks."""
+    pkg = package_name or sanitize_package_name(project_name)
     chat_p = rag_config.get("chat_provider", "openai")
     model_name = rag_config.get("model_name", "gpt-4o-mini")
     vector_db = rag_config.get("vector_db", "memory")
@@ -497,6 +518,7 @@ All classes, functions, and prompt templates in this file are fully editable by 
 
 import os
 from typing import Any, Dict, List, Optional
+from aimlite.config import BaseConfig
 from aimlite.rag import (
     AnthropicChatProvider,
     BaseChatProvider,
@@ -537,58 +559,74 @@ Answer:"""
 # =====================================================================
 
 def get_chat_provider(
-    provider_name: str = "{chat_p}",
+    provider_name: Optional[str] = None,
     model_name: Optional[str] = None,
     system_prompt: Optional[str] = None,
-    temperature: float = 0.7,
+    temperature: Optional[float] = None,
+    config: Optional[Any] = None,
     **kwargs: Any,
 ) -> BaseChatProvider:
     """Instantiates and returns the configured LLM Chat Provider.
     
     Edit this function to add custom LLM providers, change default models,
-    or adjust generation parameters.
+    or adjust generation parameters. Settings are dynamically resolved from aimlite.json.
     """
+    cfg = config if isinstance(config, dict) else (config.to_dict() if hasattr(config, "to_dict") else None)
+    if cfg is None:
+        try:
+            cfg = BaseConfig.load_active().to_dict()
+        except Exception:
+            cfg = {{}}
+    rag_cfg = cfg.get("rag") or cfg.get("config", {{}}).get("rag") or {{}}
+
+    p_name = (provider_name or os.environ.get("CHAT_PROVIDER") or rag_cfg.get("chat_provider") or "{chat_p}").lower()
+    m_name = model_name or os.environ.get("MODEL_NAME") or rag_cfg.get("model_name") or rag_cfg.get("model")
+    temp = temperature if temperature is not None else rag_cfg.get("temperature", 0.7)
+    timeout = kwargs.pop("timeout", None) or rag_cfg.get("timeout")
     prompt = system_prompt or SYSTEM_PROMPT
 
-    if provider_name == "openai":
+    if p_name == "openai":
         return OpenAIChatProvider(
-            model=model_name or os.environ.get("OPENAI_MODEL", "{model_name}"),
+            model=m_name or os.environ.get("OPENAI_MODEL", "{model_name}"),
             system_prompt=prompt,
-            temperature=temperature,
+            temperature=temp,
             **kwargs,
         )
-    elif provider_name == "gemini":
+    elif p_name == "gemini":
         return GeminiChatProvider(
-            model=model_name or os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"),
+            model=m_name or os.environ.get("GEMINI_MODEL", "gemini-1.5-flash"),
             system_prompt=prompt,
-            temperature=temperature,
+            temperature=temp,
             **kwargs,
         )
-    elif provider_name == "anthropic":
+    elif p_name == "anthropic":
         return AnthropicChatProvider(
-            model=model_name or os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
+            model=m_name or os.environ.get("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
             system_prompt=prompt,
-            temperature=temperature,
+            temperature=temp,
             **kwargs,
         )
-    elif provider_name == "ollama":
+    elif p_name == "ollama":
         return OllamaChatProvider(
-            model=model_name or os.environ.get("OLLAMA_MODEL", "{model_name}"),
-            base_url=os.environ.get("OLLAMA_HOST", "http://localhost:11434"),
+            model=m_name or os.environ.get("OLLAMA_MODEL", "{model_name}"),
+            base_url=rag_cfg.get("ollama_host") or os.environ.get("OLLAMA_HOST", "http://localhost:11434"),
             system_prompt=prompt,
-            temperature=temperature,
+            temperature=temp,
+            timeout=timeout,
             **kwargs,
         )
-    elif provider_name == "local":
+    elif p_name == "local":
         return LocalChatProvider(
-            model_name=model_name or os.environ.get("LOCAL_MODEL", "meta-llama/Llama-3.2-3B"),
+            model_name=m_name or os.environ.get("LOCAL_MODEL", "meta-llama/Llama-3.2-3B"),
             system_prompt=prompt,
+            temperature=temp,
             **kwargs,
         )
     else:
         return MockChatProvider(
-            model=model_name or os.environ.get("MOCK_MODEL", "mock-gpt"),
+            model=m_name or os.environ.get("MOCK_MODEL", "mock-gpt"),
             system_prompt=prompt,
+            temperature=temp,
             **kwargs,
         )
 
@@ -599,17 +637,27 @@ def get_chat_provider(
 
 def get_query_analyzer(
     chat_provider: Optional[BaseChatProvider] = None,
-    enable_hyde: bool = True,
+    enable_hyde: Optional[bool] = None,
     system_prompt: Optional[str] = None,
+    config: Optional[Any] = None,
 ) -> QueryAnalyzer:
     """Configures Query Intelligence for intent parsing, expansion, and hypothetical document generation (HyDE).
     
     Edit this function to customize the query analyzer or adjust query expansion behaviour.
     """
-    provider = chat_provider or get_chat_provider()
+    cfg = config if isinstance(config, dict) else (config.to_dict() if hasattr(config, "to_dict") else None)
+    if cfg is None:
+        try:
+            cfg = BaseConfig.load_active().to_dict()
+        except Exception:
+            cfg = {{}}
+    rag_cfg = cfg.get("rag") or cfg.get("config", {{}}).get("rag") or {{}}
+
+    provider = chat_provider or get_chat_provider(config=cfg)
+    hyde_active = enable_hyde if enable_hyde is not None else rag_cfg.get("enable_hyde", True)
     return QueryAnalyzer(
         chat_provider=provider,
-        enable_hyde=enable_hyde,
+        enable_hyde=hyde_active,
         system_prompt=system_prompt or PROMPT_QUERY_ANALYZER,
     )
 '''
@@ -625,6 +673,7 @@ All functions and classes in this file are fully editable by the developer.
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+from aimlite.config import BaseConfig
 from aimlite.rag import (
     APIEmbedding,
     BaseEmbedding,
@@ -646,15 +695,24 @@ from aimlite.rag import (
 def get_embedding_model(
     engine: Optional[str] = None,
     model_name: Optional[str] = None,
+    config: Optional[Any] = None,
     **kwargs: Any,
 ) -> BaseEmbedding:
     """Instantiates embedding model (Dense Neural, Ollama API, OpenAI API, or Pure-Python TF-IDF).
     
-    Edit this function to plug in custom embedding models (e.g. HuggingFace, Cohere, OpenAI).
+    Edit this function to plug in custom embedding models. Resolves settings from aimlite.json.
     """
-    resolved_engine = (engine or os.environ.get("EMBEDDING_ENGINE") or "{embed_engine}").lower()
-    resolved_model = model_name or os.environ.get("EMBEDDING_MODEL", "{embed_model}")
-    ollama_host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    cfg = config if isinstance(config, dict) else (config.to_dict() if hasattr(config, "to_dict") else None)
+    if cfg is None:
+        try:
+            cfg = BaseConfig.load_active().to_dict()
+        except Exception:
+            cfg = {{}}
+    rag_cfg = cfg.get("rag") or cfg.get("config", {{}}).get("rag") or {{}}
+
+    resolved_engine = (engine or os.environ.get("EMBEDDING_ENGINE") or rag_cfg.get("embedding_engine") or "{embed_engine}").lower()
+    resolved_model = model_name or os.environ.get("EMBEDDING_MODEL") or rag_cfg.get("embedding_model") or "{embed_model}"
+    ollama_host = rag_cfg.get("ollama_host") or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 
     if resolved_engine == "ollama" or "nomic" in resolved_model.lower():
         return OllamaEmbedding(model=resolved_model, host=ollama_host, **kwargs)
@@ -676,16 +734,25 @@ def get_vector_store(
     embedding_fn: Optional[BaseEmbedding] = None,
     db_url: Optional[str] = None,
     table_name: str = "aimlite_knowledge_chunks",
+    config: Optional[Any] = None,
     **kwargs: Any,
 ) -> BaseVectorStore:
     """Instantiates vector storage backend (PostgreSQL pgvector ORM or MemoryVectorStore).
     
     Edit this function to configure connection pooling, custom vector tables,
-    or connect third-party vector databases (e.g. Chroma, Qdrant, Pinecone).
+    or connect third-party vector databases. Resolves settings from aimlite.json.
     """
-    resolved_backend = (backend or os.environ.get("VECTOR_STORE") or "{vector_db}").lower()
-    resolved_db = db_url or os.environ.get("DATABASE_URL")
-    embed_fn = embedding_fn or get_embedding_model()
+    cfg = config if isinstance(config, dict) else (config.to_dict() if hasattr(config, "to_dict") else None)
+    if cfg is None:
+        try:
+            cfg = BaseConfig.load_active().to_dict()
+        except Exception:
+            cfg = {{}}
+    rag_cfg = cfg.get("rag") or cfg.get("config", {{}}).get("rag") or {{}}
+
+    resolved_backend = (backend or os.environ.get("VECTOR_STORE") or rag_cfg.get("vector_db") or "{vector_db}").lower()
+    resolved_db = db_url or os.environ.get("DATABASE_URL") or rag_cfg.get("db_url")
+    embed_fn = embedding_fn or get_embedding_model(config=cfg)
 
     if resolved_backend == "postgres" or (resolved_db and resolved_backend != "memory"):
         return PostgresVectorStore(
@@ -783,6 +850,7 @@ All methods and hooks in this model are fully editable and overrideable by the d
 """
 
 from typing import Any, Dict, List, Optional
+from aimlite.config import BaseConfig
 from aimlite.rag import (
     BaseChatProvider,
     BaseEmbedding,
@@ -793,8 +861,8 @@ from aimlite.rag import (
     QueryAnalyzer,
     SmartChunker,
 )
-from {project_name}.chat_provider import SYSTEM_PROMPT, QA_PROMPT_TEMPLATE, get_chat_provider, get_query_analyzer
-from {project_name}.store import get_embedding_model, get_vector_store
+from {pkg}.chat_provider import SYSTEM_PROMPT, QA_PROMPT_TEMPLATE, get_chat_provider, get_query_analyzer
+from {pkg}.store import get_embedding_model, get_vector_store
 
 
 class SupportDocRAG(KnowledgeModel):
@@ -802,31 +870,44 @@ class SupportDocRAG(KnowledgeModel):
 
     def __init__(
         self,
-        name: str = "{project_name}_rag",
+        name: str = "{pkg}_rag",
         config: Optional[Dict[str, Any]] = None,
-        top_k: int = 3,
+        top_k: Optional[int] = None,
         chat_provider: Optional[BaseChatProvider] = None,
         vector_store: Optional[BaseVectorStore] = None,
         embedding_fn: Optional[BaseEmbedding] = None,
         query_analyzer: Optional[QueryAnalyzer] = None,
         retriever: Optional[BaseRetriever] = None,
-        chunk_size: int = 400,
-        chunk_overlap: int = 40,
+        chunk_size: Optional[int] = None,
+        chunk_overlap: Optional[int] = None,
         system_prompt: Optional[str] = None,
         prompt_template: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        provider = chat_provider or get_chat_provider()
+        cfg = config
+        if cfg is None:
+            try:
+                cfg = BaseConfig.load_active().to_dict()
+            except Exception:
+                cfg = {{}}
+        inner = cfg.get("config", {{}}) if isinstance(cfg.get("config"), dict) else {{}}
+        rag_cfg = {{**(inner.get("rag") or {{}}), **(cfg.get("rag") or {{}})}}
+
+        provider = chat_provider or get_chat_provider(config=cfg)
         self.chat_provider = provider
 
-        embed_model = embedding_fn or get_embedding_model()
-        store = vector_store or get_vector_store(embedding_fn=embed_model)
-        analyzer = query_analyzer or get_query_analyzer(chat_provider=provider)
-        chunker = SmartChunker(max_chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+        embed_model = embedding_fn or get_embedding_model(config=cfg)
+        store = vector_store or get_vector_store(embedding_fn=embed_model, config=cfg)
+        analyzer = query_analyzer or get_query_analyzer(chat_provider=provider, config=cfg)
+        
+        c_size = chunk_size or rag_cfg.get("chunk_size", 400)
+        c_overlap = chunk_overlap or rag_cfg.get("chunk_overlap", 40)
+        chunker = SmartChunker(max_chunk_size=c_size, chunk_overlap=c_overlap)
+        t_k = top_k or rag_cfg.get("top_k", 3)
 
         super().__init__(
             name=name,
-            config=config,
+            config=cfg,
             chat_provider=provider,
             embedding_fn=embed_model,
             vector_store=store,
@@ -835,7 +916,7 @@ class SupportDocRAG(KnowledgeModel):
             retriever=retriever,
             system_prompt=system_prompt or SYSTEM_PROMPT,
             prompt_template=prompt_template or QA_PROMPT_TEMPLATE,
-            top_k=top_k,
+            top_k=t_k,
             **kwargs,
         )
 
@@ -1064,8 +1145,8 @@ All test queries and benchmark logic in this file are fully editable by the deve
 """
 
 import time
-from {project_name}.data import KnowledgeDocsDataset
-from {project_name}.model import SupportDocRAG
+from {pkg}.data import KnowledgeDocsDataset
+from {pkg}.model import SupportDocRAG
 
 
 def run_benchmark() -> None:
@@ -1182,8 +1263,8 @@ AIMLITE_PORT=8000
 
 import os
 import urllib.request
-from {project_name}.data import KnowledgeDocsDataset
-from {project_name}.model import SupportDocRAG
+from {pkg}.data import KnowledgeDocsDataset
+from {pkg}.model import SupportDocRAG
 
 
 def check_provider_health(model: SupportDocRAG) -> None:
@@ -1264,10 +1345,10 @@ if __name__ == "__main__":
 Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
 
 ## Project Structure
-- `{project_name}/chat_provider.py`: Chat Provider & Query Intelligence LLM configuration.
-- `{project_name}/store.py`: Vector store, PostgreSQL ORM, and embedding setup.
-- `{project_name}/model.py`: High-level Knowledge Model connecting retrieval and generation.
-- `{project_name}/data.py`: SmartChunker document ingestion dataset.
+- `{pkg}/chat_provider.py`: Chat Provider & Query Intelligence LLM configuration.
+- `{pkg}/store.py`: Vector store, PostgreSQL ORM, and embedding setup.
+- `{pkg}/model.py`: High-level Knowledge Model connecting retrieval and generation.
+- `{pkg}/data.py`: SmartChunker document ingestion dataset.
 - `experiments/benchmark.py`: Latency & retrieval quality benchmark script.
 - `client.py`: Ready-to-run interactive/batch client query starter.
 - `.env`: Active local environment configuration with model identifiers.
@@ -1345,8 +1426,16 @@ aimlite serve --port 8000
     (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
 
 
-def _scaffold_adapter(package_dir: Path, dest_root: Path, project_name: str, adapter_config: Dict[str, Any], clean: bool = False) -> None:
+def _scaffold_adapter(
+    package_dir: Path,
+    dest_root: Path,
+    project_name: str,
+    adapter_config: Dict[str, Any],
+    clean: bool = False,
+    package_name: Optional[str] = None,
+) -> None:
     """Generates Fine-Tuning & LoRA Adapter files."""
+    pkg = package_name or sanitize_package_name(project_name)
     # 1. Adapter Configuration Starter: adapter.py
     adapter_py = f'''"""Fine-Tuning & Adapter Configuration: adapter.py
 
@@ -1358,17 +1447,30 @@ from aimlite import AdapterConfig
 
 
 def get_adapter_config(
-    r: int = {adapter_config.get("r", 8)},
-    alpha: float = {adapter_config.get("alpha", 16.0)},
-    dropout: float = 0.05,
+    r: Optional[int] = None,
+    alpha: Optional[float] = None,
+    dropout: Optional[float] = None,
     target_modules: Optional[List[str]] = None,
+    config: Optional[Any] = None,
 ) -> AdapterConfig:
-    """Returns the LoRA hyperparameter configuration."""
-    modules = target_modules or {adapter_config.get("target_modules", ["q_proj", "v_proj"])}
+    """Returns the LoRA hyperparameter configuration. Dynamically resolves settings from aimlite.json."""
+    from aimlite.config import BaseConfig
+
+    cfg = config if isinstance(config, dict) else (config.to_dict() if hasattr(config, "to_dict") else None)
+    if cfg is None:
+        try:
+            cfg = BaseConfig.load_active().to_dict()
+        except Exception:
+            cfg = {{}}
+    ad_cfg = cfg.get("adapter") or cfg.get("config", {{}}).get("adapter") or {{}}
+    resolved_r = r if r is not None else ad_cfg.get("r", {adapter_config.get("r", 8)})
+    resolved_alpha = alpha if alpha is not None else ad_cfg.get("alpha", {adapter_config.get("alpha", 16.0)})
+    resolved_dropout = dropout if dropout is not None else ad_cfg.get("dropout", 0.05)
+    modules = target_modules or ad_cfg.get("target_modules") or {adapter_config.get("target_modules", ["q_proj", "v_proj"])}
     return AdapterConfig(
-        r=r,
-        alpha=alpha,
-        dropout=dropout,
+        r=resolved_r,
+        alpha=resolved_alpha,
+        dropout=resolved_dropout,
         target_modules=modules,
     )
 '''
@@ -1413,7 +1515,7 @@ class InstructionDataset(Dataset):
 
 from typing import Any, Dict, Optional
 from aimlite import AdapterModel
-from {project_name}.adapter import get_adapter_config
+from {pkg}.adapter import get_adapter_config
 
 
 class LoRAInstructionModel(AdapterModel):
@@ -1421,7 +1523,7 @@ class LoRAInstructionModel(AdapterModel):
 
     def __init__(
         self,
-        name: str = "{project_name}_adapter",
+        name: str = "{pkg}_adapter",
         config: Optional[Dict[str, Any]] = None,
         r: int = {adapter_config.get("r", 8)},
         alpha: float = {adapter_config.get("alpha", 16.0)},
@@ -1508,8 +1610,8 @@ class AdapterInference(BaseInference):
     benchmark_py = f'''"""Benchmark script evaluating parameter efficiency and latency for {project_name} LoRA Adapter."""
 
 import time
-from {project_name}.data import InstructionDataset
-from {project_name}.model import LoRAInstructionModel
+from {pkg}.data import InstructionDataset
+from {pkg}.model import LoRAInstructionModel
 
 
 def run_benchmark() -> None:
@@ -1598,8 +1700,8 @@ AIMLITE_PORT=8000
     # 9. Client starter script in root
     client_py = f'''"""Client test script for {project_name} Fine-Tuning / LoRA Adapter Model."""
 
-from {project_name}.data import InstructionDataset
-from {project_name}.model import LoRAInstructionModel
+from {pkg}.data import InstructionDataset
+from {pkg}.model import LoRAInstructionModel
 
 
 def main() -> None:
@@ -1641,9 +1743,9 @@ if __name__ == "__main__":
 Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
 
 ## Project Structure
-- `{project_name}/adapter.py`: LoRA configuration, target modules, and low-rank matrices.
-- `{project_name}/model.py`: Parameter-efficient AdapterModel architecture.
-- `{project_name}/data.py`: InstructionDataset loader for prompt/response pairs.
+- `{pkg}/adapter.py`: LoRA configuration, target modules, and low-rank matrices.
+- `{pkg}/model.py`: Parameter-efficient AdapterModel architecture.
+- `{pkg}/data.py`: InstructionDataset loader for prompt/response pairs.
 - `experiments/benchmark.py`: Parameter efficiency & inference latency benchmark.
 - `client.py`: Ready-to-run interactive/batch client inference test.
 - `.env.example`: Template for API keys, Hugging Face tokens, and runtime settings.
@@ -1713,7 +1815,13 @@ aimlite serve --port 8000
 _scaffold_fine_tuning = _scaffold_adapter
 
 
-def _scaffold_clean_project(package_dir: Path, dest_root: Path, project_name: str, template_type: str = "scratch") -> None:
+def _scaffold_clean_project(
+    package_dir: Path,
+    dest_root: Path,
+    project_name: str,
+    template_type: str = "scratch",
+    package_name: Optional[str] = None,
+) -> None:
     """Generates a clean AIMLite project with empty code files and zero sample data.
 
     Code files are generated as empty files (0 bytes) for the chosen paradigm.
@@ -1783,14 +1891,24 @@ aimlite serve --port 8000
     (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
 
 
-def _scaffold_clean_scratch(package_dir: Path, dest_root: Path, project_name: str) -> None:
+def _scaffold_clean_scratch(
+    package_dir: Path,
+    dest_root: Path,
+    project_name: str,
+    package_name: Optional[str] = None,
+) -> None:
     """Backwards compatibility alias for clean scratch scaffolding."""
-    _scaffold_clean_project(package_dir, dest_root, project_name, template_type="scratch")
-    (dest_root / "README.md").write_text(readme_md, encoding="utf-8")
+    _scaffold_clean_project(package_dir, dest_root, project_name, template_type="scratch", package_name=package_name)
 
 
-def _scaffold_scratch(package_dir: Path, dest_root: Path, project_name: str) -> None:
+def _scaffold_scratch(
+    package_dir: Path,
+    dest_root: Path,
+    project_name: str,
+    package_name: Optional[str] = None,
+) -> None:
     """Generates standard supervised / custom ML starter files from app_template."""
+    pkg = package_name or sanitize_package_name(project_name)
     try:
         from aimlite import templates
 
@@ -1821,8 +1939,8 @@ def _scaffold_scratch(package_dir: Path, dest_root: Path, project_name: str) -> 
     benchmark_py = f'''"""Benchmark script evaluating latency and throughput for {project_name} Model."""
 
 import time
-from {project_name}.data import AppDataset
-from {project_name}.model import AppModel
+from {pkg}.data import AppDataset
+from {pkg}.model import AppModel
 
 
 def run_benchmark() -> None:
@@ -1900,8 +2018,8 @@ AIMLITE_PORT=8000
     # Client starter script in root
     client_py = f'''"""Client test script for {project_name} Custom ML Model."""
 
-from {project_name}.data import AppDataset
-from {project_name}.model import AppModel
+from {pkg}.data import AppDataset
+from {pkg}.model import AppModel
 
 
 def main() -> None:
@@ -1935,9 +2053,9 @@ if __name__ == "__main__":
 Built with [AIMLite](https://github.com/Alazar42/aimlite) — The Django for AI & Machine Learning.
 
 ## Project Structure
-- `{project_name}/model.py`: Model architecture and forward prediction.
-- `{project_name}/data.py`: Application dataset ingestion.
-- `{project_name}/trainer.py`: Model training orchestration.
+- `{pkg}/model.py`: Model architecture and forward prediction.
+- `{pkg}/data.py`: Application dataset ingestion.
+- `{pkg}/trainer.py`: Model training orchestration.
 - `experiments/benchmark.py`: Forward throughput & latency benchmark.
 - `client.py`: Ready-to-run test client.
 - `.env.example`: Template for environment variables and secrets.

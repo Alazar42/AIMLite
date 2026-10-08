@@ -1512,6 +1512,17 @@
         });
         const data = await res.json();
 
+        if (!res.ok || data.status === "error" || data.error) {
+          const errMsg = data.message || data.error || `Inference error (HTTP ${res.status})`;
+          aiRow.querySelector(".bubble").innerHTML = `
+            <div style="color: var(--accent-danger); font-size: 13px; line-height: 1.5;">
+              <strong>Error (${res.status}):</strong> ${escapeHtml(errMsg)}
+            </div>
+          `;
+          container.scrollTop = container.scrollHeight;
+          return;
+        }
+
         let ans = "No answer returned.";
         let sources = null;
         if (typeof data.result === "string") {
