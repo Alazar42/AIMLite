@@ -1203,6 +1203,9 @@ ENV/
 __pycache__/
 *.py[cod]
 *$py.class
+*.cpython-*.pyc
+*.pyo
+*.pyd
 *.so
 build/
 dist/
@@ -1657,6 +1660,9 @@ ENV/
 __pycache__/
 *.py[cod]
 *$py.class
+*.cpython-*.pyc
+*.pyo
+*.pyd
 *.so
 build/
 dist/
@@ -1851,6 +1857,9 @@ ENV/
 __pycache__/
 *.py[cod]
 *$py.class
+*.cpython-*.pyc
+*.pyo
+*.pyd
 *.so
 build/
 dist/
@@ -1980,6 +1989,9 @@ ENV/
 __pycache__/
 *.py[cod]
 *$py.class
+*.cpython-*.pyc
+*.pyo
+*.pyd
 *.so
 build/
 dist/

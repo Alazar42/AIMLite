@@ -8,6 +8,7 @@ from aimlite.cli.commands.init import run_init
 from aimlite.cli.commands.install import run_install
 from aimlite.cli.commands.serve import run_serve
 from aimlite.cli.commands.train import run_train
+from aimlite.cli.commands.update import run_update
 
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "run_evaluate",
     "run_serve",
     "run_doctor",
+    "run_update",
 ]
 

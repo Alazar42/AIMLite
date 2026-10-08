@@ -5,6 +5,36 @@ All notable changes to the AIMLite framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-10-08
+
+### Fixed (Minor Fixes & Improvements)
+- **Dynamic Model Configuration Synchronization & Hot-Reloading**:
+  - Added dynamic config synchronization in `KnowledgeModel.sync_config()` and `aimlite serve` inference loop.
+  - Active chat model and `top_k` settings in `aimlite.json` are hot-reloaded without requiring a server restart.
+  - Added `BaseConfig.load_active()`, `BaseConfig.reload()`, and dedicated accessors (`get_rag_config()`, `get_adapter_config()`, `get_model_config()`).
+- **Ollama Provider Robustness & Timeouts**:
+  - Added configurable timeout parameter and `OLLAMA_TIMEOUT` environment variable support (default 300s, replacing hardcoded 90s REST timeout).
+  - Explicit `TimeoutError` exception raised with clear troubleshooting instructions when Ollama generation times out.
+  - Added `max_tokens` (`num_predict`) support in `OllamaChatProvider` and capped query analyzer generation to 256 tokens.
+  - Graceful fallback from Ollama SDK to native REST API on connection or import errors.
+- **Package Name Sanitization & Auto-Healing**:
+  - Implemented `sanitize_package_name()` to convert project directory names with leading dots (e.g. `.custom_rag`), hyphens, numbers, or reserved keywords into valid Python identifiers.
+  - Enhanced `resolve_project_context()` with auto-healing: automatically renames invalid package directories on disk, updates `aimlite.json` entrypoints, and rewrites local imports.
+  - Expanded project class discovery and bare module imports to register `store`, `chat_provider`, and `adapter` modules.
+- **Scaffolding & Agent Customizations**:
+  - Updated RAG and LoRA starter templates to dynamically resolve configuration defaults from `aimlite.json` via `BaseConfig.load_active()`.
+  - Updated `AGENTS.md` and `.agents/skills/aimlite/SKILL.md` to reference sanitized package names.
+- **Web UI Inference Error Handling**:
+  - Enhanced `app.html` interactive chat playground to trap and display server errors and inference failure messages inline instead of failing silently.
+- **`aimlite update` Self-Updater & Package Synchronizer**:
+  - Added zero-friction `aimlite update` CLI command to check and upgrade globally, user-level (`--user`), or virtualenv installed AIMLite packages directly from PyPI.
+  - Multi-tier cross-platform engine supporting Windows, macOS, and Linux across virtual environments and non-virtualenv system environments.
+  - Automatically identifies whether AIMLite is already up to date, installs when missing, cleanly bypasses Linux PEP 668 externally-managed environment locks (`--break-system-packages`), and supports `--force`, `--user`, `--global`, and specific `--version` targets.
+- **Repository Hygiene & `.gitignore` Hardening**:
+  - Untracked all tracked CPython `.pyc` and `__pycache__` compilation artifacts from the repository index.
+  - Hardened `.gitignore` with comprehensive exclusions for `*.cpython-*.pyc`, `*.pyo`, `*.pyd`, `**/__pycache__/`, and type checker/test caches (`.mypy_cache/`, `.ruff_cache/`).
+  - Removed erroneous `examples/` ignore rule in `.gitignore` so example projects remain tracked.
+
 ## [2.1.0] - 2026-10-07
 
 ### Fixed (Major Bug Fixes)

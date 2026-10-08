@@ -1731,11 +1731,11 @@ export const ADAPTER_GUIDE_STEPS: GuideStep[] = [
         description:
             'Scaffold a new LoRA instruction tuning project using the adapter paradigm. Use `--clean` to initialize with pristine 0-byte starting files.',
         code: `# Create and enter project directory
-aimlite init lora_instructions--type adapter
+aimlite init lora_instructions --type adapter
 cd lora_instructions
 
 # Optional: Add--clean to scaffold pristine 0 - byte starting files
-# aimlite init lora_instructions--type adapter --clean`,
+# aimlite init lora_instructions --type adapter --clean`,
         whyCode:
             'Sets up standard project conventions and generates aimlite.json.',
     },

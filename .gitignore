@@ -2,12 +2,14 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.cpython-*.pyc
+*.pyo
+*.pyd
 
 # C extensions
 *.so
 
 # Distribution / packaging
-build/
 dist/
 *.egg-info/
 *.egg
@@ -21,13 +23,16 @@ ENV/
 env.bak/
 venv.bak/
 
-# Testing & Coverage
+# Testing, Coverage & Type Caches
 .pytest_cache/
 .coverage
 .coverage.*
 htmlcov/
 .tox/
 .nox/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
 
 # Temporary / Generated Test Projects
 ui_regression/
@@ -50,7 +55,6 @@ models/*.bin
 models/*.safetensors
 checkpoints/
 artifacts/
-examples/
 
 # Environment Variables & Secrets
 .env
@@ -65,3 +69,4 @@ examples/
 *~
 .DS_Store
 Thumbs.db
+

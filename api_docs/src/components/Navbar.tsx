@@ -214,10 +214,10 @@ export default function Navbar({
             onSelectSection('changelog');
           }}
           className="hidden min-[480px]:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono transition-colors shrink-0"
-          title="View v2.1.0 Release Notes"
+          title="View v2.1.1 Release Notes"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 dark:bg-zinc-400 animate-pulse" />
-          <span>v2.1.0</span>
+          <span>v2.1.1</span>
         </button>
 
         {/* llms.txt Agent Specification Link */}

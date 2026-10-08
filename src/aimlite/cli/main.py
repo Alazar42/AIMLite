@@ -15,10 +15,11 @@ from aimlite.cli.commands import (
     run_install,
     run_serve,
     run_train,
+    run_update,
 )
 from aimlite.cli.ui import C, vite_header
 
-VERSION = "2.1.0"
+VERSION = "2.1.1"
 
 
 def print_custom_help() -> None:
@@ -35,6 +36,7 @@ def print_custom_help() -> None:
     print(f"    {C.GREEN}evaluate{C.RESET} [class]            {C.DIM}Assess model performance against held-out splits{C.RESET}")
     print(f"    {C.GREEN}serve{C.RESET} [class] [options]     {C.DIM}Launch inference server & custom frontend{C.RESET}")
     print(f"    {C.GREEN}doctor{C.RESET}                    {C.DIM}Inspect runtime, accelerators & directory permissions{C.RESET}")
+    print(f"    {C.GREEN}update{C.RESET} [options]           {C.DIM}Update globally or locally installed AIMLite package & CLI{C.RESET}")
     print(f"    {C.GREEN}benchmark{C.RESET} [script] [args]  {C.DIM}Run any script with project root on PYTHONPATH (no ModuleNotFoundError){C.RESET}\n")
 
     print(f"  {C.BOLD}Options:{C.RESET}")
@@ -176,6 +178,14 @@ def build_parser() -> argparse.ArgumentParser:
     # doctor
     subparsers.add_parser("doctor")
 
+    # update
+    update_parser = subparsers.add_parser("update", help="Update aimlite to the latest release")
+    update_parser.add_argument("--force", action="store_true", help="Force reinstallation even if already up to date")
+    update_parser.add_argument("--user", dest="user", action="store_const", const=True, default=None, help="Install to user site directory (--user)")
+    update_parser.add_argument("--global", dest="user", action="store_const", const=False, help="Install system-wide / globally")
+    update_parser.add_argument("--version", "--target-version", dest="target_version", default=None, help="Install a specific target version")
+    update_parser.add_argument("--pre", action="store_true", help="Include pre-release versions")
+
     return parser
 
 
@@ -252,6 +262,14 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "doctor":
         return run_doctor()
+
+    if args.command == "update":
+        return run_update(
+            force=getattr(args, "force", False),
+            user=getattr(args, "user", None),
+            target_version=getattr(args, "target_version", None),
+            pre=getattr(args, "pre", False),
+        )
 
     if args.command == "benchmark":
         return run_benchmark(

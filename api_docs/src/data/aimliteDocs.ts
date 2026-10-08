@@ -103,6 +103,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
       { id: 'cli-benchmark', label: 'aimlite benchmark', badge: 'NEW', badgeVariant: 'cli' },
       { id: 'cli-data', label: 'aimlite data validate', badge: 'CLI', badgeVariant: 'cli' },
       { id: 'cli-doctor', label: 'aimlite doctor', badge: 'CLI', badgeVariant: 'cli' },
+      { id: 'cli-update', label: 'aimlite update', badge: 'NEW', badgeVariant: 'cli' },
     ],
   },
   {
@@ -121,7 +122,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'Releases & Changelog',
     items: [
-      { id: 'changelog', label: 'Version Changelog', badge: 'v2.1.0', badgeVariant: 'util' },
+      { id: 'changelog', label: 'Version Changelog', badge: 'v2.1.1', badgeVariant: 'util' },
     ],
   },
 ];
@@ -493,7 +494,7 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
     subtitle: 'Vite-inspired interactive wizard scaffolding modular AI projects in <50ms.',
-    badge: { label: 'CLI v2.1.0', variant: 'cli' },
+    badge: { label: 'CLI v2.1.1', variant: 'cli' },
     signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapter>] [--clean] [--install] [-y]',
     breadcrumbs: ['CLI', 'init'],
     overview:
@@ -589,7 +590,7 @@ aimlite init . --type adapter --install`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
     subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
-    badge: { label: 'CLI v2.1.0', variant: 'cli' },
+    badge: { label: 'CLI v2.1.1', variant: 'cli' },
     signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
@@ -676,7 +677,7 @@ aimlite train ChurnClassifier`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
     subtitle: 'Zero-path multi-model inference server with type-adaptive Web Playgrounds, Swagger UI, and headless --api mode.',
-    badge: { label: 'CLI v2.1.0', variant: 'cli' },
+    badge: { label: 'CLI v2.1.1', variant: 'cli' },
     signatureOrPath: 'aimlite serve [ModelName] [--api] [--checkpoint <path>] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
@@ -900,6 +901,67 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
       recommended_python: '3.10–3.12',
       device: 'CPU',
       directories_ok: true,
+    },
+  },
+
+  'cli-update': {
+    id: 'cli-update',
+    category: 'Zero-Path CLI Commands',
+    title: 'aimlite update',
+    subtitle: 'Cross-platform self-updater synchronizing global, user-level, or virtualenv AIMLite CLI & package directly from PyPI.',
+    badge: { label: 'CLI v2.1.1', variant: 'cli' },
+    signatureOrPath: 'aimlite update [--user] [--global] [--force] [--version <version>]',
+    breadcrumbs: ['CLI', 'update'],
+    overview:
+      'Checks the installed AIMLite version against the latest PyPI release and performs safe, non-interactive installation and upgrades. Intelligently adapts to virtual environments (.venv), Windows User site (%APPDATA%), Linux/macOS user directories (~/.local), and system environments, handling PEP 668 externally-managed barriers automatically.',
+    djangoAnalogy:
+      'Self-contained package and CLI upgrade command, ensuring your local and global environments stay up to date without manual pip flag juggling.',
+    parametersTitle: 'CLI Flags & Options',
+    parameters: [
+      {
+        name: '--user',
+        type: 'boolean flag (optional)',
+        required: false,
+        defaultValue: 'auto',
+        description: 'Force installation into Python user directory (~/.local or %APPDATA%), avoiding root/administrator requirements.',
+      },
+      {
+        name: '--global',
+        type: 'boolean flag (optional)',
+        required: false,
+        defaultValue: 'false',
+        description: 'Force system-wide installation without --user.',
+      },
+      {
+        name: '--force',
+        type: 'boolean flag (optional)',
+        required: false,
+        defaultValue: 'false',
+        description: 'Force reinstallation even if AIMLite is already at the latest version.',
+      },
+      {
+        name: '--version, --target-version',
+        type: 'string (optional)',
+        required: false,
+        description: 'Install a specific release version (e.g. 2.1.1).',
+      },
+    ],
+    snippets: {
+      cli: `# Check and update to latest release:
+aimlite update
+
+# Force reinstallation:
+aimlite update --force
+
+# Install specific version:
+aimlite update --version 2.1.1`,
+    },
+    defaultPayload: '{\n  "command": "aimlite update"\n}',
+    defaultResponse: {
+      status: 'up_to_date',
+      installed_version: '2.1.1',
+      latest_version: '2.1.1',
+      message: 'AIMLite is already up to date (v2.1.1).',
     },
   },
 
@@ -1865,15 +1927,19 @@ class CustomSupportRAG(KnowledgeModel):
     id: 'changelog',
     category: 'Releases & Changelog',
     title: 'Framework Changelog & Releases',
-    subtitle: 'Release history and upgrade guide for AIMLite (v2.1.0 latest).',
-    badge: { label: 'v2.1.0', variant: 'util' },
-    signatureOrPath: 'pip install --upgrade aimlite==2.1.0',
-    breadcrumbs: ['Releases', 'v2.1.0'],
+    subtitle: 'Release history and upgrade guide for AIMLite (v2.1.1 latest).',
+    badge: { label: 'v2.1.1', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==2.1.1',
+    breadcrumbs: ['Releases', 'v2.1.1'],
     overview:
-      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.1.0, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.1.1, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
     djangoAnalogy:
       'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
     conventions: [
+      {
+        title: 'Release [2.1.1] - 2026-10-08 (Dynamic Config Sync, Ollama Robustness & Git Hygiene)',
+        description: 'Dynamic Model Configuration Synchronization: Model parameters and active LLMs in aimlite.json are hot-reloaded during serving via KnowledgeModel.sync_config() and BaseConfig.load_active(). Ollama Provider Robustness: Configurable timeout (OLLAMA_TIMEOUT, default 300s) with explicit TimeoutError, max_tokens capping, and graceful REST fallback. Package Sanitization & Auto-Healing: sanitize_package_name prevents invalid Python package names (leading dots, hyphens, keywords) and auto-heals legacy project entrypoints. Web UI Error Display: app.html renders informative error bubbles on server inference failures. Git Repository Hygiene: Untracked all tracked CPython .pyc / __pycache__ artifacts from git and hardened .gitignore rules.',
+      },
       {
         title: 'Release [2.1.0] - 2026-10-07 (Major Packaging & LoRA Flexibility Fixes)',
         description: 'POSIX Binary Collision Resolved: Removed global test and cli script entries in pyproject.toml; only aimlite is registered to prevent overrides of POSIX /bin/test. Root Namespace Pollution Eliminated: Moved cli into aimlite.cli and configured Hatchling packaging. Flexible LoRA Dataset Training: Vectorizer supports instruction pairs (instruction/response, prompt/completion), arbitrary dictionaries, and raw text strings without crashing on non-numeric columns. Canonical 3-Paradigm Alignment: Standardized choices strictly to scratch, rag, and adapter with UnknownParadigmError. aimlite init --clean Paradigm Scaffolding: --clean prompts for paradigm and provisions 0-byte pristine empty code files. doctor Python Version Check: Recommends Python 3.10–3.12 for ML ecosystem wheel compatibility. 113 passing tests.',
@@ -1926,20 +1992,19 @@ pip install --upgrade aimlite
 # Verify installation & diagnostic health:
 aimlite doctor`,
     },
-    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.1.0",\n  "channel": "pypi"\n}',
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.1.1",\n  "channel": "pypi"\n}',
     defaultResponse: {
       package: 'aimlite',
-      installed_version: '2.1.0',
-      latest_pypi_version: '2.1.0',
-      release_date: '2026-10-07',
+      installed_version: '2.1.1',
+      latest_pypi_version: '2.1.1',
+      release_date: '2026-10-08',
       status: 'up_to_date',
       highlights: [
-        'POSIX binary collision resolved (removed test and cli entrypoints; exclusively aimlite exposed)',
-        'Site-packages root namespace pollution fixed: cli encapsulated cleanly into aimlite.cli',
-        'Flexible LoRA dataset training supporting text instruction pairs, prompt/response, arbitrary dicts, and raw strings',
-        'Canonical 3-paradigm alignment: scratch, rag, and adapter',
-        'aimlite init --clean prompts for paradigm and scaffolds 0-byte pristine code files',
-        'doctor recommends Python 3.10–3.12 for broad PyTorch/CUDA/TensorFlow wheel compatibility',
+        'Dynamic model configuration sync: hot-reload aimlite.json model and top_k changes during serve',
+        'Ollama chat provider robustness: configurable timeout (OLLAMA_TIMEOUT) and token limits',
+        'Package name sanitization and project auto-healing for valid Python identifiers',
+        'Web UI interactive chat error handling and clear error bubbles',
+        'Repository hygiene: untracked all .pyc bytecode and hardened .gitignore rules',
       ],
     },
   },

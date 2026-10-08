@@ -129,7 +129,7 @@ const renderTerminalLine = (line: string, idx: number) => {
     return (
       <div key={idx} className="flex items-center gap-2 py-1 text-xs font-mono">
         <span className="text-[#00d8ff] font-extrabold tracking-wider">AIMLITE</span>
-        <span className="text-zinc-500">{parts[1] || 'v2.1.0'}</span>
+        <span className="text-zinc-500">{parts[1] || 'v2.1.1'}</span>
         <span className="text-emerald-400 font-semibold">{parts[2]}</span>
         <span className="text-zinc-400">{parts.slice(3).join(' ')}</span>
       </div>
@@ -138,7 +138,7 @@ const renderTerminalLine = (line: string, idx: number) => {
   if (line.includes('The Django for AI & Machine Learning')) {
     return (
       <div key={idx} className="flex items-center gap-2 pt-1 pb-0.5 text-xs font-mono">
-        <span className="text-zinc-500">v2.1.0</span>
+        <span className="text-zinc-500">v2.1.1</span>
         <span className="text-[#00d8ff] font-bold">❯</span>
         <span className="text-zinc-100 font-bold">The Django for AI & Machine Learning</span>
       </div>
@@ -324,7 +324,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
   88   88   .88.   88  88  88 88booo.   .88.      88    88.     
   YP   YP Y888888P YP  YP  YP Y88888P Y888888P    YP    Y88888P
 
-  v2.1.0  ❯  The Django for AI & Machine Learning
+  v2.1.1  ❯  The Django for AI & Machine Learning
   create project
 
   ✔  Project name    my_knowledge_base
@@ -345,7 +345,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     train: `$ aimlite train SupportDocRAG
 
-  AIMLITE v2.1.0 train  SupportDocRAG
+  AIMLITE v2.1.1 train  SupportDocRAG
 
 ❯ Discovering project root: /workspace/my_knowledge_base
 ❯ Inspecting data/: found 14 knowledge articles (.md, .txt)
@@ -356,7 +356,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     serve: `$ aimlite serve --port 8000
 
-  AIMLITE v2.1.0 serve
+  AIMLITE v2.1.1 serve
 
   ➜  Primary Model:    ChurnClassifier (ML)
   ➜  Registered:       ChurnClassifier [ml], SupportDocRAG [rag]
@@ -369,7 +369,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     benchmark: `$ aimlite benchmark experiments/benchmark.py
 
-  AIMLITE v2.1.0 benchmark  experiments/benchmark.py
+  AIMLITE v2.1.1 benchmark  experiments/benchmark.py
 
 ❯ Project Root: /workspace/my_knowledge_base
 ❯ Extended PYTHONPATH with project root
@@ -403,7 +403,7 @@ Running 3 benchmark queries:
           className="group inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 rounded-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900/90 dark:hover:bg-zinc-800 border border-zinc-300/80 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-medium transition-all mb-6 sm:mb-7 shadow-xs backdrop-blur-sm max-w-full"
         >
           <span className="flex h-1.5 w-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100 animate-pulse shrink-0" />
-          <span className="font-semibold text-zinc-900 dark:text-zinc-100 shrink-0">v2.1.0 Live</span>
+          <span className="font-semibold text-zinc-900 dark:text-zinc-100 shrink-0">v2.1.1 Live</span>
           <span className="text-zinc-400 dark:text-zinc-600 shrink-0">•</span>
           <span className="hidden sm:inline text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-white transition-colors truncate">
             Production ML Engine & Multi-Model Serving
@@ -501,7 +501,7 @@ Running 3 benchmark queries:
               rel="noopener noreferrer"
               className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-3 rounded-xl bg-white hover:bg-zinc-100 dark:bg-zinc-900/60 dark:hover:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-800 text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200 font-mono text-xs transition-colors"
             >
-              <span>pypi: v2.1.0</span>
+              <span>pypi: v2.1.1</span>
               <ExternalLink size={12} />
             </a>
           </div>
@@ -641,7 +641,7 @@ Running 3 benchmark queries:
               <div className="lg:col-span-6 space-y-5">
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-200 font-mono text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700">
-                    v2.1.0
+                    v2.1.1
                   </span>
                   <span className="text-xs text-zinc-500 font-mono">aimlite.rag</span>
                 </div>
@@ -1152,7 +1152,7 @@ Running 3 benchmark queries:
               <Boxes size={14} />
             </div>
             <span className="font-bold text-zinc-900 dark:text-zinc-200 text-sm">AIMLite</span>
-            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">v2.1.0 (Apache 2.0)</span>
+            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-mono">v2.1.1 (Apache 2.0)</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-5 gap-y-2 text-xs text-zinc-600 dark:text-zinc-400">
