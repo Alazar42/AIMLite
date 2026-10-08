@@ -19,7 +19,7 @@ description: >-
 
 # AIMLite Skill Guide
 
-This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.1.1)**.
+This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.1.2)**.
 
 AIMLite operates on **convention over configuration** with **zero-path CLI execution**. Like Django, you organize code into standard modules (`data.py`, `model.py`, `trainer.py`, `evaluator.py`, `inference.py`), and the framework handles discovery, environment resolution, and execution automatically.
 
@@ -260,7 +260,7 @@ def get_agents_md_content(
     mode_text = "Clean skeleton (contracts & docstrings only)" if clean else "Interactive starter setup"
     return f"""# Agent Instructions for {project_name}
 
-Welcome! This repository is an **AIMLite (v2.1.1)** project built on **convention over configuration**.
+Welcome! This repository is an **AIMLite (v2.1.2)** project built on **convention over configuration**.
 AI coding agents (Antigravity, Cursor, Windsurf, Claude Code, GitHub Copilot) working in this workspace should follow these instructions.
 
 ## Project Summary
@@ -325,7 +325,7 @@ aimlite benchmark
 
 def get_llms_txt_content(project_name: str, template_type: str) -> str:
     """Generates a project-level llms.txt file."""
-    return f"""# {project_name} (AIMLite v2.1.1)
+    return f"""# {project_name} (AIMLite v2.1.2)
 
 > Machine learning project built with AIMLite ({template_type} paradigm).
 

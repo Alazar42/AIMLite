@@ -22,8 +22,8 @@ from aimlite.cli.commands.update import (
 class TestVersionParsing:
     def test_parse_version_ordering(self):
         assert parse_version("2.0.0") < parse_version("2.1.0")
-        assert parse_version("2.1.0") < parse_version("2.1.1")
-        assert parse_version("v2.1.1") == parse_version("2.1.1")
+        assert parse_version("2.1.0") < parse_version("2.1.2")
+        assert parse_version("v2.1.2") == parse_version("2.1.2")
         assert parse_version("2.1.0") == parse_version("2.1.0")
 
     def test_parse_version_empty(self):
@@ -59,13 +59,13 @@ class TestCandidateResolution:
         assert all("--user" not in cmd for cmd in cmds)
 
     def test_candidate_commands_target_version(self):
-        cmds = resolve_candidate_commands("aimlite==2.1.1", user_flag=True)
-        assert any("aimlite==2.1.1" in cmd for cmd in cmds)
+        cmds = resolve_candidate_commands("aimlite==2.1.2", user_flag=True)
+        assert any("aimlite==2.1.2" in cmd for cmd in cmds)
 
 
 class TestRunUpdateFlow:
-    @patch("aimlite.cli.commands.update.get_installed_version", return_value="2.1.1")
-    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.1")
+    @patch("aimlite.cli.commands.update.get_installed_version", return_value="2.1.2")
+    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.2")
     @patch("subprocess.run")
     def test_already_up_to_date(self, mock_run, mock_latest, mock_installed, capsys):
         code = run_update(force=False)
@@ -73,14 +73,14 @@ class TestRunUpdateFlow:
         mock_run.assert_not_called()
         captured = capsys.readouterr().out
         assert "already up to date" in captured.lower()
-        assert "v2.1.1" in captured
+        assert "v2.1.2" in captured
 
     @patch("aimlite.cli.commands.update.get_installed_version")
-    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.1")
+    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.2")
     @patch("subprocess.run")
     def test_upgrades_when_outdated(self, mock_run, mock_latest, mock_installed, capsys):
-        # First call installed is 2.0.0, after install fresh call is 2.1.1
-        mock_installed.side_effect = ["2.0.0", "2.1.1"]
+        # First call installed is 2.0.0, after install fresh call is 2.1.2
+        mock_installed.side_effect = ["2.0.0", "2.1.2"]
         mock_proc = MagicMock()
         mock_proc.returncode = 0
         mock_run.return_value = mock_proc
@@ -90,13 +90,13 @@ class TestRunUpdateFlow:
         mock_run.assert_called()
         captured = capsys.readouterr().out
         assert "Upgrading aimlite" in captured or "v2.0.0" in captured
-        assert "Successfully updated AIMLite" in captured or "2.1.1" in captured
+        assert "Successfully updated AIMLite" in captured or "2.1.2" in captured
 
     @patch("aimlite.cli.commands.update.get_installed_version")
-    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.1")
+    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.2")
     @patch("subprocess.run")
     def test_installs_when_not_installed(self, mock_run, mock_latest, mock_installed, capsys):
-        mock_installed.side_effect = [None, "2.1.1"]
+        mock_installed.side_effect = [None, "2.1.2"]
         mock_proc = MagicMock()
         mock_proc.returncode = 0
         mock_run.return_value = mock_proc
@@ -108,8 +108,8 @@ class TestRunUpdateFlow:
         assert "Installing aimlite" in captured
         assert "Successfully installed AIMLite" in captured
 
-    @patch("aimlite.cli.commands.update.get_installed_version", return_value="2.1.1")
-    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.1")
+    @patch("aimlite.cli.commands.update.get_installed_version", return_value="2.1.2")
+    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.2")
     @patch("subprocess.run")
     def test_force_reinstalls_even_if_current(self, mock_run, mock_latest, mock_installed, capsys):
         mock_proc = MagicMock()
@@ -123,7 +123,7 @@ class TestRunUpdateFlow:
         assert "Reinstalling aimlite" in captured
 
     @patch("aimlite.cli.commands.update.get_installed_version", return_value="2.0.0")
-    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.1")
+    @patch("aimlite.cli.commands.update.get_latest_pypi_version", return_value="2.1.2")
     @patch("subprocess.run")
     def test_handles_installation_failure(self, mock_run, mock_latest, mock_installed, capsys):
         mock_proc = MagicMock()

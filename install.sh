@@ -8,7 +8,7 @@
 #   ./install.sh [options]
 #
 # Options:
-#   --version <version>    Install a specific release version (e.g. 2.1.1)
+#   --version <version>    Install a specific release version (e.g. 2.1.2)
 #   --user                 Force installation into Python user site directory
 #   --global               Force system-wide installation (may require sudo/admin)
 #   --editable, -e         Install local repository in editable mode (-e .)
@@ -55,7 +55,7 @@ print_help() {
     echo -e "    $ curl -fsSL https://raw.githubusercontent.com/Alazar42/AIMLite/main/install.sh | bash"
     echo -e "    $ ./install.sh [options]\n"
     echo -e "  ${BOLD}Options:${RESET}"
-    echo -e "    ${GREEN}--version <ver>${RESET}    Install a specific release version (e.g. 2.1.1)"
+    echo -e "    ${GREEN}--version <ver>${RESET}    Install a specific release version (e.g. 2.1.2)"
     echo -e "    ${GREEN}--user${RESET}             Force installation into user site directory (~/.local or %APPDATA%)"
     echo -e "    ${GREEN}--global${RESET}           Force system-wide installation"
     echo -e "    ${GREEN}--editable, -e${RESET}     Install local checkout in editable development mode"

@@ -122,7 +122,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'Releases & Changelog',
     items: [
-      { id: 'changelog', label: 'Version Changelog', badge: 'v2.1.1', badgeVariant: 'util' },
+      { id: 'changelog', label: 'Version Changelog', badge: 'v2.1.2', badgeVariant: 'util' },
     ],
   },
 ];
@@ -494,7 +494,7 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
     subtitle: 'Vite-inspired interactive wizard scaffolding modular AI projects in <50ms.',
-    badge: { label: 'CLI v2.1.1', variant: 'cli' },
+    badge: { label: 'CLI v2.1.2', variant: 'cli' },
     signatureOrPath: 'aimlite init [project_name | .] [--type <scratch|rag|adapter>] [--clean] [--install] [-y]',
     breadcrumbs: ['CLI', 'init'],
     overview:
@@ -590,7 +590,7 @@ aimlite init . --type adapter --install`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
     subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
-    badge: { label: 'CLI v2.1.1', variant: 'cli' },
+    badge: { label: 'CLI v2.1.2', variant: 'cli' },
     signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
@@ -677,7 +677,7 @@ aimlite train ChurnClassifier`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
     subtitle: 'Zero-path multi-model inference server with type-adaptive Web Playgrounds, Swagger UI, and headless --api mode.',
-    badge: { label: 'CLI v2.1.1', variant: 'cli' },
+    badge: { label: 'CLI v2.1.2', variant: 'cli' },
     signatureOrPath: 'aimlite serve [ModelName] [--api] [--checkpoint <path>] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
@@ -909,7 +909,7 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite update',
     subtitle: 'Cross-platform self-updater synchronizing global, user-level, or virtualenv AIMLite CLI & package directly from PyPI.',
-    badge: { label: 'CLI v2.1.1', variant: 'cli' },
+    badge: { label: 'CLI v2.1.2', variant: 'cli' },
     signatureOrPath: 'aimlite update [--user] [--global] [--force] [--version <version>]',
     breadcrumbs: ['CLI', 'update'],
     overview:
@@ -943,7 +943,7 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
         name: '--version, --target-version',
         type: 'string (optional)',
         required: false,
-        description: 'Install a specific release version (e.g. 2.1.1).',
+        description: 'Install a specific release version (e.g. 2.1.2).',
       },
     ],
     snippets: {
@@ -954,14 +954,14 @@ aimlite update
 aimlite update --force
 
 # Install specific version:
-aimlite update --version 2.1.1`,
+aimlite update --version 2.1.2`,
     },
     defaultPayload: '{\n  "command": "aimlite update"\n}',
     defaultResponse: {
       status: 'up_to_date',
-      installed_version: '2.1.1',
-      latest_version: '2.1.1',
-      message: 'AIMLite is already up to date (v2.1.1).',
+      installed_version: '2.1.2',
+      latest_version: '2.1.2',
+      message: 'AIMLite is already up to date (v2.1.2).',
     },
   },
 
@@ -1927,15 +1927,19 @@ class CustomSupportRAG(KnowledgeModel):
     id: 'changelog',
     category: 'Releases & Changelog',
     title: 'Framework Changelog & Releases',
-    subtitle: 'Release history and upgrade guide for AIMLite (v2.1.1 latest).',
-    badge: { label: 'v2.1.1', variant: 'util' },
-    signatureOrPath: 'pip install --upgrade aimlite==2.1.1',
-    breadcrumbs: ['Releases', 'v2.1.1'],
+    subtitle: 'Release history and upgrade guide for AIMLite (v2.1.2 latest).',
+    badge: { label: 'v2.1.2', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==2.1.2',
+    breadcrumbs: ['Releases', 'v2.1.2'],
     overview:
-      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.1.1, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.1.2, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
     djangoAnalogy:
       'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
     conventions: [
+      {
+        title: 'Release [2.1.2] - 2026-10-08 (LoRA Adapter Scaffolding Fix & Documentation Overhaul)',
+        description: 'LoRA Adapter Scaffolding & Prompt Resolution: Enhanced predict() in LoRAInstructionModel to resolve prompt, instruction, text, and input payload keys, fixing dictionary stringification during Web UI and API serving. Documentation & Paradigm Guides Indentation Overhaul: Fixed indentation and code formatting across all 16 template snippets in api_docs (SCRATCH_FILES, RAG_FILES, ADAPTER_FILES), ensuring error-free copy-paste into local Python modules. Corrected CLI command spacing in guide steps (scikit-learn, sentence-transformers, --type, --port). Interactive Documentation App: Synchronized api_docs to v2.1.2 with production build.',
+      },
       {
         title: 'Release [2.1.1] - 2026-10-08 (Dynamic Config Sync, Ollama Robustness & Git Hygiene)',
         description: 'Dynamic Model Configuration Synchronization: Model parameters and active LLMs in aimlite.json are hot-reloaded during serving via KnowledgeModel.sync_config() and BaseConfig.load_active(). Ollama Provider Robustness: Configurable timeout (OLLAMA_TIMEOUT, default 300s) with explicit TimeoutError, max_tokens capping, and graceful REST fallback. Package Sanitization & Auto-Healing: sanitize_package_name prevents invalid Python package names (leading dots, hyphens, keywords) and auto-heals legacy project entrypoints. Web UI Error Display: app.html renders informative error bubbles on server inference failures. Git Repository Hygiene: Untracked all tracked CPython .pyc / __pycache__ artifacts from git and hardened .gitignore rules.',
@@ -1992,11 +1996,11 @@ pip install --upgrade aimlite
 # Verify installation & diagnostic health:
 aimlite doctor`,
     },
-    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.1.1",\n  "channel": "pypi"\n}',
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.1.2",\n  "channel": "pypi"\n}',
     defaultResponse: {
       package: 'aimlite',
-      installed_version: '2.1.1',
-      latest_pypi_version: '2.1.1',
+      installed_version: '2.1.2',
+      latest_pypi_version: '2.1.2',
       release_date: '2026-10-08',
       status: 'up_to_date',
       highlights: [

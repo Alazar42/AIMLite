@@ -5,6 +5,21 @@ All notable changes to the AIMLite framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-10-08
+
+### Fixed
+- **LoRA Adapter Scaffolding & Prompt Resolution**:
+  - Enhanced `predict()` in scaffolded adapter models (`LoRAInstructionModel`) to check `inputs.get("prompt")`, `inputs.get("instruction")`, `inputs.get("text")`, and `inputs.get("input")`.
+  - Fixes dictionary stringification in the Web Application LoRA playground where requests send `{"prompt": "...", "max_tokens": ...}` without the `"instruction"` key.
+  - Aligned prompt parsing across documentation examples and live API specifications.
+- **Documentation Paradigm Guides Indentation Overhaul**:
+  - Restored clean 4-space Python indentation across all 16 template snippets in `api_docs/src/data/paradigmGuides.ts` (`SCRATCH_FILES`, `RAG_FILES`, `ADAPTER_FILES`).
+  - Fixed syntax and indentation errors when developers copy-paste starter code from the documentation or interactive code playground into local `.py` files.
+  - Standardized JSON formatting to 2-space indentation in all scaffolded manifest files.
+  - Corrected CLI command spacing in guide steps (e.g. `scikit-learn`, `sentence-transformers`, `--type`, `--port`).
+- **Interactive Documentation App Update**:
+  - Synchronized `api_docs` to `v2.1.2` release with verified TypeScript compilation and production bundle build.
+
 ## [2.1.1] - 2026-10-08
 
 ### Fixed (Minor Fixes & Improvements)
