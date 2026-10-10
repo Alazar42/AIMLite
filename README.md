@@ -73,8 +73,6 @@ Requires Python **>= 3.10** (tested on 3.14) and [`uv`](https://docs.astral.sh/u
 ```bash
 git clone https://github.com/Alazar42/aimlite.git
 cd aimlite
-git clone https://github.com/Alazar42/aimlite.git
-cd aimlite
 uv sync
 ```
 
@@ -145,7 +143,6 @@ Bespoke tabular architectures, full optimization loops, and custom weights.
 ---
 
 ### Reference Template 2: Knowledge Base & RAG (Enterprise Knowledge Engine)
-### Reference Template 2: Knowledge Base & RAG (Enterprise Knowledge Engine)
 
 Demonstrates semantic vector retrieval, query intelligence, smart document chunking, and grounded LLM synthesis. Ingest text, Markdown, CSV, JSON, or any document source with any filename you choose.
 
@@ -201,7 +198,6 @@ Demonstrates parameter-efficient fine-tuning with mathematical low-rank matrix d
 ## Zero-Path CLI Reference
 
 AIMLite provides zero-path convention-over-configuration commands:
-AIMLite provides zero-path convention-over-configuration commands:
 
 | Command | Description |
 |---|---|
@@ -216,18 +212,120 @@ AIMLite provides zero-path convention-over-configuration commands:
 
 ---
 
-## How to Build & Package
+## Containerization & Production Docker Deployment
+
+Deploying an AIMLite application to production is zero-friction. Below is the production-ready `Dockerfile` engineered for ultra-fast builds, layer-cached dependencies, pre-baked model weights, active health monitoring, and dynamic port binding on cloud platforms (Render, Railway, Fly.io, Google Cloud Run, AWS ECS/Fargate, and Kubernetes).
+
+### Production `Dockerfile`
+
+```dockerfile
+# syntax=docker/dockerfile:1
+FROM python:3.12-slim
+
+# Set environment configuration
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PORT=8000 \
+    HOST=0.0.0.0 \
+    PATH="/app/.venv/bin:$PATH"
+
+# Install system dependencies (curl for healthchecks & network tooling)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 1. Install uv (blazing fast backend) and AIMLite framework
+RUN pip install --no-cache-dir uv aimlite
+
+# 2. Set project working directory
+WORKDIR /app
+
+# 3. Copy project manifest
+COPY aimlite.json .
+
+# 4. Install all project dependencies into managed .venv using aimlite CLI
+RUN aimlite install
+
+# 5. Copy the remaining application files, data, and frontend assets
+COPY . .
+
+# 6. Train and calibrate model weights for serving
+RUN aimlite train
+
+# 7. Expose serving port
+EXPOSE 8000
+
+# 8. Health check verifying inference server status
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
+
+# 9. Host multi-model inference server with custom frontend (dynamically binds to $PORT on cloud hosts)
+CMD ["sh", "-c", "aimlite serve --host 0.0.0.0 --port ${PORT:-8000} --frontend frontend"]
+```
+
+### Key Architectural Highlights
+
+1. **Layer Caching Optimization**: By copying `aimlite.json` and executing `aimlite install` *before* copying application code, Docker caches your compiled virtual environment layer. Code edits will rebuild in seconds without re-downloading dependencies.
+2. **Baked Checkpoints (Zero Cold-Start)**: `RUN aimlite train` runs at image build time. Weight matrices (`models/*.pkl`) and vector artifacts are pre-baked directly into the container image, guaranteeing instant startup and zero inference lag on container spin-up.
+3. **Active Healthcheck Probe**: Built-in `HEALTHCHECK` periodically verifies `GET /health` with `curl`. Orchestrators (Kubernetes, ECS, Docker Swarm) automatically restart degraded instances.
+4. **Dynamic Cloud Port Binding (`${PORT:-8000}`)**: Cloud platforms (Render, Railway, Heroku, Google Cloud Run) dynamically inject the `$PORT` environment variable. The shell wrapper dynamically binds to this port, avoiding binding conflicts.
+5. **Unified SPA & REST API Serving (`--frontend frontend`)**: AIMLite serves your custom compiled frontend SPA (React, Vue, Vite, Next.js static) alongside backend inference endpoints on the exact same port, eliminating CORS configurations entirely.
+
+### Build and Run Instructions
+
+```bash
+# 1. Build the production Docker image:
+docker build -t my-aimlite-app .
+
+# 2. Run container locally with port 8000 mapped:
+docker run -d --name aimlite-srv -p 8000:8000 my-aimlite-app
+
+# 3. Verify server health:
+curl http://localhost:8000/health
+
+# 4. Submit inference request:
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"features": [128.0, 1.0, 2.7, 1.0, 265.1, 110.0, 89.0, 9.8, 10.0]}'
+
+# 5. View live streaming container logs:
+docker logs -f aimlite-srv
+```
+
+### Docker Compose (`docker-compose.yml`)
+
+For local multi-service orchestration (e.g. AIMLite + PostgreSQL with `pgvector` for enterprise RAG):
+
+```yaml
+services:
+  aimlite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+```
+
+---
+
 ## How to Build & Package
 
 AIMLite supports multiple build and packaging targets:
-AIMLite supports multiple build and packaging targets:
 
-### 1. Build Standalone CLI Executable (`build/`)
-Bundle the entire AIMLite framework and CLI into a single, portable executable using Python's native `zipapp` format (compressed bytecode, zero external binary dependencies):
 ### 1. Build Standalone CLI Executable (`build/`)
 Bundle the entire AIMLite framework and CLI into a single, portable executable using Python's native `zipapp` format (compressed bytecode, zero external binary dependencies):
 ```bash
-# Compile standalone binary:
 # Compile standalone binary:
 python3 build/build_cli.py
 
@@ -249,23 +347,9 @@ python3 -m build
 
 ### 3. Build Interactive Documentation Portal (`api_docs/`)
 Build the React/TypeScript/Vite API documentation portal:
-### 2. Build Python Package (Wheel & Source Distribution)
-Build standard distribution packages using Hatchling / uv:
-```bash
-# Using uv:
-uv build
-
-# Or using standard python build:
-python3 -m pip install --upgrade build
-python3 -m build
-```
-
-### 3. Build Interactive Documentation Portal (`api_docs/`)
-Build the React/TypeScript/Vite API documentation portal:
 ```bash
 cd api_docs
 npm install
-npm run build   # Produces optimized production bundle in api_docs/dist/
 npm run build   # Produces optimized production bundle in api_docs/dist/
 ```
 

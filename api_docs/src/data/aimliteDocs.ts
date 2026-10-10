@@ -6,6 +6,8 @@ import {
   RAG_GUIDE_STEPS,
   ADAPTER_FILES,
   ADAPTER_GUIDE_STEPS,
+  DOCKER_FILES,
+  DOCKER_GUIDE_STEPS,
 } from './paradigmGuides';
 
 export interface DocParameter {
@@ -117,6 +119,12 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
       { id: 'endpoint-openapi', label: 'OpenAPI 3.0 Schema', badge: 'GET', badgeVariant: 'get' },
       { id: 'endpoint-docs', label: 'Swagger UI Docs', badge: 'GET', badgeVariant: 'get' },
       { id: 'guide-serving', label: 'Serving & Customization', badge: 'GUIDE', badgeVariant: 'cli' },
+    ],
+  },
+  {
+    name: 'Production & Deployment',
+    items: [
+      { id: 'deployment-docker', label: 'Docker & Cloud Deploy', badge: 'DOCKER', badgeVariant: 'cli' },
     ],
   },
   {
@@ -1920,6 +1928,136 @@ class CustomSupportRAG(KnowledgeModel):
         },
       ],
       status: 'success',
+    },
+  },
+
+  'deployment-docker': {
+    id: 'deployment-docker',
+    category: 'Production & Deployment',
+    title: 'Production Dockerfile & Cloud Deployment',
+    subtitle: 'Deploy containerized multi-model inference servers with layer-cached dependencies, pre-baked weights, active health checks, and dynamic port binding.',
+    badge: { label: 'DOCKER', variant: 'cli' },
+    signatureOrPath: 'docker build -t my-aimlite-app . && docker run -p 8000:8000 my-aimlite-app',
+    breadcrumbs: ['Production', 'Docker & Cloud Deployment'],
+    overview:
+      'AIMLite applications are engineered for zero-friction containerization. With this standardized production Dockerfile, dependencies are installed into .venv via uv and aimlite install before application code is copied (maximizing Docker layer caching). Model weights are trained and calibrated at image build time, ensuring instantaneous startup with zero cold-start delay, while dynamic $PORT binding and health probes integrate seamlessly with Render, Railway, Fly.io, Google Cloud Run, AWS ECS, and Kubernetes.',
+    djangoAnalogy:
+      'Like production containerization in Django with Gunicorn and Docker layer caching, AIMLite packages its managed virtual environment, pre-baked model weights, health checks, and single-port SPA frontend into a minimal, reproducible container.',
+    whyCode: [
+      {
+        component: 'FROM python:3.12-slim',
+        reason:
+          'Minimizes image size (~150MB base) and attack surface while providing full compatibility with Python 3.12 scientific wheels.',
+      },
+      {
+        component: 'ENV PYTHONUNBUFFERED=1 & PATH="/app/.venv/bin:$PATH"',
+        reason:
+          'Enables real-time streaming logs to docker logs and cloud monitoring, and makes all installed .venv executables available on PATH without activating.',
+      },
+      {
+        component: 'COPY aimlite.json . && RUN aimlite install',
+        reason:
+          'Docker layer caching strategy: resolves and compiles dependencies into .venv before copying source code. Edits to code or datasets rebuild in seconds without re-downloading packages.',
+      },
+      {
+        component: 'RUN aimlite train',
+        reason:
+          'Calibrates and writes model weights (models/*.pkl) at image build time. The container image is completely self-contained and boots instantly with zero cold-start latency.',
+      },
+      {
+        component: 'HEALTHCHECK --interval=30s CMD curl -f http://localhost:${PORT:-8000}/health',
+        reason:
+          'Active liveness probe hitting AIMLite native /health endpoint. Orchestrators automatically detect degraded pods and replace them.',
+      },
+      {
+        component: 'CMD ["sh", "-c", "aimlite serve --host 0.0.0.0 --port ${PORT:-8000} --frontend frontend"]',
+        reason:
+          'Dynamically binds to cloud platform assigned $PORT (Render, Railway, Fly.io, Cloud Run) and serves custom React/Vite/Vue frontend SPA on the exact same port with zero CORS configuration.',
+      },
+    ],
+    parametersTitle: 'Container Environment Variables & Options',
+    parameters: [
+      {
+        name: 'PORT',
+        type: 'integer',
+        required: false,
+        defaultValue: '8000',
+        description: 'Server listening port. Dynamically populated by cloud hosts (e.g. Render, Railway, Cloud Run).',
+      },
+      {
+        name: 'HOST',
+        type: 'string',
+        required: false,
+        defaultValue: '0.0.0.0',
+        description: 'Network interface binding. 0.0.0.0 binds to all container network interfaces for incoming traffic.',
+      },
+      {
+        name: 'PYTHONUNBUFFERED',
+        type: 'boolean (1/0)',
+        required: false,
+        defaultValue: '1',
+        description: 'Forces Python stdout/stderr to be unbuffered so inference logs appear immediately in container logs.',
+      },
+      {
+        name: 'PYTHONDONTWRITEBYTECODE',
+        type: 'boolean (1/0)',
+        required: false,
+        defaultValue: '1',
+        description: 'Prevents writing .pyc files to container disk, preserving layer purity.',
+      },
+      {
+        name: 'PATH',
+        type: 'string',
+        required: false,
+        defaultValue: '/app/.venv/bin:$PATH',
+        description: 'Prefixes the virtual environment bin directory so python and CLI commands resolve to .venv.',
+      },
+    ],
+    conventions: [
+      {
+        title: 'Layer Caching Strategy',
+        description: 'Always copy aimlite.json first and run aimlite install before COPY . . to avoid re-installing heavy libraries on every code change.',
+      },
+      {
+        title: 'Bake Weights at Build Time',
+        description: 'Running aimlite train inside the Dockerfile creates models/*.pkl inside the container layer, guaranteeing immediate readiness.',
+      },
+      {
+        title: 'Zero-CORS SPA Hosting',
+        description: 'Using --frontend frontend mounts your production React/Vite/Vue build directly, serving both UI and API on a single unified port.',
+      },
+      {
+        title: 'Native Healthcheck',
+        description: 'The built-in GET /health endpoint returns HTTP 200 with JSON status, uptime, and model inventory for container orchestration.',
+      },
+    ],
+    snippets: {
+      files: DOCKER_FILES,
+      cli: `# 1. Build production image with layer caching:
+docker build -t my-aimlite-app .
+
+# 2. Run container mapping host port 8000:
+docker run -d --name aimlite-srv -p 8000:8000 my-aimlite-app
+
+# 3. Verify server health:
+curl http://localhost:8000/health
+
+# 4. Stream container logs:
+docker logs -f aimlite-srv`,
+      curl: `curl -X POST http://localhost:8000/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"features": [128.0, 1.0, 2.7, 1.0, 265.1, 110.0, 89.0, 9.8, 10.0]}'`,
+    },
+    guideSteps: DOCKER_GUIDE_STEPS,
+    defaultPayload: '{\\n  "features": [128.0, 1.0, 2.7, 1.0, 265.1, 110.0, 89.0, 9.8, 10.0]\\n}',
+    defaultResponse: {
+      status: "healthy",
+      uptime_seconds: 42.8,
+      active_model: "ChurnClassifier",
+      models: ["ChurnClassifier"],
+      port: 8000,
+      host: "0.0.0.0",
+      frontend: "frontend (mounted)",
     },
   },
 

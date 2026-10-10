@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Search, ArrowRight, CornerDownLeft, X, Boxes, Terminal, Server, Settings, Database } from 'lucide-react';
+import { Search, ArrowRight, CornerDownLeft, X, Boxes, Terminal, Server, Settings, Database, Box } from 'lucide-react';
 import { NAVIGATION_CATEGORIES, DOC_SECTIONS, type NavItem } from '../data/aimliteDocs';
 
 interface SearchModalProps {
@@ -74,6 +74,7 @@ export default function SearchModal({ isOpen, onClose, onSelectSection }: Search
 
   const getItemIcon = (category: string) => {
     const iconClass = "text-zinc-500 dark:text-zinc-400 shrink-0";
+    if (category.includes('Production') || category.includes('Deployment')) return <Box size={13} className={iconClass} />;
     if (category.includes('Pillar')) return <Boxes size={13} className={iconClass} />;
     if (category.includes('CLI')) return <Terminal size={13} className={iconClass} />;
     if (category.includes('HTTP')) return <Server size={13} className={iconClass} />;

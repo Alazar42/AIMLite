@@ -223,3 +223,62 @@ When writing or generating code for AIMLite:
 5. **No fake training results**: `AdapterTrainer.fit()` and custom trainers must compute real forward and backward passes.
 6. **Threaded concurrency**: Custom inference servers should use `ThreadingHTTPServer` to avoid blocking concurrent requests.
 7. **Zero TODO / FIXME comments**: Produce production-ready, clean, well-commented code.
+
+---
+
+## 7. Containerization & Production Docker Deployment
+
+Deploying an AIMLite application to production uses this standardized `Dockerfile`:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+FROM python:3.12-slim
+
+# Set environment configuration
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PORT=8000 \
+    HOST=0.0.0.0 \
+    PATH="/app/.venv/bin:$PATH"
+
+# Install system dependencies (curl for healthchecks & network tooling)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 1. Install uv (blazing fast backend) and AIMLite framework
+RUN pip install --no-cache-dir uv aimlite
+
+# 2. Set project working directory
+WORKDIR /app
+
+# 3. Copy project manifest
+COPY aimlite.json .
+
+# 4. Install all project dependencies into managed .venv using aimlite CLI
+RUN aimlite install
+
+# 5. Copy the remaining application files, data, and frontend assets
+COPY . .
+
+# 6. Train and calibrate model weights for serving
+RUN aimlite train
+
+# 7. Expose serving port
+EXPOSE 8000
+
+# 8. Health check verifying inference server status
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
+
+# 9. Host multi-model inference server with custom frontend (dynamically binds to $PORT on cloud hosts)
+CMD ["sh", "-c", "aimlite serve --host 0.0.0.0 --port ${PORT:-8000} --frontend frontend"]
+```
+
+### Build & Run Commands:
+```bash
+docker build -t my-aimlite-app .
+docker run -d -p 8000:8000 my-aimlite-app
+curl http://localhost:8000/health
+```

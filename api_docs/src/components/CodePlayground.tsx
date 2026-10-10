@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Copy, Check, FileCode, Terminal, Lock, PanelRightClose } from 'lucide-react';
+import { Copy, Check, FileCode, Terminal, Lock, PanelRightClose, Box, Layers } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-docker';
+import 'prismjs/components/prism-yaml';
 import { type DocSection } from '../data/aimliteDocs';
 
 interface CodePlaygroundProps {
@@ -17,12 +19,16 @@ export default function CodePlayground({ section, onClose }: CodePlaygroundProps
 
   // Compute available tabs dynamically from section.snippets
   const availableTabs = useMemo(() => {
-    const tabs: { id: string; label: string; type: 'py' | 'sh' | 'json' }[] = [];
+    const tabs: { id: string; label: string; type: 'py' | 'sh' | 'json' | 'docker' | 'yaml' }[] = [];
 
-    // 1. Individual project files (data.py, model.py, trainer.py, evaluator.py, inference.py, config.py)
+    // 1. Individual project files (Dockerfile, docker-compose.yml, data.py, model.py, etc.)
     if (section.snippets.files && Object.keys(section.snippets.files).length > 0) {
       for (const fname of Object.keys(section.snippets.files)) {
-        const type = fname.endsWith('.json') ? 'json' : fname.endsWith('.sh') ? 'sh' : 'py';
+        let type: 'py' | 'sh' | 'json' | 'docker' | 'yaml' = 'py';
+        if (fname === 'Dockerfile' || fname.endsWith('.dockerfile')) type = 'docker';
+        else if (fname.endsWith('.yml') || fname.endsWith('.yaml')) type = 'yaml';
+        else if (fname.endsWith('.json')) type = 'json';
+        else if (fname.endsWith('.sh') || fname === '.dockerignore') type = 'sh';
         tabs.push({ id: fname, label: fname, type });
       }
     } else if (section.snippets.python) {
@@ -88,7 +94,13 @@ export default function CodePlayground({ section, onClose }: CodePlaygroundProps
     let grammar = Prism.languages.python;
     let lang = 'python';
 
-    if (activeTab.endsWith('.sh')) {
+    if (activeTab === 'Dockerfile' || activeTab.endsWith('.dockerfile')) {
+      grammar = Prism.languages.docker || Prism.languages.bash;
+      lang = 'docker';
+    } else if (activeTab.endsWith('.yml') || activeTab.endsWith('.yaml')) {
+      grammar = Prism.languages.yaml || Prism.languages.bash;
+      lang = 'yaml';
+    } else if (activeTab.endsWith('.sh') || activeTab === '.dockerignore') {
       grammar = Prism.languages.bash;
       lang = 'bash';
     } else if (activeTab.endsWith('.json')) {
@@ -109,11 +121,27 @@ export default function CodePlayground({ section, onClose }: CodePlaygroundProps
   const lineCount = currentSnippet ? currentSnippet.split('\n').length : 1;
   const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
 
+  const getLanguageLabel = (): string => {
+    if (activeTab === 'Dockerfile') return 'Dockerfile';
+    if (activeTab.endsWith('.yml') || activeTab.endsWith('.yaml')) return 'YAML';
+    if (activeTab.endsWith('.sh') || activeTab === '.dockerignore') return 'Shell';
+    if (activeTab.endsWith('.json')) return 'JSON';
+    return 'Python';
+  };
+
   return (
     <aside className="w-full h-full flex flex-col bg-white dark:bg-[#121318] border-l border-zinc-200 dark:border-zinc-800 font-mono text-xs select-text shadow-xl transition-colors">
-      {/* Tab Bar with Individual File Tabs & Controls */}
-      <div className="flex items-center justify-between bg-zinc-100 dark:bg-[#1a1b22] border-b border-zinc-200 dark:border-zinc-800 px-1 shrink-0 select-none overflow-x-auto">
-        <div className="flex items-center overflow-x-auto scrollbar-none">
+      {/* Top Chrome Header with Mac Traffic Lights & Tab Bar */}
+      <div className="flex items-center justify-between bg-zinc-100 dark:bg-[#1a1b22] border-b border-zinc-200 dark:border-zinc-800 px-2 shrink-0 select-none">
+        {/* Left Mac-style Traffic Light Dots */}
+        <div className="hidden sm:flex items-center gap-1.5 mr-2 shrink-0 pl-1">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-400/80 dark:bg-red-500/70 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80 dark:bg-amber-500/70 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80 dark:bg-emerald-500/70 inline-block" />
+        </div>
+
+        {/* Tab List */}
+        <div className="flex items-center flex-1 overflow-x-auto scrollbar-none">
           {availableTabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -130,6 +158,8 @@ export default function CodePlayground({ section, onClose }: CodePlaygroundProps
                 {isActive && (
                   <div className="absolute top-0 left-0 right-0 h-[2px] bg-zinc-900 dark:bg-white" />
                 )}
+                {tab.type === 'docker' && <Box size={13} className="text-zinc-500 dark:text-zinc-400" />}
+                {tab.type === 'yaml' && <Layers size={13} className="text-zinc-500 dark:text-zinc-400" />}
                 {tab.type === 'py' && <FileCode size={13} className="text-zinc-500 dark:text-zinc-400" />}
                 {tab.type === 'sh' && <Terminal size={13} className="text-zinc-500 dark:text-zinc-400" />}
                 {tab.type === 'json' && <FileCode size={13} className="text-zinc-500 dark:text-zinc-400" />}
@@ -206,7 +236,7 @@ export default function CodePlayground({ section, onClose }: CodePlaygroundProps
         </div>
         <div className="flex items-center gap-2">
           <span>Ln {lineCount}, Col 1</span>
-          <span>{activeTab.endsWith('.sh') ? 'Shell' : activeTab.endsWith('.json') ? 'JSON' : 'Python'}</span>
+          <span>{getLanguageLabel()}</span>
         </div>
       </div>
     </aside>

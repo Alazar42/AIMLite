@@ -8,12 +8,16 @@ import {
   Code2,
   FileText,
   Braces,
+  Box,
+  Layers,
 } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-bash';
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-markdown';
+import 'prismjs/components/prism-docker';
+import 'prismjs/components/prism-yaml';
 import { type GuideStep } from '../data/paradigmGuides';
 
 interface GuideStepCardProps {
@@ -34,7 +38,13 @@ export default function GuideStepCard({ step }: GuideStepCardProps) {
     let grammar = Prism.languages.python;
     let lang = 'python';
 
-    if (step.language === 'bash' || step.filename?.endsWith('.sh')) {
+    if (step.language === 'docker' || step.filename === 'Dockerfile' || step.filename?.endsWith('.dockerfile')) {
+      grammar = Prism.languages.docker || Prism.languages.bash;
+      lang = 'docker';
+    } else if (step.language === 'yaml' || step.filename?.endsWith('.yml') || step.filename?.endsWith('.yaml')) {
+      grammar = Prism.languages.yaml || Prism.languages.bash;
+      lang = 'yaml';
+    } else if (step.language === 'bash' || step.filename?.endsWith('.sh')) {
       grammar = Prism.languages.bash;
       lang = 'bash';
     } else if (step.language === 'json' || step.filename?.endsWith('.json')) {
@@ -61,6 +71,12 @@ export default function GuideStepCard({ step }: GuideStepCardProps) {
   const renderFileIcon = () => {
     const fn = step.filename || '';
     const iconClass = "text-zinc-500 dark:text-zinc-400";
+    if (fn === 'Dockerfile' || step.language === 'docker') {
+      return <Box size={14} className={iconClass} />;
+    }
+    if (fn.endsWith('.yml') || fn.endsWith('.yaml') || step.language === 'yaml') {
+      return <Layers size={14} className={iconClass} />;
+    }
     if (fn.endsWith('.sh') || step.language === 'bash') {
       return <Terminal size={14} className={iconClass} />;
     }

@@ -1,4 +1,4 @@
-import { Menu, Search, Terminal, ExternalLink, BookOpen, Code2, Bot } from 'lucide-react';
+import { Menu, Search, Terminal, ExternalLink, BookOpen, Code2, Bot, Box } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 const GithubIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
@@ -146,6 +146,20 @@ export default function Navbar({
               }`}
           >
             API Server
+          </button>
+
+          <button
+            onClick={() => {
+              onSelectViewMode('docs');
+              onSelectSection('deployment-docker');
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId === 'deployment-docker'
+              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
+              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+              }`}
+          >
+            <Box size={13} className="text-zinc-500 dark:text-zinc-400" />
+            <span>Deploy</span>
           </button>
 
           <button

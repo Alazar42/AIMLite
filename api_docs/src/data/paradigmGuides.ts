@@ -6,7 +6,7 @@ export interface GuideStep {
   description: string;
   filename?: string;
   code: string;
-  language?: 'python' | 'bash' | 'json' | 'markdown';
+  language?: 'python' | 'bash' | 'json' | 'markdown' | 'docker' | 'yaml';
   whyCode?: string;
   externalLink?: {
     label: string;
@@ -1837,3 +1837,234 @@ curl -X POST http://localhost:8000/predict \
       'Enables rapid experimentation and instant deployment of specialized adapters without retraining entire foundation models.',
   },
 ];
+
+/* ========================================================================= */
+/* PRODUCTION DOCKER & CLOUD DEPLOYMENT                                      */
+/* ========================================================================= */
+
+export const DOCKER_FILES: Record<string, string> = {
+  'Dockerfile': `# syntax=docker/dockerfile:1
+FROM python:3.12-slim
+
+# Set environment configuration
+ENV PYTHONUNBUFFERED=1 \\
+    PYTHONDONTWRITEBYTECODE=1 \\
+    PIP_NO_CACHE_DIR=1 \\
+    PORT=8000 \\
+    HOST=0.0.0.0 \\
+    PATH="/app/.venv/bin:$PATH"
+
+# Install system dependencies (curl for healthchecks & network tooling)
+RUN apt-get update && apt-get install -y --no-install-recommends \\
+    curl \\
+    && rm -rf /var/lib/apt/lists/*
+
+# 1. Install uv (blazing fast backend) and AIMLite framework
+RUN pip install --no-cache-dir uv aimlite
+
+# 2. Set project working directory
+WORKDIR /app
+
+# 3. Copy project manifest
+COPY aimlite.json .
+
+# 4. Install all project dependencies into managed .venv using aimlite CLI
+RUN aimlite install
+
+# 5. Copy the remaining application files, data, and frontend assets
+COPY . .
+
+# 6. Train and calibrate model weights for serving
+RUN aimlite train
+
+# 7. Expose serving port
+EXPOSE 8000
+
+# 8. Health check verifying inference server status
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \\
+    CMD curl -f http://localhost:\${PORT:-8000}/health || exit 1
+
+# 9. Host multi-model inference server with custom frontend (dynamically binds to $PORT on cloud hosts)
+CMD ["sh", "-c", "aimlite serve --host 0.0.0.0 --port \${PORT:-8000} --frontend frontend"]`,
+
+  'docker-compose.yml': `version: "3.8"
+
+services:
+  aimlite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "\${PORT:-8000}:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - DATABASE_URL=postgresql://postgres:secret@postgres:5432/aimlite_db
+      - OPENAI_API_KEY=\${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=\${GEMINI_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: aimlite_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:`,
+
+  '.dockerignore': `.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+.pytest_cache
+experiments/*.log
+artifacts/cache/
+.DS_Store
+*.swp`,
+
+  'deploy.sh': `#!/usr/bin/env bash
+set -e
+
+echo "=== 1. Building Production AIMLite Docker Image ==="
+docker build -t my-aimlite-app .
+
+echo "=== 2. Launching Background Container on Port 8000 ==="
+docker run -d --name aimlite-srv -p 8000:8000 my-aimlite-app
+
+echo "=== 3. Waiting for Health Check Status ==="
+sleep 3
+curl -s http://localhost:8000/health | grep '"status":"healthy"' && echo "Server is live & healthy!"
+
+echo "=== 4. Testing Model Inference Endpoint ==="
+curl -X POST http://localhost:8000/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"features": [128.0, 1.0, 2.7, 1.0, 265.1, 110.0, 89.0, 9.8, 10.0]}'
+
+echo -e "\\nContainer is ready for production traffic!"`,
+
+  'cloud-deploy.sh': `# 1. Google Cloud Run (Serverless Container with auto-scaling to 0):
+gcloud builds submit --tag gcr.io/\$PROJECT_ID/aimlite-app
+gcloud run deploy aimlite-service \\
+  --image gcr.io/\$PROJECT_ID/aimlite-app \\
+  --platform managed \\
+  --region us-central1 \\
+  --allow-unauthenticated \\
+  --memory 2Gi \\
+  --cpu 2
+
+# 2. Render / Railway / Fly.io:
+# Simply push your repository with Dockerfile and aimlite.json.
+# Cloud hosts automatically supply \$PORT, which the shell CMD binds to dynamically.
+# Set Healthcheck Path to: /health
+
+# 3. AWS ECS / Fargate:
+# Push to Amazon ECR, register Task Definition with containerPort 8000,
+# and configure Target Group health check path to /health.`
+};
+
+export const DOCKER_GUIDE_STEPS: GuideStep[] = [
+  {
+    stepNumber: 1,
+    title: 'Create Production Dockerfile',
+    badge: 'BLUEPRINT',
+    badgeVariant: 'cli',
+    filename: 'Dockerfile',
+    language: 'docker',
+    description:
+      'Place `Dockerfile` in your project root. Engineered with UV backend, layer-cached `aimlite install`, build-time `aimlite train` model baking, and dynamic `$PORT` binding.',
+    code: DOCKER_FILES['Dockerfile'],
+    whyCode:
+      'Guarantees reproducible builds, zero dependency drift, pre-baked model weights for 0ms cold starts, and single-port SPA frontend + API serving.',
+  },
+  {
+    stepNumber: 2,
+    title: 'Configure .dockerignore',
+    badge: 'OPTIMIZATION',
+    badgeVariant: 'util',
+    filename: '.dockerignore',
+    language: 'bash',
+    description:
+      'Prevent local virtual environments, bytecode caches, and temporary experiment logs from being copied into the container build context.',
+    code: DOCKER_FILES['.dockerignore'],
+    whyCode:
+      'Dramatically reduces Docker build context transfer time and prevents local OS binaries from polluting container filesystem.',
+  },
+  {
+    stepNumber: 3,
+    title: 'Build and Verify Locally',
+    badge: 'VERIFICATION',
+    badgeVariant: 'cli',
+    filename: 'terminal.sh',
+    language: 'bash',
+    description:
+      'Build the container image and execute containerized inference. Test `/health` endpoint and submit prediction requests.',
+    code: `# 1. Build Docker image with layer caching
+docker build -t my-aimlite-app .
+
+# 2. Run container mapping host port 8000
+docker run -d --name aimlite-srv -p 8000:8000 my-aimlite-app
+
+# 3. Verify health probe
+curl http://localhost:8000/health
+
+# 4. Submit prediction request
+curl -X POST http://localhost:8000/predict \\
+  -H "Content-Type: application/json" \\
+  -d '{"features": [128.0, 1.0, 2.7, 1.0, 265.1, 110.0, 89.0, 9.8, 10.0]}'
+
+# 5. Tail container logs
+docker logs -f aimlite-srv`,
+    whyCode:
+      'Verifies the entire lifecycle inside Linux container environment before deploying to cloud clusters.',
+  },
+  {
+    stepNumber: 4,
+    title: 'Multi-Service Orchestration with Docker Compose',
+    badge: 'ORCHESTRATION',
+    badgeVariant: 'post',
+    filename: 'docker-compose.yml',
+    language: 'yaml',
+    description:
+      'For RAG knowledge engines or complex multi-model systems, orchestrate AIMLite alongside PostgreSQL with `pgvector` for enterprise vector persistence.',
+    code: DOCKER_FILES['docker-compose.yml'],
+    whyCode:
+      'Provides a self-contained local production simulation with database health checks and shared network isolation.',
+  },
+  {
+    stepNumber: 5,
+    title: 'Cloud Deploy: Google Cloud Run, Render & Railway',
+    badge: 'CLOUD DEPLOY',
+    badgeVariant: 'cli',
+    filename: 'cloud-deploy.sh',
+    language: 'bash',
+    description:
+      'Deploy container directly to Google Cloud Run, Render, Railway, Fly.io, or AWS ECS. Because the `CMD` dynamically binds to `${PORT:-8000}`, cloud port assignments work out of the box.',
+    code: DOCKER_FILES['cloud-deploy.sh'],
+    whyCode:
+      'Enables true zero-downtime rolling updates and serverless autoscaling from 0 to thousands of concurrent requests.',
+  },
+];
+

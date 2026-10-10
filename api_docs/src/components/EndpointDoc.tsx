@@ -15,6 +15,7 @@ import {
   History,
   Tag,
   ArrowLeft,
+  Box,
 } from 'lucide-react';
 import { type DocSection, type DocParameter, NAVIGATION_CATEGORIES, DOC_SECTIONS } from '../data/aimliteDocs';
 import GuideStepCard from './GuideStepCard';
@@ -152,6 +153,19 @@ export default function EndpointDoc({
             <Cpu size={13} className="shrink-0" />
             <span>3. Adapters (LoRA)</span>
           </button>
+
+          <span className="text-zinc-400 dark:text-zinc-600 text-xs shrink-0">→</span>
+
+          <button
+            onClick={() => onSelectSection('deployment-docker')}
+            className={`shrink-0 flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg font-medium transition-all ${section.id === 'deployment-docker'
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/60'
+              }`}
+          >
+            <Box size={13} className="shrink-0" />
+            <span>4. Docker Deploy</span>
+          </button>
         </div>
       ) : (
         <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs overflow-x-auto no-scrollbar">
@@ -256,6 +270,53 @@ export default function EndpointDoc({
               All scripts can also be selected and copied individually via the code console tabs on the right.
             </span>
           </div>
+
+          {/* Parameters Table for Guide Sections (e.g. Docker Environment Variables) */}
+          {section.parameters && section.parameters.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-200">
+                {section.parametersTitle || 'Environment Variables & Configuration'}
+              </div>
+
+              <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-x-auto bg-white dark:bg-zinc-950/40">
+                <table className="w-full min-w-[500px] text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/60 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                      <th className="py-2.5 px-3">Variable</th>
+                      <th className="py-2.5 px-3">Type</th>
+                      <th className="py-2.5 px-3">Req</th>
+                      <th className="py-2.5 px-3">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {section.parameters.map((param) => renderParameterRow(param))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Conventions for Guide Sections */}
+          {section.conventions && section.conventions.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                <FolderTree size={13} className="text-zinc-500 dark:text-zinc-400" />
+                <span>Production Architecture & Key Conventions</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {section.conventions.map((conv) => (
+                  <div
+                    key={conv.title}
+                    className="p-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800/80 space-y-1"
+                  >
+                    <div className="font-semibold text-zinc-900 dark:text-zinc-200 text-[11px]">{conv.title}</div>
+                    <div className="text-zinc-600 dark:text-zinc-400 text-[11px] leading-snug">{conv.description}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : isChangelog ? (
         /* ================================================================= */
@@ -270,14 +331,14 @@ export default function EndpointDoc({
               </h2>
             </div>
             <span className="text-xs text-zinc-900 dark:text-zinc-100 font-mono bg-zinc-200 dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 font-semibold">
-              Latest: v2.1.0
+              Latest: v2.1.2
             </span>
           </div>
 
           {section.conventions && (
             <div className="space-y-4">
               {section.conventions.map((release) => {
-                const isLatest = release.title.includes('2.1.0');
+                const isLatest = release.title.includes('2.1.2');
                 return (
                   <div
                     key={release.title}
