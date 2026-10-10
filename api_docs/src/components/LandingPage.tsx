@@ -173,12 +173,12 @@ const renderTerminalLine = (line: string, idx: number) => {
   if (line.startsWith('$ ')) {
     return (
       <div key={idx} className="flex items-center gap-1.5 text-zinc-100 font-semibold py-0.5">
-        <span className="text-zinc-400 select-none">$</span>
+        <span className="text-zinc-500 select-none">$</span>
         <span className="text-zinc-100 font-bold">{line.slice(2)}</span>
       </div>
     );
   }
-  // ASCII Figlet art: Clean Crisp White
+  // ASCII Figlet art: Vibrant Electric Bright Cyan (#00d8ff) matching CLI big_header
   if (
     line.includes('.d8b.') ||
     line.includes('d888888b') ||
@@ -192,39 +192,170 @@ const renderTerminalLine = (line: string, idx: number) => {
     return (
       <div
         key={idx}
-        className="text-white font-extrabold select-none whitespace-pre tracking-normal leading-[1.15] font-mono text-[7px] min-[360px]:text-[8px] min-[400px]:text-[9.5px] sm:text-[12px] md:text-[13px] drop-shadow-[0_0_8px_rgba(255,255,255,0.25)]"
+        className="text-[#00d8ff] font-extrabold select-none whitespace-pre tracking-normal leading-[1.15] font-mono text-[7px] min-[360px]:text-[8px] min-[400px]:text-[9.5px] sm:text-[12px] md:text-[13px] drop-shadow-[0_0_12px_rgba(0,216,255,0.4)]"
       >
         {line}
       </div>
     );
   }
-  if (line.includes('✔') || line.includes('completed successfully') || line.includes('HEALTHY')) {
+  // Vite / CLI Header title in cyan
+  if (line.trim().startsWith('AIMLITE v')) {
+    const parts = line.trim().split(/\s+/);
     return (
-      <div key={idx} className="text-zinc-200 font-medium py-0.5">
+      <div key={idx} className="flex items-center gap-2 py-1 text-xs font-mono">
+        <span className="text-[#00d8ff] font-extrabold tracking-wider">AIMLITE</span>
+        <span className="text-zinc-500">{parts[1] || 'v2.1.2'}</span>
+        <span className="text-emerald-400 font-semibold">{parts[2]}</span>
+        <span className="text-zinc-400">{parts.slice(3).join(' ')}</span>
+      </div>
+    );
+  }
+  if (line.includes('The Django for AI & Machine Learning')) {
+    return (
+      <div key={idx} className="flex items-center gap-2 pt-1 pb-0.5 text-xs font-mono">
+        <span className="text-zinc-500">v2.1.2</span>
+        <span className="text-[#00d8ff] font-bold">❯</span>
+        <span className="text-zinc-100 font-bold">The Django for AI & Machine Learning</span>
+      </div>
+    );
+  }
+  if (line.trim() === 'create project') {
+    return (
+      <div key={idx} className="text-emerald-400 font-semibold pb-1.5 font-mono text-xs">
         {line}
       </div>
     );
   }
-  if (line.includes('❯')) {
+  if (line.includes('[========================================]')) {
     return (
-      <div key={idx} className="text-zinc-200 font-medium py-0.2">
-        {line}
-      </div>
-    );
-  }
-  if (line.includes('? Select Project Paradigm:') || line.includes('? Select LLM Chat Provider:')) {
-    return (
-      <div key={idx} className="text-zinc-100 font-semibold pt-1">
-        {line}
+      <div key={idx} className="flex items-center gap-1.5 text-zinc-300">
+        <span className="text-[#00d8ff] font-bold select-none">❯</span>
+        <span>Embedding Passages: </span>
+        <span className="text-emerald-400 font-bold">[========================================]</span>
+        <span className="text-emerald-300 font-semibold"> 48/48 (100%)</span>
       </div>
     );
   }
   if (line.includes('Average Latency =')) {
     return (
       <div key={idx} className="text-zinc-200">
-        <span className="text-zinc-400 font-bold select-none">✔ </span>
+        <span className="text-emerald-400 font-bold select-none">✔ </span>
         <span>Benchmark Results: </span>
-        <span className="text-white font-bold">Average Latency = 21.50ms</span>
+        <span className="text-sky-300 font-bold">Average Latency = 21.50ms</span>
+      </div>
+    );
+  }
+  if (line.startsWith('✔ ') || line.includes('✔ ')) {
+    return (
+      <div key={idx} className="flex items-center gap-1.5 text-zinc-200">
+        <span className="text-emerald-400 font-bold select-none">✔</span>
+        <span className="text-emerald-300 font-medium">{line.replace(/^.*✔\s*/, '')}</span>
+      </div>
+    );
+  }
+  if (line.startsWith('❯ ')) {
+    return (
+      <div key={idx} className="flex items-center gap-1.5 text-[#00d8ff]">
+        <span className="text-[#00d8ff] font-bold select-none">❯</span>
+        <span className="text-[#00d8ff] font-bold">{line.slice(2)}</span>
+      </div>
+    );
+  }
+  if (line.startsWith('? ')) {
+    return (
+      <div key={idx} className="text-zinc-100 font-semibold pt-1">
+        <span className="text-[#00d8ff] font-bold select-none">? </span>
+        <span className="text-white font-bold">{line.slice(2)}</span>
+      </div>
+    );
+  }
+  if (line.trim().startsWith('➜')) {
+    const content = line.trim().replace(/^➜\s*/, '');
+    const colonIdx = content.indexOf(':');
+    if (colonIdx !== -1) {
+      const label = content.slice(0, colonIdx + 1);
+      const val = content.slice(colonIdx + 1);
+      return (
+        <div key={idx} className="flex items-center gap-2 py-0.5 pl-2 font-mono text-xs">
+          <span className="text-emerald-400 font-bold select-none">➜</span>
+          <span className="text-zinc-400">{label}</span>
+          <span className="text-cyan-300 font-semibold">{val}</span>
+        </div>
+      );
+    }
+    return (
+      <div key={idx} className="flex items-center gap-2 py-0.5 pl-2 font-mono text-xs">
+        <span className="text-emerald-400 font-bold select-none">➜</span>
+        <span className="text-zinc-200">{content}</span>
+      </div>
+    );
+  }
+  if (line.startsWith('INFO:')) {
+    return (
+      <div key={idx} className="text-zinc-400">
+        <span className="text-blue-400 font-semibold">INFO:</span>
+        <span className="text-zinc-300">{line.slice(5)}</span>
+      </div>
+    );
+  }
+  if (line.includes('🚀 Endpoints Ready:')) {
+    return (
+      <div key={idx} className="text-emerald-400 font-bold pt-1">
+        {line}
+      </div>
+    );
+  }
+  if (line.trim().startsWith('• GET')) {
+    const parts = line.split('->');
+    return (
+      <div key={idx} className="pl-2">
+        <span className="text-sky-400 font-semibold">• GET</span>
+        <span className="text-zinc-200">{parts[0].replace('• GET', '')}</span>
+        {parts[1] && <span className="text-zinc-400">→{parts[1]}</span>}
+      </div>
+    );
+  }
+  if (line.trim().startsWith('• POST')) {
+    const parts = line.split('->');
+    return (
+      <div key={idx} className="pl-2">
+        <span className="text-emerald-400 font-semibold">• POST</span>
+        <span className="text-zinc-200">{parts[0].replace('• POST', '')}</span>
+        {parts[1] && <span className="text-zinc-400">→{parts[1]}</span>}
+      </div>
+    );
+  }
+  if (line.includes('Query:') && line.includes('->')) {
+    const [queryPart, msPart] = line.split('->');
+    return (
+      <div key={idx} className="pl-2 text-zinc-300">
+        <span className="text-zinc-400">{queryPart}</span>
+        <span className="text-zinc-500">→</span>
+        <span className="text-emerald-400 font-semibold">{msPart}</span>
+      </div>
+    );
+  }
+  if (line.startsWith('[+] Building')) {
+    return (
+      <div key={idx} className="text-sky-400 font-semibold py-0.5">
+        <span>[+] </span>
+        <span className="text-zinc-200">Building 4.2s (10/10) </span>
+        <span className="text-emerald-400 font-bold">FINISHED</span>
+      </div>
+    );
+  }
+  if (line.trim().startsWith('=>')) {
+    return (
+      <div key={idx} className="text-zinc-400 py-0.5 pl-1">
+        <span className="text-sky-400 font-bold select-none">=&gt; </span>
+        <span className="text-zinc-300">{line.replace(/^.*=>\s*/, '')}</span>
+      </div>
+    );
+  }
+  if (line.includes('press Ctrl+C to terminate')) {
+    return (
+      <div key={idx} className="text-zinc-500 italic text-[11px] pt-1">
+        {line}
       </div>
     );
   }
@@ -585,42 +716,50 @@ $ docker run -d -p 8000:8000 my-aimlite-app
         <ScrollReveal>
           <div className="relative rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-[#090b10] shadow-2xl overflow-hidden font-mono">
             {/* Terminal Window Header Chrome */}
-            <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#12151e] border-b border-zinc-800/80 select-none">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-zinc-700 inline-block shadow-xs" />
-                <span className="w-3 h-3 rounded-full bg-zinc-700 inline-block shadow-xs" />
-                <span className="w-3 h-3 rounded-full bg-zinc-700 inline-block shadow-xs" />
+            <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#12151e] border-b border-zinc-800/80 select-none overflow-hidden gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#ff5f56] inline-block shadow-xs" />
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#ffbd2e] inline-block shadow-xs" />
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#27c93f] inline-block shadow-xs" />
                 <span className="text-[11px] text-zinc-400 font-mono ml-2 hidden sm:inline">
-                  aimlite — zsh — 80x24
+                  aimlite terminal session
                 </span>
               </div>
 
               {/* Command Tabs */}
-              <div className="flex items-center gap-1">
-                {(['init', 'train', 'serve', 'benchmark', 'docker'] as const).map((tab) => (
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-[calc(100vw-120px)] sm:max-w-none">
+                {(
+                  [
+                    { id: 'init', label: '1. aimlite init' },
+                    { id: 'train', label: '2. aimlite train' },
+                    { id: 'serve', label: '3. aimlite serve' },
+                    { id: 'benchmark', label: '4. aimlite benchmark' },
+                    { id: 'docker', label: '5. docker' },
+                  ] as const
+                ).map((tab) => (
                   <button
-                    key={tab}
-                    onClick={() => setTerminalTab(tab)}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono transition-all uppercase font-bold ${
-                      terminalTab === tab
-                        ? 'bg-zinc-800 text-white border border-zinc-700 shadow-xs'
-                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-850'
+                    key={tab.id}
+                    onClick={() => setTerminalTab(tab.id)}
+                    className={`shrink-0 px-2.5 py-1 rounded-md text-[10px] sm:text-[11px] font-mono transition-all whitespace-nowrap font-semibold ${
+                      terminalTab === tab.id
+                        ? 'bg-zinc-800 text-[#00d8ff] border border-zinc-700 shadow-xs'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
                     }`}
                   >
-                    {tab}
+                    {tab.label}
                   </button>
                 ))}
               </div>
 
               <button
                 onClick={handleCopyTerminal}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
                 title="Copy terminal commands"
               >
                 {hasCopiedTerminal ? (
                   <>
-                    <Check size={12} className="text-zinc-200" />
-                    <span className="text-zinc-200 text-[10px]">Copied</span>
+                    <Check size={12} className="text-emerald-400" />
+                    <span className="text-emerald-400 text-[10px]">Copied</span>
                   </>
                 ) : (
                   <>
@@ -633,9 +772,11 @@ $ docker run -d -p 8000:8000 my-aimlite-app
 
             {/* Terminal Content Screen */}
             <div className="p-4 sm:p-6 overflow-x-auto text-[11px] sm:text-xs leading-[1.65] max-h-[460px] overflow-y-auto">
-              {terminalSnippets[terminalTab]
-                .split('\n')
-                .map((line, idx) => renderTerminalLine(line, idx))}
+              <div className="space-y-0.5">
+                {terminalSnippets[terminalTab]
+                  .split('\n')
+                  .map((line, idx) => renderTerminalLine(line, idx))}
+              </div>
             </div>
           </div>
         </ScrollReveal>
