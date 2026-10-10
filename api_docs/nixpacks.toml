@@ -1,0 +1,11 @@
+# nixpacks.toml configuration for AIMLite API Docs deployment
+
+[variables]
+NODE_ENV = "development"
+NPM_CONFIG_PRODUCTION = "false"
+
+[phases.install]
+cmds = ["npm install --include=dev"]
+
+[phases.build]
+cmds = ["npm run build"]
