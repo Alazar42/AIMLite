@@ -14,6 +14,7 @@ import {
   Home,
   FileCode,
   Box,
+  Sparkles,
 } from 'lucide-react';
 import { NAVIGATION_CATEGORIES, type NavCategory } from '../data/aimliteDocs';
 
@@ -46,7 +47,7 @@ export default function Sidebar({
   };
 
   const getCategoryIcon = (name: string) => {
-    const iconClass = "text-zinc-500 dark:text-zinc-400";
+    const iconClass = "text-zinc-400 dark:text-zinc-500";
     switch (name) {
       case 'The 3 AI Paradigms':
         return <Layers size={13} className={iconClass} />;
@@ -71,44 +72,54 @@ export default function Sidebar({
 
   const getItemIcon = (id: string) => {
     const iconClass = "text-zinc-400 dark:text-zinc-500 shrink-0";
-    if (id === 'pillar-data') return <Database size={11} className={iconClass} />;
-    if (id === 'pillar-model') return <Cpu size={11} className={iconClass} />;
-    if (id === 'pillar-lifecycle') return <RefreshCw size={11} className={iconClass} />;
-    if (id === 'paradigm-rag') return <BookOpen size={11} className={iconClass} />;
-    if (id === 'paradigm-adapters') return <Cpu size={11} className={iconClass} />;
-    if (id === 'paradigm-scratch') return <Layers size={11} className={iconClass} />;
-    if (id === 'deployment-docker') return <Box size={11} className={iconClass} />;
-    if (id === 'rag-hooks') return <FileCode size={11} className={iconClass} />;
-    if (id === 'changelog') return <History size={11} className={iconClass} />;
+    if (id === 'pillar-data') return <Database size={12} className={iconClass} />;
+    if (id === 'pillar-model') return <Cpu size={12} className={iconClass} />;
+    if (id === 'pillar-lifecycle') return <RefreshCw size={12} className={iconClass} />;
+    if (id === 'paradigm-rag') return <BookOpen size={12} className={iconClass} />;
+    if (id === 'paradigm-adapters') return <Cpu size={12} className={iconClass} />;
+    if (id === 'paradigm-scratch') return <Layers size={12} className={iconClass} />;
+    if (id === 'deployment-docker') return <Box size={12} className={iconClass} />;
+    if (id === 'rag-hooks') return <FileCode size={12} className={iconClass} />;
+    if (id === 'changelog') return <History size={12} className={iconClass} />;
     return null;
   };
 
+  const getBadgeStyle = (_badge: string, isActive: boolean) => {
+    if (isActive) {
+      return 'bg-zinc-800 text-zinc-100 dark:bg-zinc-200 dark:text-zinc-900 border-zinc-700 dark:border-zinc-300 font-bold';
+    }
+    return 'bg-zinc-100 text-zinc-600 border-zinc-200/80 dark:bg-zinc-850 dark:text-zinc-400 dark:border-zinc-800 font-mono text-[8px] font-semibold';
+  };
+
   return (
-    <aside className="w-full h-full flex flex-col bg-white dark:bg-[#09090b] border-r border-zinc-200 dark:border-zinc-800 select-none text-xs transition-colors">
+    <aside className="w-full h-full flex flex-col select-none text-xs">
       {/* Top Overview Quick Link */}
       {onNavigateToOverview && (
-        <div className="p-2 border-b border-zinc-200 dark:border-zinc-800/80">
+        <div className="p-3 border-b border-zinc-200/80 dark:border-zinc-800/80">
           <button
             onClick={onNavigateToOverview}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-850 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white bg-zinc-100/70 hover:bg-zinc-200/70 dark:bg-zinc-900/60 dark:hover:bg-zinc-800/70 border border-zinc-200/60 dark:border-zinc-800/60 transition-all shadow-2xs group"
           >
-            <Home size={14} className="text-zinc-600 dark:text-zinc-400" />
-            <span>Framework Overview</span>
+            <div className="flex items-center gap-2">
+              <Home size={14} className="text-zinc-500 group-hover:text-zinc-950 dark:text-zinc-400 dark:group-hover:text-white transition-colors" />
+              <span className="font-semibold">Framework Overview</span>
+            </div>
+            <Sparkles size={12} className="text-zinc-400 group-hover:text-zinc-600 dark:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
           </button>
         </div>
       )}
 
-      {/* Navigation List */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3">
+      {/* Navigation Tree List */}
+      <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-3.5 scrollbar-thin">
         {NAVIGATION_CATEGORIES.map((category: NavCategory) => {
           const isCollapsed = collapsedCategories[category.name];
           return (
             <div key={category.name} className="space-y-0.5">
               <button
                 onClick={() => toggleCategory(category.name)}
-                className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors uppercase tracking-wider"
+                className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors uppercase tracking-wider font-mono"
               >
-                <div className="flex items-center gap-1.5 truncate">
+                <div className="flex items-center gap-2 truncate">
                   {getCategoryIcon(category.name)}
                   <span className="truncate">{category.name}</span>
                 </div>
@@ -116,7 +127,7 @@ export default function Sidebar({
               </button>
 
               {!isCollapsed && (
-                <div className="space-y-0.5 pl-1">
+                <div className="space-y-0.5 pt-0.5">
                   {category.items.map((item) => {
                     const isActive = activeSectionId === item.id;
                     const itemIcon = getItemIcon(item.id);
@@ -124,25 +135,22 @@ export default function Sidebar({
                       <button
                         key={item.id}
                         onClick={() => onSelectSection(item.id)}
-                        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] transition-all ${isActive
-                            ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-sm'
-                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900'
-                          }`}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[11px] transition-all relative ${
+                          isActive
+                            ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-semibold shadow-xs'
+                            : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-100 hover:bg-zinc-100/90 dark:hover:bg-zinc-900/90'
+                        }`}
                       >
-                        <div className="flex items-center gap-1.5 truncate">
+                        <div className="flex items-center gap-2 truncate">
                           {itemIcon}
                           <span className="truncate">{item.label}</span>
                         </div>
                         {item.badge && (
                           <span
-                            className={`text-[8px] font-mono uppercase px-1 rounded border transition-colors ${isActive
-                                ? 'bg-zinc-800 text-zinc-200 border-zinc-700 dark:bg-zinc-200 dark:text-zinc-800 dark:border-zinc-300 font-semibold'
-                                : item.badge === 'DOCKER'
-                                  ? 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/40 font-bold'
-                                  : item.badge.includes('2.1.2') || item.badge.includes('2.1.1') || item.badge.includes('2.1.0') || item.badge.includes('2.0.0') || item.badge.includes('1.0.8') || item.badge.includes('1.0.7') || item.badge.includes('1.0.6') || item.badge === 'NEW'
-                                    ? 'bg-zinc-200 text-zinc-900 border-zinc-300 dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700 font-semibold'
-                                    : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-500 dark:border-zinc-800'
-                              }`}
+                            className={`text-[8px] font-mono uppercase px-1.5 py-0.2 rounded-md border transition-colors ${getBadgeStyle(
+                              item.badge,
+                              isActive
+                            )}`}
                           >
                             {item.badge}
                           </span>
@@ -155,6 +163,14 @@ export default function Sidebar({
             </div>
           );
         })}
+      </div>
+
+      {/* Modern Status Footer */}
+      <div className="p-3 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-950/40">
+        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 dark:text-zinc-400">
+          <span>Python &ge; 3.10</span>
+          <span>Apache 2.0</span>
+        </div>
       </div>
     </aside>
   );

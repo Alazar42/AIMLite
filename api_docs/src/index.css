@@ -5,6 +5,7 @@
 @layer base {
   :root {
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
   }
 
@@ -13,6 +14,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-heading {
+    font-family: var(--font-heading);
   }
 
   code, pre {
@@ -47,7 +52,66 @@
   background: #3f3f46;
 }
 
-/* Syntax Highlighting: Light Theme by default, VS Code Dark+ in .dark */
+/* ========================================================================= */
+/* BACKGROUND AMBIANCE & MESH GRIDS                                          */
+/* ========================================================================= */
+
+.bg-grid-ambient {
+  background-size: 32px 32px;
+  background-image: linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+}
+
+.dark .bg-grid-ambient {
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.radial-fade-mask {
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 70%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 70%, transparent 100%);
+}
+
+/* Glassmorphism Panels */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.dark .glass-panel {
+  background: rgba(12, 13, 18, 0.78);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Subtle Ambient Glow */
+.glow-subtle {
+  box-shadow: 0 0 24px -4px rgba(0, 0, 0, 0.08);
+}
+
+.dark .glow-subtle {
+  box-shadow: 0 0 24px -4px rgba(255, 255, 255, 0.03);
+}
+
+/* Smooth Transition Utility */
+.transition-subtle {
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hide Scrollbar for Horizontal Swiping */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ========================================================================= */
+/* SYNTAX HIGHLIGHTING TOKENS                                                */
+/* ========================================================================= */
+
 .token.comment,
 .token.prolog,
 .token.doctype,
@@ -105,7 +169,7 @@
   color: #0550ae;
 }
 
-/* Dark Mode Syntax Highlighting Tokens */
+/* Dark Mode Syntax Highlighting Tokens (VS Code Dark+ & Modern IDE) */
 .dark .token.comment,
 .dark .token.prolog,
 .dark .token.doctype,
@@ -160,37 +224,4 @@
 .dark .token.important,
 .dark .token.variable {
   color: #9cdcfe;
-}
-
-/* Backdrop Blur and Subtle Shadows */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.dark .glass-panel {
-  background: rgba(18, 19, 26, 0.85);
-}
-
-.glow-subtle {
-  box-shadow: 0 0 24px -4px rgba(0, 0, 0, 0.12);
-}
-
-.dark .glow-subtle {
-  box-shadow: 0 0 24px -4px rgba(255, 255, 255, 0.04);
-}
-
-/* Custom Transition Utilities */
-.transition-subtle {
-  transition: all 180ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Utility to hide scrollbars for horizontal swiping containers */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }

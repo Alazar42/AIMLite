@@ -135,9 +135,9 @@ export default function CodePlayground({ section, onClose }: CodePlaygroundProps
       <div className="flex items-center justify-between bg-zinc-100 dark:bg-[#1a1b22] border-b border-zinc-200 dark:border-zinc-800 px-2 shrink-0 select-none">
         {/* Left Mac-style Traffic Light Dots */}
         <div className="hidden sm:flex items-center gap-1.5 mr-2 shrink-0 pl-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-400/80 dark:bg-red-500/70 inline-block" />
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400/80 dark:bg-amber-500/70 inline-block" />
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/80 dark:bg-emerald-500/70 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block" />
+          <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700 inline-block" />
         </div>
 
         {/* Tab List */}

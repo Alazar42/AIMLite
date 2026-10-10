@@ -37,53 +37,58 @@ export default function Navbar({
   const isDocs = viewMode === 'docs';
 
   return (
-    <header className="sticky top-0 z-30 w-full h-13 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between px-3 sm:px-5 select-none text-xs transition-colors duration-150">
+    <header className="sticky top-0 z-40 w-full h-14 backdrop-blur-xl bg-white/75 dark:bg-[#07080a]/80 border-b border-zinc-200/80 dark:border-zinc-800/80 flex items-center justify-between px-3 sm:px-6 select-none text-xs transition-colors shadow-xs">
       {/* Brand & Main Navigation */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-        {/* Mobile Navigation Toggle (drawer menu for both docs and mobile landing navigation) */}
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        {/* Mobile Navigation Toggle */}
         <button
           onClick={onToggleMobileNav}
-          className={`${isDocs ? 'lg:hidden' : 'md:hidden'} p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors shrink-0`}
+          className={`${isDocs ? 'lg:hidden' : 'md:hidden'} p-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition-colors shrink-0`}
           title="Toggle Navigation Menu"
         >
           <Menu size={16} />
         </button>
 
-        {/* Brand Logo */}
+        {/* Brand Logo with Ambient Hover Aura */}
         <div
-          className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
+          className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group shrink-0"
           onClick={() => onSelectViewMode('landing')}
-          title="Return to AIMLite Landing Page"
+          title="AIMLite Home & Overview"
         >
-          <div className="relative flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800/90 border border-zinc-200 dark:border-zinc-700 shadow-xs group-hover:scale-105 group-hover:border-zinc-300 dark:group-hover:border-zinc-600 transition-all">
+          <div className="relative flex items-center justify-center w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900 border border-zinc-200/90 dark:border-zinc-700/80 shadow-xs group-hover:scale-105 group-hover:border-zinc-400 dark:group-hover:border-zinc-600 transition-all">
             {/* Light Mode Logo */}
             <img
               src="/logo.png"
               alt="AIMLite Logo"
-              className="w-6 h-6 sm:w-8 sm:h-8 object-contain block dark:hidden transition-transform"
+              className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 object-contain block dark:hidden transition-transform"
             />
             {/* Dark Mode Logo - High-contrast crisp white */}
             <img
               src="/logo_white.png"
               alt="AIMLite Logo"
-              className="w-6 h-6 sm:w-8 sm:h-8 object-contain hidden dark:block drop-shadow-[0_0_8px_rgba(255,255,255,0.25)] transition-transform"
+              className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 object-contain hidden dark:block drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] transition-transform"
             />
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold text-sm sm:text-lg text-zinc-900 dark:text-white tracking-tight">
+
+          <div className="flex flex-col">
+            <span className="font-heading font-extrabold text-sm sm:text-base text-zinc-950 dark:text-white tracking-tight leading-none">
               AIMLite
+            </span>
+            <span className="hidden lg:inline text-[9px] text-zinc-400 dark:text-zinc-500 font-mono tracking-tight mt-0.5">
+              The Django for AI
             </span>
           </div>
         </div>
 
-        {/* Navigation Switcher */}
-        <nav className="hidden md:flex items-center gap-1 pl-3 border-l border-zinc-200 dark:border-zinc-800">
+        {/* Desktop Navigation Switcher */}
+        <nav className="hidden md:flex items-center gap-1 pl-4 border-l border-zinc-200 dark:border-zinc-800/80">
           <button
             onClick={() => onSelectViewMode('landing')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${viewMode === 'landing'
-              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              viewMode === 'landing'
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+            }`}
           >
             Overview
           </button>
@@ -95,17 +100,19 @@ export default function Navbar({
                 activeSectionId.startsWith('paradigm-') ||
                 activeSectionId.startsWith('cli-') ||
                 activeSectionId.startsWith('endpoint-') ||
+                activeSectionId === 'deployment-docker' ||
                 activeSectionId === 'changelog'
               ) {
                 onSelectSection('pillar-data');
               }
             }}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId.startsWith('pillar-')
-              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              isDocs && activeSectionId.startsWith('pillar-')
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+            }`}
           >
-            Documentation
+            Core Pillars
           </button>
 
           <button
@@ -113,13 +120,14 @@ export default function Navbar({
               onSelectViewMode('docs');
               onSelectSection('paradigm-rag');
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId.startsWith('paradigm-')
-              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              isDocs && activeSectionId.startsWith('paradigm-')
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+            }`}
           >
-            <BookOpen size={13} className="text-zinc-500 dark:text-zinc-400" />
-            <span>Paradigms</span>
+            <BookOpen size={13} className="text-zinc-400 dark:text-zinc-500" />
+            <span>3 Paradigms</span>
           </button>
 
           <button
@@ -127,10 +135,11 @@ export default function Navbar({
               onSelectViewMode('docs');
               onSelectSection('cli-init');
             }}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId.startsWith('cli-')
-              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              isDocs && activeSectionId.startsWith('cli-')
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+            }`}
           >
             CLI
           </button>
@@ -140,12 +149,13 @@ export default function Navbar({
               onSelectViewMode('docs');
               onSelectSection('endpoint-predict');
             }}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId.startsWith('endpoint-')
-              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              isDocs && activeSectionId.startsWith('endpoint-')
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+            }`}
           >
-            API Server
+            HTTP Server
           </button>
 
           <button
@@ -153,12 +163,13 @@ export default function Navbar({
               onSelectViewMode('docs');
               onSelectSection('deployment-docker');
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId === 'deployment-docker'
-              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              isDocs && activeSectionId === 'deployment-docker'
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+            }`}
           >
-            <Box size={13} className="text-zinc-500 dark:text-zinc-400" />
+            <Box size={13} className="text-zinc-400 dark:text-zinc-500" />
             <span>Deploy</span>
           </button>
 
@@ -167,27 +178,30 @@ export default function Navbar({
               onSelectViewMode('docs');
               onSelectSection('changelog');
             }}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${isDocs && activeSectionId === 'changelog'
-              ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-950 dark:text-white font-semibold'
-              : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              isDocs && activeSectionId === 'changelog'
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
+            }`}
           >
             Changelog
           </button>
         </nav>
       </div>
 
-      {/* Right Controls: Search, Console, ThemeToggle, Version, External Links */}
-      <div className="flex items-center gap-2">
-        {/* Quick Search */}
+      {/* Right Controls: Command Search, Console, ThemeToggle, llms.txt, GitHub */}
+      <div className="flex items-center gap-2 sm:gap-2.5">
+        {/* Modern Command Search Bar */}
         <button
           onClick={onOpenSearch}
-          className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:px-2.5 sm:py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg transition-colors shrink-0"
+          className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100/90 hover:bg-zinc-200/80 dark:bg-zinc-900/90 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-zinc-500 dark:text-zinc-400 rounded-xl transition-all shadow-xs group"
           title="Search Documentation (⌘K)"
         >
-          <Search size={14} className="sm:w-[13px] sm:h-[13px]" />
-          <span className="hidden sm:inline text-xs">Search</span>
-          <kbd className="hidden sm:inline-block px-1.5 py-0.5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded text-[9px] font-mono text-zinc-500 dark:text-zinc-400">
+          <Search size={13} className="text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors" />
+          <span className="hidden sm:inline text-xs font-medium text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-white transition-colors">
+            Search docs...
+          </span>
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md text-[9px] font-mono text-zinc-500 dark:text-zinc-400 shadow-2xs">
             ⌘K
           </kbd>
         </button>
@@ -196,14 +210,15 @@ export default function Navbar({
         {isDocs && onToggleConsoleVisibility && (
           <button
             onClick={onToggleConsoleVisibility}
-            className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-colors ${isConsoleVisible
-              ? 'bg-zinc-200/80 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-700 font-medium'
-              : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:text-zinc-950 dark:hover:text-white'
-              }`}
+            className={`hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono transition-all ${
+              isConsoleVisible
+                ? 'bg-zinc-200/90 dark:bg-zinc-800 text-zinc-900 dark:text-white border-zinc-300 dark:border-zinc-700 font-semibold shadow-xs'
+                : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:text-zinc-950 dark:hover:text-white'
+            }`}
             title={isConsoleVisible ? 'Hide Code Console' : 'Show Code Console'}
           >
             <Code2 size={13} />
-            <span>{isConsoleVisible ? 'Hide Code' : 'Show Code'}</span>
+            <span>{isConsoleVisible ? 'Console' : 'Show Code'}</span>
           </button>
         )}
 
@@ -211,7 +226,7 @@ export default function Navbar({
         {isDocs && (
           <button
             onClick={onToggleMobileConsole}
-            className="xl:hidden p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors shrink-0"
+            className="xl:hidden p-2 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors shrink-0"
             title="Toggle Code Console"
           >
             <Terminal size={14} />
@@ -221,16 +236,16 @@ export default function Navbar({
         {/* Theme Toggle (Light / System / Dark) */}
         <ThemeToggle />
 
-        {/* Version Badge (hidden on screens < 480px to prevent header overflow) */}
+        {/* Live Version Status Pill */}
         <button
           onClick={() => {
             onSelectViewMode('docs');
             onSelectSection('changelog');
           }}
-          className="hidden min-[480px]:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono transition-colors shrink-0"
-          title="View v2.1.2 Release Notes"
+          className="hidden min-[520px]:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono transition-all shrink-0"
+          title="Release Changelog (v2.1.2 Latest Stable)"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 dark:bg-zinc-400 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500 animate-pulse" />
           <span>v2.1.2</span>
         </button>
 
@@ -239,7 +254,7 @@ export default function Navbar({
           href="/llms.txt"
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 text-[11px] font-mono border border-zinc-200 dark:border-zinc-800 transition-colors"
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-850 text-[11px] font-mono border border-zinc-200 dark:border-zinc-800 transition-colors"
           title="Open llms.txt standard guide for coding agents"
         >
           <Bot size={13} />
@@ -251,10 +266,10 @@ export default function Navbar({
           href="https://github.com/Alazar42/AIMLite"
           target="_blank"
           rel="noopener noreferrer"
-          className="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors hidden sm:flex items-center"
+          className="p-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 transition-colors hidden sm:flex items-center"
           title="GitHub Repository"
         >
-          <GithubIcon size={16} />
+          <GithubIcon size={15} />
         </a>
 
         {/* PyPI Link */}
@@ -262,10 +277,10 @@ export default function Navbar({
           href="https://pypi.org/project/aimlite/"
           target="_blank"
           rel="noopener noreferrer"
-          className="p-1.5 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors hidden sm:flex items-center"
+          className="p-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 transition-colors hidden sm:flex items-center"
           title="PyPI Package"
         >
-          <ExternalLink size={15} />
+          <ExternalLink size={14} />
         </a>
       </div>
     </header>

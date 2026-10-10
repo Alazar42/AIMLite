@@ -89,21 +89,21 @@ export default function GuideStepCard({ step }: GuideStepCardProps) {
     return <FileCode size={14} className={iconClass} />;
   };
 
-  return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 p-4 sm:p-5 space-y-4 hover:border-zinc-300 dark:hover:border-zinc-700/70 transition-all shadow-sm">
+    return (
+    <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-900/40 backdrop-blur-md p-5 sm:p-6 space-y-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-xs">
       {/* Step Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800/60 pb-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-mono text-xs font-bold border border-zinc-900 dark:border-zinc-100 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200/80 dark:border-zinc-800/60 pb-3.5">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center justify-center w-7 h-7 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-mono text-xs font-bold shadow-xs shrink-0">
             {step.stepNumber}
           </span>
-          <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+          <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white tracking-tight font-heading">
             {step.title}
           </h3>
         </div>
 
         {step.badge && (
-          <span className="self-start sm:self-auto text-[10px] font-mono uppercase px-2 py-0.5 rounded font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+          <span className="self-start sm:self-auto text-[10px] font-mono uppercase px-2.5 py-1 rounded-lg font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
             {step.badge}
           </span>
         )}
@@ -120,30 +120,39 @@ export default function GuideStepCard({ step }: GuideStepCardProps) {
           href={step.externalLink.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 text-xs font-medium transition-colors"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs font-medium transition-colors"
         >
           <span>{step.externalLink.label}</span>
-          <ExternalLink size={13} className="shrink-0" />
+          <ExternalLink size={13} className="shrink-0 text-zinc-400" />
         </a>
       )}
 
-      {/* Code Card */}
-      <div className="rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-900 dark:bg-[#121318] font-mono text-xs shadow-inner">
-        {/* Code Header Bar */}
-        <div className="flex items-center justify-between bg-zinc-800/80 dark:bg-[#1a1b22] border-b border-zinc-700/60 dark:border-zinc-800 px-3 py-1.5 select-none">
-          <div className="flex items-center gap-2">
-            {renderFileIcon()}
-            <span className="font-mono text-[11px] text-zinc-200 font-medium">
-              {step.filename || 'code'}
-            </span>
-            <span className="text-[10px] text-zinc-400 hidden sm:inline">
+      {/* Code Card with macOS Window Controls */}
+      <div className="rounded-xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800 bg-[#0d0e13] font-mono text-xs shadow-inner">
+        {/* Code Header Bar with macOS Window Dots */}
+        <div className="flex items-center justify-between bg-[#15171e] border-b border-zinc-800/80 px-3 py-2 select-none">
+          <div className="flex items-center gap-2.5">
+            {/* macOS traffic light dots */}
+            <div className="flex items-center gap-1.5 mr-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-zinc-700 inline-block" />
+              <span className="w-2.5 h-2.5 rounded-full bg-zinc-700 inline-block" />
+              <span className="w-2.5 h-2.5 rounded-full bg-zinc-700 inline-block" />
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {renderFileIcon()}
+              <span className="font-mono text-[11px] text-zinc-200 font-medium">
+                {step.filename || 'code'}
+              </span>
+            </div>
+            <span className="text-[10px] text-zinc-500 hidden sm:inline">
               ({lineCount} lines)
             </span>
           </div>
 
           <button
             onClick={copyCode}
-            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-zinc-300 hover:text-white hover:bg-zinc-700 dark:hover:bg-zinc-800 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors border border-zinc-700/60"
             title={`Copy ${step.filename || 'code'}`}
           >
             {hasCopied ? (
@@ -154,23 +163,23 @@ export default function GuideStepCard({ step }: GuideStepCardProps) {
             ) : (
               <>
                 <Copy size={12} />
-                <span>Copy {step.filename || 'code'}</span>
+                <span>Copy</span>
               </>
             )}
           </button>
         </div>
 
         {/* Code Body */}
-        <div className="p-3 flex font-mono text-[11px] leading-[1.6] max-h-96 overflow-y-auto overflow-x-auto">
+        <div className="p-3.5 flex font-mono text-[11px] leading-[1.65] max-h-96 overflow-y-auto overflow-x-auto text-zinc-200">
           {/* Line Numbers Gutter */}
-          <div className="select-none text-right pr-3 text-zinc-500 border-r border-zinc-700/60 dark:border-zinc-800 mr-3 shrink-0">
+          <div className="select-none text-right pr-3.5 text-zinc-600 border-r border-zinc-800 mr-3.5 shrink-0">
             {lineNumbers.map((num) => (
               <div key={num}>{num}</div>
             ))}
           </div>
 
           {/* Code Text */}
-          <div className="flex-1 min-w-0 text-zinc-200">
+          <div className="flex-1 min-w-0">
             <pre className="m-0 p-0 font-mono whitespace-pre">
               <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
             </pre>
@@ -180,10 +189,10 @@ export default function GuideStepCard({ step }: GuideStepCardProps) {
 
       {/* Why This Code Callout */}
       {step.whyCode && (
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 text-xs">
-          <Code2 size={14} className="text-zinc-600 dark:text-zinc-400 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-zinc-100/70 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-xs">
+          <Code2 size={15} className="text-zinc-500 shrink-0 mt-0.5" />
           <div className="leading-relaxed">
-            <strong className="text-zinc-900 dark:text-zinc-100 font-medium">Why this code: </strong>
+            <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">Why this code: </strong>
             <span className="text-zinc-600 dark:text-zinc-300">{step.whyCode}</span>
           </div>
         </div>
@@ -191,3 +200,4 @@ export default function GuideStepCard({ step }: GuideStepCardProps) {
     </div>
   );
 }
+
