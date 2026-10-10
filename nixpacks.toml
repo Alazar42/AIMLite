@@ -1,0 +1,14 @@
+# nixpacks.toml configuration for AIMLite repository deployment
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "pnpm-9_x"]
+
+[phases.install]
+cmds = [
+  "if [ -f package.json ]; then pnpm install; elif [ -d api_docs ]; then cd api_docs && pnpm install; fi"
+]
+
+[phases.build]
+cmds = [
+  "if [ -f package.json ]; then pnpm run build; elif [ -d api_docs ]; then cd api_docs && pnpm run build && cd .. && if [ -d api_docs/dist ] && [ ! -d dist ]; then cp -r api_docs/dist dist; fi; fi"
+]
