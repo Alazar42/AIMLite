@@ -5,6 +5,22 @@ All notable changes to the AIMLite framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] - 2026-10-12
+
+### Changed
+- **Decoupled Standalone Visual Studio & Documentation Restructuring**:
+  - Reverted the documentation website (`api_docs`) to purely documentation, removing embedded project creation components (`ProjectStudio.tsx`).
+  - Added dedicated documentation in `api_docs` for the local visual Studio workflow (`aimlite` / `aimlite init` default browser experience) vs `--cli` terminal mode.
+  - Redesigned the visual Web Studio (`src/aimlite/templates/studio.html`) to match the premium dark obsidian aesthetic of the AIMLite `api_docs` website:
+    - 100% full-screen width responsive layout with sticky navbar and fluid split configuration & preview panels.
+    - Added custom tokenized syntax highlighting for live `aimlite.json` manifest code preview with distinct color tokens (`hl-key`, `hl-string`, `hl-number`, `hl-bool`, `hl-punct`).
+    - Added syntax-styled File Tree and CLI command previews.
+- **Clean Zero-Bloat Dependencies by Default & Bidirectional Dependency Management**:
+  - All projects (`scratch`, `rag`, `adapter`) now initialize with a completely clean, empty dependencies list (`"dependencies": []`) on start unless explicitly added by the developer.
+  - In the visual Web Studio (`studio.html`), dependencies start empty (`[]`) with a clean-state indicator. Developers can dynamically add packages via text input or quick-add chips, and any added dependency can be removed on demand via individual `×` removal buttons or the "Clear all" button.
+  - Added new zero-path CLI command `aimlite remove <pkgs...>` (and alias `aimlite uninstall`) to safely uninstall packages from the project `.venv` and remove them from `aimlite.json`.
+- Bumped framework, server, CLI, skill guides, and documentation versions to `2.2.2`.
+
 ## [2.2.1] - 2026-10-12
 
 ### Changed

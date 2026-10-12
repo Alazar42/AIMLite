@@ -101,7 +101,7 @@ def test_studio_server(tmp_path: Path):
     port = _find_available_port(start_port=18500)
     dist_dir = _resolve_static_dist_dir()
     handler_class = create_studio_handler(dist_dir)
-    server = ThreadingStudioServer(("127.0.0.1", port), handler_class)
+    server = ThreadingStudioServer(("127.0.0.1", port), handler_class, auto_shutdown=False)
 
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
@@ -122,7 +122,7 @@ def test_studio_api_status(test_studio_server):
         assert resp.status == 200
         data = json.loads(resp.read().decode("utf-8"))
         assert data["status"] == "ok"
-        assert data["version"] == "2.2.1"
+        assert data["version"] == "2.2.2"
         assert "cwd" in data
         assert "python_version" in data
 
@@ -208,5 +208,138 @@ def test_studio_api_init_rag(test_studio_server):
     assert target.is_dir()
     manifest = json.loads((target / "aimlite.json").read_text(encoding="utf-8"))
     assert manifest["template"] == "rag"
+    assert manifest["dependencies"] == []
     assert manifest["config"]["rag"]["chat_provider"] == "gemini"
     assert manifest["config"]["rag"]["model_name"] == "gemini-1.5-flash"
+
+
+def test_studio_api_init_with_dependencies(test_studio_server):
+    """Verify dependencies are only present when explicitly added by user."""
+    base_url, tmp_dir = test_studio_server
+
+    payload = {
+        "project_name": "web_deps_test",
+        "target_dir": str(tmp_dir),
+        "template_type": "adapter",
+        "clean": True,
+        "create_venv": False,
+        "install_deps": False,
+        "extra_packages": ["torch", "peft", "transformers"],
+    }
+
+    req = urllib.request.Request(
+        f"{base_url}/api/init",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urllib.request.urlopen(req) as resp:
+        assert resp.status == 200
+        data = json.loads(resp.read().decode("utf-8"))
+        assert data["status"] == "success"
+
+    target = tmp_dir / "web_deps_test"
+    manifest = json.loads((target / "aimlite.json").read_text(encoding="utf-8"))
+    assert manifest["dependencies"] == ["torch", "peft", "transformers"]
+
+
+def test_run_remove_from_manifest(tmp_path: Path):
+    """Verify run_remove removes target packages from aimlite.json dependencies."""
+    from aimlite.cli.commands.install import run_remove
+
+    proj_dir = tmp_path / "test_remove_proj"
+    proj_dir.mkdir(parents=True)
+    manifest = proj_dir / "aimlite.json"
+    manifest.write_text(
+        json.dumps({
+            "name": "test_remove_proj",
+            "dependencies": ["torch", "peft", "scikit-learn", "pandas"]
+        }, indent=2),
+        encoding="utf-8",
+    )
+
+    # Remove peft and pandas
+    code = run_remove(["peft", "pandas"], project_root=proj_dir)
+    assert code == 0
+
+    updated = json.loads(manifest.read_text(encoding="utf-8"))
+    assert updated["dependencies"] == ["torch", "scikit-learn"]
+
+    # Remove remaining
+    code2 = run_remove(["torch", "scikit-learn"], project_root=proj_dir)
+    assert code2 == 0
+
+    updated2 = json.loads(manifest.read_text(encoding="utf-8"))
+    assert updated2["dependencies"] == []
+
+
+def test_studio_init_target_dir_with_leading_slash_safe(test_studio_server, monkeypatch):
+    """Verify target_dir with leading slash like '/examples' does not cause Permission denied on root."""
+    base_url, tmp_dir = test_studio_server
+
+    monkeypatch.chdir(tmp_dir)
+
+    payload = {
+        "project_name": "slash_test",
+        "target_dir": "/examples",
+        "template_type": "scratch",
+        "clean": True,
+        "create_venv": False,
+        "install_deps": False,
+    }
+
+    req = urllib.request.Request(
+        f"{base_url}/api/init",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urllib.request.urlopen(req) as resp:
+        assert resp.status == 200
+        data = json.loads(resp.read().decode("utf-8"))
+        assert data["status"] == "success"
+
+    target = tmp_dir / "examples" / "slash_test"
+    assert target.is_dir()
+    assert (target / "aimlite.json").exists()
+
+
+def test_studio_auto_shutdown_on_init(tmp_path: Path):
+    """Verify that when auto_shutdown is True, /api/init triggers server shutdown and closes terminal."""
+    port = _find_available_port(start_port=18600)
+    dist_dir = _resolve_static_dist_dir()
+    handler_class = create_studio_handler(dist_dir)
+    server = ThreadingStudioServer(("127.0.0.1", port), handler_class, auto_shutdown=True)
+
+    server_thread = threading.Thread(target=server.serve_forever, daemon=False)
+    server_thread.start()
+    time.sleep(0.1)
+
+    payload = {
+        "project_name": "shutdown_test",
+        "target_dir": str(tmp_path),
+        "template_type": "scratch",
+        "clean": True,
+        "create_venv": False,
+        "install_deps": False,
+    }
+
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}/api/init",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urllib.request.urlopen(req) as resp:
+        assert resp.status == 200
+
+    # Wait for server thread to terminate automatically (delayed shutdown is ~0.5s)
+    server_thread.join(timeout=3.0)
+    assert not server_thread.is_alive()
+    server.server_close()
+
+
+

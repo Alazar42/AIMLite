@@ -111,14 +111,41 @@ def run_init(
     elif is_tty:
         print(f"  {check('Project name', project_name)}")
 
-    # Resolve target directory
+    # Resolve target directory (strictly anchored to command run directory)
+    cmd_run_dir = Path.cwd().resolve()
+
+    clean_proj = str(project_name).strip()
+    if clean_proj != "." and clean_proj.startswith("/"):
+        clean_proj = clean_proj.lstrip("/")
+    if not clean_proj:
+        clean_proj = "my_ai"
+    project_name = clean_proj
+
     if target_dir:
-        dest_root = Path(target_dir).resolve() / project_name
+        td_raw = str(target_dir).strip()
+        td_path = Path(td_raw)
+        if td_path.is_absolute():
+            try:
+                resolved = td_path.resolve()
+                if (resolved.parent == Path("/") or resolved == Path("/")) and not os.access("/", os.W_OK):
+                    base_target = (cmd_run_dir / td_raw.lstrip("/")).resolve()
+                else:
+                    base_target = resolved
+            except Exception:
+                base_target = (cmd_run_dir / td_raw.lstrip("/")).resolve()
+        else:
+            base_target = (cmd_run_dir / td_raw).resolve()
+
+        if project_name == ".":
+            dest_root = base_target
+            project_name = dest_root.name
+        else:
+            dest_root = base_target / project_name
     elif project_name == ".":
-        dest_root = Path.cwd()
+        dest_root = cmd_run_dir
         project_name = dest_root.name
     else:
-        dest_root = Path.cwd() / project_name
+        dest_root = cmd_run_dir / project_name
 
     dest_root.mkdir(parents=True, exist_ok=True)
     package_name = sanitize_package_name(project_name)
@@ -256,42 +283,8 @@ def run_init(
     for d in convention_dirs:
         (dest_root / d).mkdir(parents=True, exist_ok=True)
 
-    # 5. Populate Manifest dependencies
+    # 5. Populate Manifest dependencies: empty by default on start for all paradigms unless explicitly added
     dependencies: List[str] = []
-    if template_type == "rag":
-        # Chat Provider SDKs
-        if chat_provider == "ollama":
-            dependencies.append("ollama")
-        elif chat_provider == "openai":
-            dependencies.append("openai")
-        elif chat_provider == "anthropic":
-            dependencies.append("anthropic")
-        elif chat_provider == "gemini":
-            dependencies.append("google-genai")
-        elif chat_provider == "local":
-            dependencies.extend(["transformers", "torch"])
-
-        # Embedding Engine dependencies
-        if embedding_engine == "sentence-transformers":
-            dependencies.extend(["sentence-transformers", "numpy"])
-        elif "nomic" in (default_embed_model or "").lower() or embedding_engine == "ollama":
-            if "ollama" not in dependencies:
-                dependencies.append("ollama")
-        elif embedding_engine == "openai":
-            if "openai" not in dependencies:
-                dependencies.append("openai")
-
-        # Vector Database dependencies
-        if vector_db == "postgres":
-            dependencies.append("psycopg2-binary")
-
-    elif template_type == "adapter":
-        dependencies.extend(["torch", "transformers", "peft", "datasets", "numpy"])
-
-    elif template_type == "scratch":
-        dependencies = []
-
-    # Merge extra packages added interactively via search step
     if extra_packages:
         dependencies.extend(extra_packages)
 
@@ -299,9 +292,10 @@ def run_init(
     seen = set()
     unique_deps = []
     for d in dependencies:
-        if d not in seen:
-            seen.add(d)
-            unique_deps.append(d)
+        d_clean = str(d).strip()
+        if d_clean and d_clean not in seen:
+            seen.add(d_clean)
+            unique_deps.append(d_clean)
     dependencies = unique_deps
 
 

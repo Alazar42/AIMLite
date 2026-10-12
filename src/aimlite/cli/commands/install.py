@@ -216,3 +216,89 @@ def run_install(
 
     print(f"\n{check(f'Installed {len(packages)} package(s) into .venv.')}\n")
     return 0
+
+
+def run_remove(
+    packages: List[str],
+    project_root: Optional[Path] = None,
+) -> int:
+    """Safely uninstalls packages from the project .venv and removes them from aimlite.json.
+
+    Args:
+        packages: List of package names to remove.
+        project_root: Optional project root path override.
+
+    Returns:
+        Process exit code.
+    """
+    if not packages:
+        print(f"\n  {C.YELLOW}Usage:{C.RESET} aimlite remove <package ...>\n")
+        print(f"  {C.DIM}Please specify at least one package name to remove.{C.RESET}\n")
+        return 1
+
+    root = project_root or find_project_root() or Path.cwd()
+    manifest_path = get_manifest_path(root)
+
+    print(vite_header("remove"))
+    venv_dir = root / ".venv"
+
+    import re
+
+    def normalize_pkg(name: str) -> str:
+        return re.split(r"[><=~!;]", name.strip())[0].strip().lower()
+
+    target_names = {normalize_pkg(p) for p in packages if p.strip()}
+
+    # 1. Uninstall from .venv if .venv exists
+    if venv_dir.is_dir():
+        uv_bin = shutil.which("uv")
+        python_bin = venv_dir / "bin" / "python"
+        pip_bin = venv_dir / "bin" / "pip"
+
+        if uv_bin:
+            cmd = [uv_bin, "pip", "uninstall", *packages]
+            res = subprocess.run(cmd, cwd=str(root))
+            if res.returncode != 0 and pip_bin.is_file():
+                subprocess.run([str(pip_bin), "uninstall", "-y", *packages], cwd=str(root))
+        elif pip_bin.is_file():
+            subprocess.run([str(pip_bin), "uninstall", "-y", *packages], cwd=str(root))
+        elif python_bin.is_file():
+            subprocess.run([str(python_bin), "-m", "pip", "uninstall", "-y", *packages], cwd=str(root))
+
+    # 2. Remove from aimlite.json
+    manifest_file = manifest_path if manifest_path.is_file() else root / "aimlite.json"
+    if manifest_file.is_file():
+        try:
+            with open(manifest_file, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+
+            current_deps = manifest_data.get("dependencies", [])
+            removed = []
+            if isinstance(current_deps, list):
+                new_deps = []
+                for d in current_deps:
+                    if normalize_pkg(d) in target_names:
+                        removed.append(d)
+                    else:
+                        new_deps.append(d)
+                manifest_data["dependencies"] = new_deps
+            elif isinstance(current_deps, dict):
+                for t in target_names:
+                    for k in list(current_deps.keys()):
+                        if normalize_pkg(k) == t:
+                            removed.append(k)
+                            del current_deps[k]
+                manifest_data["dependencies"] = current_deps
+
+            with open(manifest_file, "w", encoding="utf-8") as f:
+                json.dump(manifest_data, f, indent=2)
+
+            if removed:
+                print(f"  {check(f'Removed {len(removed)} package(s) from {manifest_file.name}: {', '.join(removed)}')}")
+            else:
+                print(f"  {C.DIM}No matching packages found in {manifest_file.name}.{C.RESET}")
+        except Exception as e:
+            print(f"  {C.DIM}Note: Could not update {manifest_file.name}: {e}{C.RESET}")
+
+    print(f"\n{check(f'Successfully removed {len(packages)} package(s).')}\n")
+    return 0

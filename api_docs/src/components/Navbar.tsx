@@ -1,4 +1,4 @@
-import { Menu, Search, Terminal, ExternalLink, BookOpen, Code2, Bot, Box, Sparkles } from 'lucide-react';
+import { Menu, Search, Terminal, ExternalLink, BookOpen, Code2, Bot, Box } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 const GithubIcon = ({ size = 16, className = '' }: { size?: number; className?: string }) => (
@@ -18,8 +18,8 @@ interface NavbarProps {
   onToggleConsoleVisibility?: () => void;
   isConsoleVisible?: boolean;
   onSelectSection: (id: string) => void;
-  onSelectViewMode: (mode: 'studio' | 'landing' | 'docs') => void;
-  viewMode: 'studio' | 'landing' | 'docs';
+  onSelectViewMode: (mode: 'landing' | 'docs') => void;
+  viewMode: 'landing' | 'docs';
   activeSectionId: string;
 }
 
@@ -82,18 +82,6 @@ export default function Navbar({
 
         {/* Desktop Navigation Switcher */}
         <nav className="hidden md:flex items-center gap-1 pl-4 border-l border-zinc-200 dark:border-zinc-800/80">
-          <button
-            onClick={() => onSelectViewMode('studio')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              viewMode === 'studio'
-                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-semibold shadow-xs'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900'
-            }`}
-          >
-            <Sparkles size={13} className={viewMode === 'studio' ? 'text-amber-400 dark:text-amber-500' : 'text-zinc-400 dark:text-zinc-500'} />
-            <span>Studio</span>
-          </button>
-
           <button
             onClick={() => onSelectViewMode('landing')}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -255,10 +243,10 @@ export default function Navbar({
             onSelectSection('changelog');
           }}
           className="hidden min-[520px]:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono transition-all shrink-0"
-          title="Release Changelog (v2.2.1 Latest Stable)"
+          title="Release Changelog (v2.2.2 Latest Stable)"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500 animate-pulse" />
-          <span>v2.2.1</span>
+          <span>v2.2.2</span>
         </button>
 
         {/* llms.txt Agent Specification Link */}

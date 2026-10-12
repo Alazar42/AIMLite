@@ -26,6 +26,10 @@ class ThreadingStudioServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
+    def __init__(self, server_address, RequestHandlerClass, auto_shutdown: bool = True):
+        super().__init__(server_address, RequestHandlerClass)
+        self.auto_shutdown = auto_shutdown
+
 
 def _find_available_port(start_port: int = 8000, max_attempts: int = 100) -> int:
     """Finds the first available port starting from start_port."""
@@ -40,21 +44,11 @@ def _find_available_port(start_port: int = 8000, max_attempts: int = 100) -> int
 
 
 def _resolve_static_dist_dir() -> Optional[Path]:
-    """Finds the built static assets directory for AIMLite Studio."""
-    # 1. Check workspace/repo api_docs/dist
-    repo_dist = Path(__file__).resolve().parent.parent.parent.parent / "api_docs" / "dist"
-    if repo_dist.is_dir() and (repo_dist / "index.html").is_file():
-        return repo_dist
-
-    # 2. Check packaged templates/studio_dist
+    """Finds the built static assets directory for AIMLite Studio if packaged."""
+    # Check packaged templates/studio_dist if present
     pkg_dist = Path(__file__).resolve().parent.parent / "templates" / "studio_dist"
     if pkg_dist.is_dir() and (pkg_dist / "index.html").is_file():
         return pkg_dist
-
-    # 3. Check workspace dist
-    root_dist = Path(__file__).resolve().parent.parent.parent.parent / "dist"
-    if root_dist.is_dir() and (root_dist / "index.html").is_file():
-        return root_dist
 
     return None
 
@@ -120,7 +114,7 @@ def create_studio_handler(dist_dir: Optional[Path] = None):
                     200,
                     {
                         "status": "ok",
-                        "version": "2.2.1",
+                        "version": "2.2.2",
                         "cwd": str(Path.cwd()),
                         "python_version": sys.version,
                         "platform": sys.platform,
@@ -156,8 +150,27 @@ def create_studio_handler(dist_dir: Optional[Path] = None):
                     body = self.rfile.read(content_len) if content_len > 0 else b"{}"
                     data = json.loads(body.decode("utf-8")) if body else {}
 
-                    proj_name = data.get("project_name") or "my_ai"
-                    target_dir = data.get("target_dir")
+                    cmd_run_dir = Path.cwd().resolve()
+
+                    raw_name = str(data.get("project_name") or "my_ai").strip()
+                    if raw_name != "." and raw_name.startswith("/"):
+                        raw_name = raw_name.lstrip("/")
+                    proj_name = raw_name or "my_ai"
+
+                    raw_target = str(data.get("target_dir") or ".").strip()
+                    target_path = Path(raw_target)
+                    if target_path.is_absolute():
+                        try:
+                            resolved_target = target_path.resolve()
+                            if (resolved_target.parent == Path("/") or resolved_target == Path("/")) and not os.access("/", os.W_OK):
+                                effective_target = (cmd_run_dir / raw_target.lstrip("/")).resolve()
+                            else:
+                                effective_target = resolved_target
+                        except Exception:
+                            effective_target = (cmd_run_dir / raw_target.lstrip("/")).resolve()
+                    else:
+                        effective_target = (cmd_run_dir / raw_target).resolve()
+
                     template_type = data.get("template_type") or "scratch"
                     chat_provider = data.get("chat_provider")
                     model_name = data.get("model_name")
@@ -169,10 +182,10 @@ def create_studio_handler(dist_dir: Optional[Path] = None):
 
                     extra_packages = data.get("extra_packages") or []
 
-                    # Execute zero-path project initialization
+                    # Execute zero-path project initialization anchored to command run dir
                     exit_code = run_init(
                         project_name=proj_name,
-                        target_dir=target_dir,
+                        target_dir=str(effective_target),
                         create_venv=create_venv,
                         template_type=template_type,
                         chat_provider=chat_provider,
@@ -196,8 +209,7 @@ def create_studio_handler(dist_dir: Optional[Path] = None):
                         return
 
                     # Compute dest directory
-                    base = Path(target_dir).resolve() if target_dir else Path.cwd()
-                    dest_dir = base / proj_name if proj_name != "." else base
+                    dest_dir = effective_target if proj_name == "." else (effective_target / proj_name)
 
                     # Enumerate generated files
                     scaffolded_files: List[str] = []
@@ -206,6 +218,15 @@ def create_studio_handler(dist_dir: Optional[Path] = None):
                             if ".venv" not in str(item) and "__pycache__" not in str(item):
                                 rel = item.relative_to(dest_dir)
                                 scaffolded_files.append(str(rel))
+
+                    if dest_dir == cmd_run_dir:
+                        cd_cmd = "# (already in project directory)"
+                    else:
+                        try:
+                            rel_cd = dest_dir.relative_to(cmd_run_dir)
+                            cd_cmd = f"cd {rel_cd}"
+                        except ValueError:
+                            cd_cmd = f"cd {dest_dir}"
 
                     self._send_json(
                         200,
@@ -216,12 +237,23 @@ def create_studio_handler(dist_dir: Optional[Path] = None):
                             "template": template_type,
                             "files": scaffolded_files,
                             "commands": [
-                                f"cd {proj_name}" if proj_name != "." else "# (already in project directory)",
+                                cd_cmd,
                                 "aimlite train",
                                 "aimlite serve --port 8000",
                             ],
                         },
                     )
+
+                    # Automatically close server and terminal upon project creation
+                    if getattr(self.server, "auto_shutdown", True):
+                        def _delayed_shutdown(srv):
+                            time.sleep(0.5)
+                            try:
+                                srv.shutdown()
+                            except Exception:
+                                pass
+
+                        threading.Thread(target=_delayed_shutdown, args=(self.server,), daemon=True).start()
                 except Exception as e:
                     self._send_json(500, {"status": "error", "message": str(e)})
                 return
@@ -312,7 +344,7 @@ def run_studio(
     network_url = f"http://localhost:{actual_port}/?{query_str}"
 
     print(vite_header())
-    print(f"  {C.BOLD}{C.GREEN}AIMLite Studio{C.RESET} {C.DIM}v2.2.1 — Locally Hosted Web Interface{C.RESET}\n")
+    print(f"  {C.BOLD}{C.GREEN}AIMLite Studio{C.RESET} {C.DIM}v2.2.2 — Locally Hosted Web Interface{C.RESET}\n")
     print(f"  {C.CYAN}➜{C.RESET}  {C.BOLD}Local:{C.RESET}   {C.UNDERLINE}{display_url}{C.RESET}")
     print(f"  {C.CYAN}➜{C.RESET}  {C.DIM}Network: use --host 0.0.0.0 to expose{C.RESET}")
     print(f"  {C.CYAN}➜{C.RESET}  {C.DIM}Mode:    Project Creator & Architectural Studio{C.RESET}\n")
@@ -336,4 +368,6 @@ def run_studio(
     finally:
         server.server_close()
 
+    print(f"\n  {check('Project scaffolding complete.')}")
+    print(f"  {C.DIM}Studio session finished. Terminal closed.{C.RESET}\n")
     return 0

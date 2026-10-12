@@ -13,6 +13,7 @@ from aimlite.cli.commands import (
     run_evaluate,
     run_init,
     run_install,
+    run_remove,
     run_serve,
     run_train,
     run_update,
@@ -20,7 +21,7 @@ from aimlite.cli.commands import (
 from aimlite.cli.studio import run_studio
 from aimlite.cli.ui import C, vite_header
 
-VERSION = "2.2.1"
+VERSION = "2.2.2"
 
 
 def print_custom_help() -> None:
@@ -33,6 +34,7 @@ def print_custom_help() -> None:
     print(f"    {C.GREEN}(no args){C.RESET}                   {C.DIM}Launch AIMLite Web Studio (locally hosted web app){C.RESET}")
     print(f"    {C.GREEN}init{C.RESET} [name]                 {C.DIM}Launch Web Studio to create project (use --cli for terminal){C.RESET}")
     print(f"    {C.GREEN}install{C.RESET} <pkgs...>           {C.DIM}Install dependencies into project .venv{C.RESET}")
+    print(f"    {C.GREEN}remove{C.RESET} <pkgs...>            {C.DIM}Remove dependencies from .venv and aimlite.json{C.RESET}")
     print(f"    {C.GREEN}data validate{C.RESET}             {C.DIM}Validate dataset schema & partition readiness{C.RESET}")
     print(f"    {C.GREEN}train{C.RESET} [class]               {C.DIM}Execute zero-path model training for specified class{C.RESET}")
     print(f"    {C.GREEN}evaluate{C.RESET} [class]            {C.DIM}Assess model performance against held-out splits{C.RESET}")
@@ -162,6 +164,12 @@ def build_parser() -> argparse.ArgumentParser:
     install_parser.add_argument("packages", nargs="*", default=[])
     install_parser.add_argument("-r", "--requirement", dest="requirement", default=None, help="Install from the given requirements file")
     install_parser.add_argument("--upgrade", action="store_true")
+
+    # remove / uninstall
+    remove_parser = subparsers.add_parser("remove")
+    remove_parser.add_argument("packages", nargs="+", help="Package names to remove")
+    uninstall_parser = subparsers.add_parser("uninstall")
+    uninstall_parser.add_argument("packages", nargs="+", help="Package names to uninstall")
 
     # data
     data_parser = subparsers.add_parser("data")
@@ -303,6 +311,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             requirement_file=getattr(args, "requirement", None),
             upgrade=args.upgrade,
         )
+
+    if args.command in ("remove", "uninstall"):
+        return run_remove(packages=args.packages)
 
     if args.command == "data":
         target = getattr(args, "target", None)

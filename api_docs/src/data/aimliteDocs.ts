@@ -130,7 +130,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'Releases & Changelog',
     items: [
-      { id: 'changelog', label: 'Version Changelog', badge: 'v2.2.1', badgeVariant: 'util' },
+      { id: 'changelog', label: 'Version Changelog', badge: 'v2.2.2', badgeVariant: 'util' },
     ],
   },
 ];
@@ -502,13 +502,31 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
     subtitle: 'Locally hosted interactive web studio by default, or use --cli for terminal execution in <50ms.',
-    badge: { label: 'CLI v2.2.1', variant: 'cli' },
+    badge: { label: 'CLI v2.2.2', variant: 'cli' },
     signatureOrPath: 'aimlite init [project_name | .] [--cli] [--type <scratch|rag|adapter>] [--clean] [--install]',
     breadcrumbs: ['CLI', 'init'],
     overview:
-      'Scaffolds a new project directory via a locally hosted Web Studio by default. When the --cli flag is passed (e.g. aimlite init --cli), it starts the interactive terminal prompts directly in your console. Generates standard layout: data/ (strictly clean), artifacts/, experiments/, and modular starter files. Supports --clean to generate a pristine project with empty code files (0 bytes) and zero sample datasets for the selected paradigm (scratch, rag, or adapter). Features an interactive package search prompt (+) to select additional dependencies, instantaneous (<50ms) project generation (heavy downloads are deferred), and generates aimlite.json as the single source of truth.',
+      'Scaffolds a new project directory via a locally hosted Web Studio by default. Running bare "aimlite" or "aimlite init" boots the visual AIMLite Studio in your default browser at http://localhost:8000. In the Studio web interface, developers can visually configure their project name, architecture paradigm (Scratch, RAG, LoRA Adapter), provider parameters, clean skeleton mode, extra PyPI packages, and environment settings with real-time syntax-highlighted manifest and directory tree previews. When the --cli flag is passed (e.g. "aimlite init --cli"), it starts interactive terminal prompts directly in your console. Generates standard layout: data/ (strictly clean), artifacts/, experiments/, and modular starter files. Instantaneous (<50ms) project generation (heavy downloads are deferred), and generates aimlite.json as the single source of truth.',
     djangoAnalogy:
       'Direct equivalent of create-vite or django-admin startproject <name>. Scaffolds 100% developer-editable code with zero hidden boilerplate.',
+    conventions: [
+      {
+        title: 'Visual Web Studio Mode (Default)',
+        description: 'Running "aimlite" or "aimlite init" starts the locally hosted AIMLite Studio on port 8000 with a full-width visual UI, real-time syntax-highlighted aimlite.json manifest, and instant project scaffolding.',
+      },
+      {
+        title: 'Terminal Isolation (--cli)',
+        description: 'Run "aimlite init --cli" to run the creation steps via interactive terminal prompts without launching a browser.',
+      },
+      {
+        title: 'Clean Skeleton Mode (--clean)',
+        description: 'Provisions 0-byte pristine interface files and zero dummy sample datasets, ideal for experienced engineers.',
+      },
+      {
+        title: 'Zero-Bloat Clean Dependencies by Default',
+        description: 'All projects start with an empty dependencies list (dependencies: []) across all paradigms unless explicitly added. Developers can add and remove packages in the Studio UI or via CLI (aimlite install / aimlite remove).',
+      },
+    ],
     parametersTitle: 'CLI Flags & Options',
     parameters: [
       {
@@ -530,6 +548,20 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
         type: 'scratch | rag | adapter',
         required: false,
         description: 'Selects the canonical AI paradigm template: scratch, rag, or adapter.',
+      },
+      {
+        name: '--port',
+        type: 'integer',
+        required: false,
+        defaultValue: '8000',
+        description: 'Port to bind the locally hosted visual Studio web application.',
+      },
+      {
+        name: '--no-browser',
+        type: 'boolean flag',
+        required: false,
+        defaultValue: 'false',
+        description: 'Prevents automatic browser launch when starting the Studio server.',
       },
       {
         name: '--clean',
@@ -567,17 +599,17 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
       },
     ],
     snippets: {
-      cli: `# Clean project with empty code files for adapter paradigm:
+      cli: `# 1. Launch visual Project Studio in browser (default):
+aimlite init
+
+# 2. Terminal interactive wizard mode:
+aimlite init my_rag --cli
+
+# 3. Clean project with empty code files for adapter paradigm:
 aimlite init my_adapter --clean --type adapter
 
-# Interactive Vite-style wizard:
-aimlite init my_rag
-
-# Non-interactive CLI flag setup for RAG:
-aimlite init my_rag --type rag --chat-provider gemini --vector-db memory
-
-# Scaffold in current directory with immediate dependency install:
-aimlite init . --type adapter --install`,
+# 4. Non-interactive CLI flag setup for RAG with dependency installation:
+aimlite init support_kb --type rag --chat-provider gemini --vector-db memory --install`,
     },
     defaultPayload: '{\n  "command": "aimlite init my_rag",\n  "type": "rag",\n  "chat_provider": "openai"\n}',
     defaultResponse: {
@@ -605,7 +637,7 @@ aimlite init . --type adapter --install`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
     subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
-    badge: { label: 'CLI v2.2.1', variant: 'cli' },
+    badge: { label: 'CLI v2.2.2', variant: 'cli' },
     signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
@@ -640,6 +672,9 @@ aimlite install
 
 # Install specific packages into the active project .venv:
 aimlite install sentence-transformers psycopg2-binary
+
+# Remove / uninstall packages from project .venv and aimlite.json:
+aimlite remove sentence-transformers
 
 # Install with package upgrade:
 aimlite install --upgrade`,
@@ -692,7 +727,7 @@ aimlite train ChurnClassifier`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
     subtitle: 'Zero-path multi-model inference server with type-adaptive Web Playgrounds, Swagger UI, and headless --api mode.',
-    badge: { label: 'CLI v2.2.1', variant: 'cli' },
+    badge: { label: 'CLI v2.2.2', variant: 'cli' },
     signatureOrPath: 'aimlite serve [ModelName] [--api] [--checkpoint <path>] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
@@ -924,7 +959,7 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite update',
     subtitle: 'Cross-platform self-updater synchronizing global, user-level, or virtualenv AIMLite CLI & package directly from PyPI.',
-    badge: { label: 'CLI v2.2.1', variant: 'cli' },
+    badge: { label: 'CLI v2.2.2', variant: 'cli' },
     signatureOrPath: 'aimlite update [--user] [--global] [--force] [--version <version>]',
     breadcrumbs: ['CLI', 'update'],
     overview:
@@ -958,7 +993,7 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
         name: '--version, --target-version',
         type: 'string (optional)',
         required: false,
-        description: 'Install a specific release version (e.g. 2.2.1).',
+        description: 'Install a specific release version (e.g. 2.2.2).',
       },
     ],
     snippets: {
@@ -969,14 +1004,14 @@ aimlite update
 aimlite update --force
 
 # Install specific version:
-aimlite update --version 2.2.1`,
+aimlite update --version 2.2.2`,
     },
     defaultPayload: '{\n  "command": "aimlite update"\n}',
     defaultResponse: {
       status: 'up_to_date',
-      installed_version: '2.2.1',
-      latest_version: '2.2.1',
-      message: 'AIMLite is already up to date (v2.2.1).',
+      installed_version: '2.2.2',
+      latest_version: '2.2.2',
+      message: 'AIMLite is already up to date (v2.2.2).',
     },
   },
 
@@ -2072,15 +2107,19 @@ docker logs -f aimlite-srv`,
     id: 'changelog',
     category: 'Releases & Changelog',
     title: 'Framework Changelog & Releases',
-    subtitle: 'Release history and upgrade guide for AIMLite (v2.2.1 latest).',
-    badge: { label: 'v2.2.1', variant: 'util' },
-    signatureOrPath: 'pip install --upgrade aimlite==2.2.1',
-    breadcrumbs: ['Releases', 'v2.2.1'],
+    subtitle: 'Release history and upgrade guide for AIMLite (v2.2.2 latest).',
+    badge: { label: 'v2.2.2', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==2.2.2',
+    breadcrumbs: ['Releases', 'v2.2.2'],
     overview:
-      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.2.1, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.2.2, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
     djangoAnalogy:
       'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
     conventions: [
+      {
+        title: 'Release [2.2.2] - 2026-10-12 (Decoupled Visual Studio, Syntax-Highlighted Code & Full-Width UI)',
+        description: 'Decoupled Documentation & Visual Studio: Completely separated the visual studio from api_docs, making the documentation site lean, clean, and purely focused on framework guides and API references. Full-Width Obsidian UI: Redesigned the locally hosted AIMLite Studio into a 100% full-screen split interface matching the sleek dark obsidian aesthetic of the docs. Syntax-Highlighted Real-Time Manifest: Enhanced the live preview pane with token-level syntax highlighting for JSON, file tree hierarchies, and reproducible CLI commands. Visual Project Creation Documentation: Added full guide on creating new projects via locally hosted AIMLite Studio.',
+      },
       {
         title: 'Release [2.2.1] - 2026-10-12 (Project Studio Enhancements & Documentation Synchronization)',
         description: 'Documentation Suite & Changelog Synchronization: Synchronized documentation web application (api_docs), landing page terminal demos, release badges, and live interactive docs to reflect the new 2.2.0 Web Studio release and 2.2.1 updates. Updated latest version references and dynamic version pills across App.tsx, Navbar.tsx, LandingPage.tsx, EndpointDoc.tsx, index.html, and chat.html. Rebuilt static distribution bundle (studio_dist) and standalone CLI executable (build/aimlite). Bumped framework and CLI version to 2.2.1 across pyproject.toml, src/aimlite/__init__.py, main.py, studio.py, ui.py, server.py, agent_assets.py, and agent skill guides.',
@@ -2149,19 +2188,19 @@ pip install --upgrade aimlite
 # Verify installation & diagnostic health:
 aimlite doctor`,
     },
-    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.2.1",\n  "channel": "pypi"\n}',
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.2.2",\n  "channel": "pypi"\n}',
     defaultResponse: {
       package: 'aimlite',
-      installed_version: '2.2.1',
-      latest_pypi_version: '2.2.1',
+      installed_version: '2.2.2',
+      latest_pypi_version: '2.2.2',
       release_date: '2026-10-12',
       status: 'up_to_date',
       highlights: [
-        'AIMLite Studio: Locally hosted interactive Web Studio project creator with dark obsidian aesthetics',
+        'Decoupled Studio from api_docs: Documentation site remains clean and dedicated strictly to guides and API references',
+        '100% Full-Width AIMLite Studio: Full screen-width responsive workspace with dark obsidian aesthetics matching the docs',
+        'Syntax-Highlighted Manifest: Real-time token highlighting for JSON aimlite.json manifest, file tree, and CLI equivalent command',
+        'Visual project creation docs: Detailed guide in aimlite init explaining how to visually create projects via local web studio',
         'Terminal isolation: only "aimlite init --cli" starts creation steps from terminal console',
-        'Full 6-step creation flow: identity, paradigm, hyperparameter configs, clean mode, extra packages, and .venv',
-        'Real-time reactive live preview: dynamic aimlite.json manifest, file tree, and CLI equivalent command',
-        'Dual-mode static serving and seamless standalone zipapp executable support',
       ],
     },
   },
