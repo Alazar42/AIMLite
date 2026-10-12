@@ -9,7 +9,7 @@ description: >-
 
 # AIMLite Skill Guide
 
-This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.1.1)**.
+This skill teaches coding agents how to build, train, evaluate, and serve production-grade machine learning applications using **AIMLite (v2.2.0)**.
 
 AIMLite operates on **convention over configuration** with **zero-path CLI execution**. Like Django, you organize code into standard modules (`data.py`, `model.py`, `trainer.py`, `evaluator.py`, `inference.py`), and the framework handles discovery, environment resolution, and execution automatically.
 
@@ -20,8 +20,8 @@ AIMLite operates on **convention over configuration** with **zero-path CLI execu
 Coding agents should use the `aimlite` CLI commands directly via shell tools:
 
 ```bash
-# Initialize a new project layout in current directory or named folder
-aimlite init <project_name | .> [--type <scratch|rag|adapter>] [--clean] [--install] [-y]
+# Initialize a new project layout (use --cli to run from terminal rather than web studio)
+aimlite init <project_name | .> --cli [--type <scratch|rag|adapter>] [--clean] [--install] [-y]
 
 # Synchronize dependencies with .venv from aimlite.json
 aimlite install [package_name ...]

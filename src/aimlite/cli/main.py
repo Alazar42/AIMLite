@@ -17,19 +17,21 @@ from aimlite.cli.commands import (
     run_train,
     run_update,
 )
+from aimlite.cli.studio import run_studio
 from aimlite.cli.ui import C, vite_header
 
-VERSION = "2.1.2"
+VERSION = "2.2.0"
 
 
 def print_custom_help() -> None:
     """Renders a Vite-style minimalist CLI help dashboard."""
     print(vite_header())
     print(f"  {C.BOLD}Usage:{C.RESET}")
-    print(f"    $ {C.CYAN}aimlite{C.RESET} <command> [options]\n")
+    print(f"    $ {C.CYAN}aimlite{C.RESET} [command] [options]\n")
 
     print(f"  {C.BOLD}Commands:{C.RESET}")
-    print(f"    {C.GREEN}init{C.RESET} [name]                 {C.DIM}Scaffold a new project layout & conventions{C.RESET}")
+    print(f"    {C.GREEN}(no args){C.RESET}                   {C.DIM}Launch AIMLite Web Studio (locally hosted web app){C.RESET}")
+    print(f"    {C.GREEN}init{C.RESET} [name]                 {C.DIM}Launch Web Studio to create project (use --cli for terminal){C.RESET}")
     print(f"    {C.GREEN}install{C.RESET} <pkgs...>           {C.DIM}Install dependencies into project .venv{C.RESET}")
     print(f"    {C.GREEN}data validate{C.RESET}             {C.DIM}Validate dataset schema & partition readiness{C.RESET}")
     print(f"    {C.GREEN}train{C.RESET} [class]               {C.DIM}Execute zero-path model training for specified class{C.RESET}")
@@ -40,6 +42,9 @@ def print_custom_help() -> None:
     print(f"    {C.GREEN}benchmark{C.RESET} [script] [args]  {C.DIM}Run any script with project root on PYTHONPATH (no ModuleNotFoundError){C.RESET}\n")
 
     print(f"  {C.BOLD}Options:{C.RESET}")
+    print(f"    {C.DIM}--port <int>{C.RESET}                 {C.DIM}Port to bind local web studio (default: 8000){C.RESET}")
+    print(f"    {C.DIM}--host <str>{C.RESET}                 {C.DIM}Host address for local web studio (default: 127.0.0.1){C.RESET}")
+    print(f"    {C.DIM}--no-browser{C.RESET}                 {C.DIM}Do not automatically open web browser{C.RESET}")
     print(f"    {C.DIM}-v, --version{C.RESET}               {C.DIM}Display version number{C.RESET}")
     print(f"    {C.DIM}-h, --help{C.RESET}                  {C.DIM}Display this message{C.RESET}\n")
 
@@ -63,12 +68,49 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Show this help message and exit.",
     )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind local web studio (default: 8000)",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host address for local web studio (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Do not automatically open web browser",
+    )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # init
     init_parser = subparsers.add_parser("init")
     init_parser.add_argument("name", nargs="?", default=None)
+    init_parser.add_argument(
+        "--cli",
+        action="store_true",
+        help="Start the project creation steps from the CLI terminal instead of the web UI",
+    )
+    init_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for web studio (default: 8000)",
+    )
+    init_parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host address for web studio (default: 127.0.0.1)",
+    )
+    init_parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Do not automatically open web browser",
+    )
     init_parser.add_argument("--no-venv", action="store_true", help="Skip creating .venv and installing aimlite")
     init_parser.add_argument("--install", action="store_true", help="Immediately install project dependencies into .venv")
     init_parser.add_argument(
@@ -193,8 +235,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     """Main CLI execution router."""
     raw_args = argv if argv is not None else sys.argv[1:]
 
-    # If no arguments provided or help requested
-    if not raw_args or "-h" in raw_args or "--help" in raw_args:
+    # If no arguments provided at all -> launch the locally hosted web studio!
+    if not raw_args:
+        return run_studio(host="127.0.0.1", port=8000, open_browser=True)
+
+    # If help requested
+    if "-h" in raw_args or "--help" in raw_args:
         if len(raw_args) > 1 and raw_args[0] not in ("-h", "--help"):
             parser = build_parser()
             parser.parse_args(raw_args)
@@ -207,24 +253,49 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(raw_args)
 
     if not args.command:
-        print_custom_help()
-        return 0
+        # Bare command with flags, e.g. aimlite --port 8080
+        return run_studio(
+            host=getattr(args, "host", "127.0.0.1"),
+            port=getattr(args, "port", 8000),
+            open_browser=not getattr(args, "no_browser", False),
+        )
 
     if args.command == "init":
-        is_non_interactive = getattr(args, "non_interactive", False)
-        interactive_flag = False if is_non_interactive else sys.stdin.isatty()
-        return run_init(
-            project_name=args.name,
-            create_venv=not getattr(args, "no_venv", False),
-            template_type=getattr(args, "template_type", None),
-            chat_provider=getattr(args, "chat_provider", None),
-            vector_db=getattr(args, "vector_db", None),
-            embedding_engine=getattr(args, "embedding_engine", None),
-            model_name=getattr(args, "model_name", None),
-            interactive=interactive_flag,
-            install_deps=getattr(args, "install", False),
-            clean=getattr(args, "clean", False),
-        )
+        # ONLY the flag aimlite init --cli should start the creating steps from the CLI!
+        if getattr(args, "cli", False):
+            is_non_interactive = getattr(args, "non_interactive", False)
+            interactive_flag = False if is_non_interactive else sys.stdin.isatty()
+            return run_init(
+                project_name=args.name,
+                create_venv=not getattr(args, "no_venv", False),
+                template_type=getattr(args, "template_type", None),
+                chat_provider=getattr(args, "chat_provider", None),
+                vector_db=getattr(args, "vector_db", None),
+                embedding_engine=getattr(args, "embedding_engine", None),
+                model_name=getattr(args, "model_name", None),
+                interactive=interactive_flag,
+                install_deps=getattr(args, "install", False),
+                clean=getattr(args, "clean", False),
+            )
+        else:
+            # Default for aimlite init (without --cli): launch locally hosted web-based creation wizard!
+            initial_params = {
+                "name": args.name,
+                "template_type": getattr(args, "template_type", None),
+                "chat_provider": getattr(args, "chat_provider", None),
+                "vector_db": getattr(args, "vector_db", None),
+                "embedding_engine": getattr(args, "embedding_engine", None),
+                "model_name": getattr(args, "model_name", None),
+                "clean": getattr(args, "clean", False),
+                "install": getattr(args, "install", False),
+                "no_venv": getattr(args, "no_venv", False),
+            }
+            return run_studio(
+                host=getattr(args, "host", "127.0.0.1"),
+                port=getattr(args, "port", 8000),
+                open_browser=not getattr(args, "no_browser", False),
+                initial_params=initial_params,
+            )
 
     if args.command == "install":
         return run_install(

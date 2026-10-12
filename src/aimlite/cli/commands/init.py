@@ -70,6 +70,7 @@ def run_init(
     interactive: Optional[bool] = None,
     install_deps: bool = False,
     clean: bool = False,
+    extra_packages: Optional[List[str]] = None,
 ) -> int:
     """Initializes a new AIMLite project with paradigm selection and follow-up configs.
 
@@ -239,15 +240,16 @@ def run_init(
         }
 
     # 3b. Extra package search step
-    extra_packages: List[str] = []
-    if is_tty and not clean:
-        extra_packages = prompt_package_search(
-            "Add extra packages",
-            hint="(space-separated, e.g. pandas numpy scikit-learn — press Enter to skip)",
-            is_tty=is_tty,
-        )
-        if extra_packages:
-            print(f"  {check(f'Added {len(extra_packages)} extra package(s):', ', '.join(extra_packages))}")
+    if extra_packages is None:
+        extra_packages = []
+        if is_tty and not clean:
+            extra_packages = prompt_package_search(
+                "Add extra packages",
+                hint="(space-separated, e.g. pandas numpy scikit-learn — press Enter to skip)",
+                is_tty=is_tty,
+            )
+    if is_tty and extra_packages:
+        print(f"  {check(f'Added {len(extra_packages)} extra package(s):', ', '.join(extra_packages))}")
 
 
     convention_dirs = ["data", "models", "experiments", "artifacts", "checkpoints"]

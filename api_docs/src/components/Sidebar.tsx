@@ -23,6 +23,7 @@ interface SidebarProps {
   onSelectSection: (id: string) => void;
   onOpenSearch: () => void;
   onNavigateToOverview?: () => void;
+  onNavigateToStudio?: () => void;
   version: string;
   onChangeVersion: (ver: string) => void;
 }
@@ -31,6 +32,7 @@ export default function Sidebar({
   activeSectionId,
   onSelectSection,
   onNavigateToOverview,
+  onNavigateToStudio,
 }: SidebarProps) {
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({
     'Supporting Foundations': false,
@@ -93,9 +95,21 @@ export default function Sidebar({
 
   return (
     <aside className="w-full h-full flex flex-col select-none text-xs">
-      {/* Top Overview Quick Link */}
-      {onNavigateToOverview && (
-        <div className="p-3 border-b border-zinc-200/80 dark:border-zinc-800/80">
+      {/* Top Overview & Studio Quick Links */}
+      <div className="p-3 border-b border-zinc-200/80 dark:border-zinc-800/80 space-y-1.5">
+        {onNavigateToStudio && (
+          <button
+            onClick={onNavigateToStudio}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-zinc-900 dark:text-zinc-100 bg-zinc-900/10 dark:bg-white/10 hover:bg-zinc-900/15 dark:hover:bg-white/15 border border-zinc-900/20 dark:border-white/20 transition-all shadow-2xs group"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-amber-500" />
+              <span className="font-semibold">Project Studio</span>
+            </div>
+            <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">aimlite init</span>
+          </button>
+        )}
+        {onNavigateToOverview && (
           <button
             onClick={onNavigateToOverview}
             className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white bg-zinc-100/70 hover:bg-zinc-200/70 dark:bg-zinc-900/60 dark:hover:bg-zinc-800/70 border border-zinc-200/60 dark:border-zinc-800/60 transition-all shadow-2xs group"
@@ -104,10 +118,9 @@ export default function Sidebar({
               <Home size={14} className="text-zinc-500 group-hover:text-zinc-950 dark:text-zinc-400 dark:group-hover:text-white transition-colors" />
               <span className="font-semibold">Framework Overview</span>
             </div>
-            <Sparkles size={12} className="text-zinc-400 group-hover:text-zinc-600 dark:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Navigation Tree List */}
       <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-3.5 scrollbar-thin">

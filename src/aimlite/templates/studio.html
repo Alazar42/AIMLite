@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIMLite Studio — Zero-Path AI & ML Project Creator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07080a;
+      --card-bg: rgba(15, 17, 23, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-border-hover: rgba(255, 255, 255, 0.16);
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --accent: #ffffff;
+      --accent-bg: #18181b;
+      --primary: #ffffff;
+      --primary-text: #09090b;
+      --success: #22c55e;
+      --success-bg: rgba(34, 197, 94, 0.1);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background-color: var(--bg);
+      background-image:
+        radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255, 255, 255, 0.04), transparent 100%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Top Navigation / Branding Header */
+    .header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #18181b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      color: #fff;
+    }
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .brand-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: var(--success-bg);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      color: #4ade80;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px #22c55e;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* Main Grid Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Step Card */
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .step-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: #fff;
+      color: #000;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #d4d4d8;
+    }
+    .label-hint {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0d0f15;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+
+    /* Paradigm Cards */
+    .paradigm-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    @media (max-width: 640px) {
+      .paradigm-selector { grid-template-columns: 1fr; }
+    }
+    .paradigm-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .paradigm-card:hover {
+      border-color: var(--card-border-hover);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .paradigm-card.active {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: #fff;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.06);
+    }
+    .paradigm-card-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .paradigm-card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .paradigm-pill {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #18181b;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--text-dim);
+    }
+
+    /* Option Grid / Button Groups */
+    .btn-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    @media (max-width: 640px) {
+      .btn-group { grid-template-columns: 1fr; }
+    }
+    .btn-option {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    .btn-option:hover {
+      border-color: var(--card-border-hover);
+    }
+    .btn-option.active {
+      background: #fff;
+      border-color: #fff;
+      color: #000;
+      font-weight: 700;
+    }
+    .btn-option-title {
+      font-size: 12px;
+      font-family: 'Outfit', sans-serif;
+    }
+    .btn-option-desc {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .btn-option.active .btn-option-desc {
+      color: #52525b;
+    }
+
+    /* Switch / Checkbox Row */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+    }
+    .switch-row:hover {
+      border-color: var(--card-border-hover);
+    }
+    .switch-label-title {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .switch-label-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #fff;
+      cursor: pointer;
+    }
+
+    /* Tag Input / Chips */
+    .chips-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      background: #18181b;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #e4e4e7;
+    }
+    .chip-remove {
+      cursor: pointer;
+      color: var(--text-dim);
+    }
+    .chip-remove:hover { color: #ef4444; }
+    .quick-add-btn {
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-add-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    /* Submit Button */
+    .btn-create {
+      width: 100%;
+      padding: 14px 20px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+    }
+    .btn-create:hover {
+      opacity: 0.95;
+      transform: scale(1.008);
+    }
+    .btn-create:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Preview Panel */
+    .preview-panel {
+      position: sticky;
+      top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .preview-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+    }
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--card-border);
+    }
+    .preview-tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .tab-btn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: #fff;
+      color: #000;
+      font-weight: 700;
+    }
+    .copy-btn {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .copy-btn:hover { color: #fff; }
+    .preview-body {
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      max-height: 480px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Success / Result Notification */
+    .result-box {
+      display: none;
+      padding: 20px;
+      border-radius: var(--radius-md);
+      background: rgba(34, 197, 94, 0.08);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    .result-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #4ade80;
+      margin-bottom: 10px;
+    }
+    .cmd-line {
+      padding: 6px 10px;
+      background: #09090b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #e4e4e7;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header-bar">
+      <div class="brand">
+        <div class="brand-logo">A</div>
+        <div>
+          <div class="brand-title">AIMLite Studio</div>
+          <div class="brand-tag">The Django for AI & ML — Zero-Path Execution</div>
+        </div>
+      </div>
+      <div class="badge-status">
+        <span class="pulse-dot"></span>
+        <span>Local Studio Active • Zero-Path Mode</span>
+      </div>
+    </header>
+
+    <div class="main-grid">
+      <!-- Left Column: All CLI Interactive Steps -->
+      <form id="studioForm" class="step-card">
+
+        <!-- STEP 1: Project Identity -->
+        <div class="step-section">
+          <div class="step-header">
+            <div class="step-badge">1</div>
+            <div class="step-title">Project Identity</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+            <div class="form-group">
+              <label>Project Name <span class="label-hint">(default: my_ai)</span></label>
+              <input type="text" id="projName" value="my_ai" required placeholder="my_ai">
+            </div>
+            <div class="form-group">
+              <label>Target Directory <span class="label-hint">(default: .)</span></label>
+              <input type="text" id="targetDir" value="." placeholder=".">
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Paradigm Selection -->
+        <div class="step-section">
+          <div class="step-header">
+            <div class="step-badge">2</div>
+            <div class="step-title">Select System Paradigm Template</div>
+          </div>
+          <div class="paradigm-selector" style="margin-top: 12px;">
+            <div class="paradigm-card active" data-type="scratch" onclick="selectParadigm('scratch')">
+              <div>
+                <div class="paradigm-card-title">Scratch / Custom ML</div>
+                <div class="paradigm-card-desc">Tabular, supervised, deep learning & classification models.</div>
+              </div>
+              <div><span class="paradigm-pill">Scikit-learn • PyTorch</span></div>
+            </div>
+            <div class="paradigm-card" data-type="rag" onclick="selectParadigm('rag')">
+              <div>
+                <div class="paradigm-card-title">RAG Knowledge Base</div>
+                <div class="paradigm-card-desc">Semantic vector search, grounded LLM synthesis & HyDE.</div>
+              </div>
+              <div><span class="paradigm-pill">Vector DB • Smart Chunk</span></div>
+            </div>
+            <div class="paradigm-card" data-type="adapter" onclick="selectParadigm('adapter')">
+              <div>
+                <div class="paradigm-card-title">LoRA Adapter Tuning</div>
+                <div class="paradigm-card-desc">Low-rank parameter adaptation & dynamic hot swapping.</div>
+              </div>
+              <div><span class="paradigm-pill">PEFT • Hugging Face</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: Paradigm Specific Configs -->
+        <div class="step-section" id="ragSection" style="display: none;">
+          <div class="step-header">
+            <div class="step-badge">3</div>
+            <div class="step-title">RAG Architecture Configurations</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 12px;">
+            <!-- Chat Provider -->
+            <div class="form-group">
+              <label>Chat Provider for LLM Synthesis</label>
+              <div class="btn-group">
+                <div class="btn-option active" data-provider="openai" onclick="selectChatProvider('openai')">
+                  <div class="btn-option-title">OpenAI</div>
+                  <div class="btn-option-desc">gpt-4o-mini</div>
+                </div>
+                <div class="btn-option" data-provider="gemini" onclick="selectChatProvider('gemini')">
+                  <div class="btn-option-title">Google Gemini</div>
+                  <div class="btn-option-desc">gemini-1.5-flash</div>
+                </div>
+                <div class="btn-option" data-provider="anthropic" onclick="selectChatProvider('anthropic')">
+                  <div class="btn-option-title">Anthropic</div>
+                  <div class="btn-option-desc">claude-3-5</div>
+                </div>
+                <div class="btn-option" data-provider="ollama" onclick="selectChatProvider('ollama')">
+                  <div class="btn-option-title">Ollama Local</div>
+                  <div class="btn-option-desc">llama3.2</div>
+                </div>
+                <div class="btn-option" data-provider="local" onclick="selectChatProvider('local')">
+                  <div class="btn-option-title">Local Pipeline</div>
+                  <div class="btn-option-desc">meta-llama</div>
+                </div>
+                <div class="btn-option" data-provider="mock" onclick="selectChatProvider('mock')">
+                  <div class="btn-option-title">Mock Provider</div>
+                  <div class="btn-option-desc">Zero external API</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Model Identifier -->
+            <div class="form-group">
+              <label>Model Identifier</label>
+              <input type="text" id="modelIdentifier" value="gpt-4o-mini">
+            </div>
+
+            <!-- Vector Store & Embedding Engine -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="form-group">
+                <label>Vector Database Backend</label>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <div class="btn-option active" data-vdb="memory" onclick="selectVectorDb('memory')">
+                    <div class="btn-option-title">In-Memory (JSON)</div>
+                    <div class="btn-option-desc">Zero external database</div>
+                  </div>
+                  <div class="btn-option" data-vdb="postgres" onclick="selectVectorDb('postgres')">
+                    <div class="btn-option-title">PostgreSQL + pgvector</div>
+                    <div class="btn-option-desc">Enterprise SQL ORM</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Embedding Engine</label>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <div class="btn-option active" data-emb="sentence-transformers" onclick="selectEmbedding('sentence-transformers')">
+                    <div class="btn-option-title">SentenceTransformers</div>
+                    <div class="btn-option-desc">all-MiniLM-L6-v2</div>
+                  </div>
+                  <div class="btn-option" data-emb="api" onclick="selectEmbedding('api')">
+                    <div class="btn-option-title">Provider API Native</div>
+                    <div class="btn-option-desc">Native API embeddings</div>
+                  </div>
+                  <div class="btn-option" data-emb="tfidf" onclick="selectEmbedding('tfidf')">
+                    <div class="btn-option-title">Hash TF-IDF</div>
+                    <div class="btn-option-desc">Fast zero-dependency</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 (alt): LoRA Adapter Configs -->
+        <div class="step-section" id="adapterSection" style="display: none;">
+          <div class="step-header">
+            <div class="step-badge">3</div>
+            <div class="step-title">LoRA Fine-Tuning Hyperparameters</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px;">
+            <div class="form-group">
+              <label>Rank r</label>
+              <input type="text" id="loraRank" value="8">
+            </div>
+            <div class="form-group">
+              <label>Alpha α</label>
+              <input type="text" id="loraAlpha" value="16.0">
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <label>Base Model</label>
+            <input type="text" id="baseModel" value="meta-llama/Llama-3.2-3B">
+          </div>
+        </div>
+
+        <!-- STEP 4: Clean Skeleton vs Starter Code -->
+        <div class="step-section">
+          <div class="step-header">
+            <div class="step-badge">4</div>
+            <div class="step-title">Code Generation Mode (--clean)</div>
+          </div>
+          <label class="switch-row" style="margin-top: 12px;">
+            <div>
+              <div class="switch-label-title">Clean Project Skeleton (--clean)</div>
+              <div class="switch-label-desc">Generates pristine 0-byte code files with abstract class contracts and zero sample data.</div>
+            </div>
+            <input type="checkbox" id="cleanToggle" onchange="updatePreview()">
+          </label>
+        </div>
+
+        <!-- STEP 5: Extra Packages Search -->
+        <div class="step-section">
+          <div class="step-header">
+            <div class="step-badge">5</div>
+            <div class="step-title">Add Extra Packages (pip)</div>
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="pkgInput" placeholder="e.g. pandas, scikit-learn, fastapi..." onkeydown="handlePkgKey(event)">
+              <button type="button" class="btn-option active" style="padding: 10px 16px; white-space: nowrap;" onclick="addPackage()">Add</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+              <span style="font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">Quick add:</span>
+              <button type="button" class="quick-add-btn" onclick="addPkgName('pandas')">+pandas</button>
+              <button type="button" class="quick-add-btn" onclick="addPkgName('numpy')">+numpy</button>
+              <button type="button" class="quick-add-btn" onclick="addPkgName('scikit-learn')">+scikit-learn</button>
+              <button type="button" class="quick-add-btn" onclick="addPkgName('fastapi')">+fastapi</button>
+              <button type="button" class="quick-add-btn" onclick="addPkgName('torch')">+torch</button>
+            </div>
+            <div class="chips-wrapper" id="chipsList"></div>
+          </div>
+        </div>
+
+        <!-- STEP 6: Virtual Environment & Install Now -->
+        <div class="step-section">
+          <div class="step-header">
+            <div class="step-badge">6</div>
+            <div class="step-title">Environment & Dependency Setup</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+            <label class="switch-row">
+              <div>
+                <div class="switch-label-title">Create Isolated .venv</div>
+                <div class="switch-label-desc">Provisions a managed local virtual environment inside the project directory.</div>
+              </div>
+              <input type="checkbox" id="venvToggle" checked onchange="updatePreview()">
+            </label>
+            <label class="switch-row">
+              <div>
+                <div class="switch-label-title">Install Dependencies Now (--install)</div>
+                <div class="switch-label-desc">Immediately runs pip install into .venv (Vite-style: deferred by default).</div>
+              </div>
+              <input type="checkbox" id="installToggle" onchange="updatePreview()">
+            </label>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <button type="submit" class="btn-create" id="createBtn">
+          <span>Scaffold Project (<span id="btnProjName">my_ai</span>)</span>
+        </button>
+
+        <!-- Result Box -->
+        <div class="result-box" id="resultBox">
+          <div class="result-title" id="resTitle">✓ Project scaffolded successfully!</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;" id="resDesc"></div>
+          <div id="resCommands"></div>
+        </div>
+      </form>
+
+      <!-- Right Column: Live Dynamic Preview Pane -->
+      <div class="preview-panel">
+        <div class="preview-card">
+          <div class="preview-header">
+            <div class="preview-tabs">
+              <button type="button" class="tab-btn active" id="tabManifest" onclick="switchTab('manifest')">aimlite.json</button>
+              <button type="button" class="tab-btn" id="tabTree" onclick="switchTab('tree')">File Tree</button>
+              <button type="button" class="tab-btn" id="tabCli" onclick="switchTab('cli')">CLI Equiv</button>
+            </div>
+            <button type="button" class="copy-btn" onclick="copyCurrentTab()">Copy</button>
+          </div>
+          <div class="preview-body">
+            <pre><code id="previewContent"></code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentParadigm = 'scratch';
+    let currentChatProvider = 'openai';
+    let currentVectorDb = 'memory';
+    let currentEmbedding = 'sentence-transformers';
+    let extraPackages = [];
+    let currentTab = 'manifest';
+
+    const defaultModels = {
+      openai: 'gpt-4o-mini',
+      gemini: 'gemini-1.5-flash',
+      anthropic: 'claude-3-5-sonnet-20241022',
+      ollama: 'llama3.2',
+      local: 'meta-llama/Llama-3.2-3B',
+      mock: 'mock-gpt'
+    };
+
+    function selectParadigm(type) {
+      currentParadigm = type;
+      document.querySelectorAll('.paradigm-card').forEach(el => {
+        el.classList.toggle('active', el.dataset.type === type);
+      });
+      document.getElementById('ragSection').style.display = type === 'rag' ? 'block' : 'none';
+      document.getElementById('adapterSection').style.display = type === 'adapter' ? 'block' : 'none';
+      updatePreview();
+    }
+
+    function selectChatProvider(p) {
+      currentChatProvider = p;
+      document.querySelectorAll('[data-provider]').forEach(el => {
+        el.classList.toggle('active', el.dataset.provider === p);
+      });
+      document.getElementById('modelIdentifier').value = defaultModels[p] || 'gpt-4o-mini';
+      updatePreview();
+    }
+
+    function selectVectorDb(vdb) {
+      currentVectorDb = vdb;
+      document.querySelectorAll('[data-vdb]').forEach(el => {
+        el.classList.toggle('active', el.dataset.vdb === vdb);
+      });
+      updatePreview();
+    }
+
+    function selectEmbedding(emb) {
+      currentEmbedding = emb;
+      document.querySelectorAll('[data-emb]').forEach(el => {
+        el.classList.toggle('active', el.dataset.emb === emb);
+      });
+      updatePreview();
+    }
+
+    function addPkgName(pkg) {
+      pkg = pkg.trim().toLowerCase();
+      if (pkg && !extraPackages.includes(pkg)) {
+        extraPackages.push(pkg);
+        renderChips();
+        updatePreview();
+      }
+    }
+
+    function addPackage() {
+      const input = document.getElementById('pkgInput');
+      addPkgName(input.value);
+      input.value = '';
+    }
+
+    function handlePkgKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addPackage();
+      }
+    }
+
+    function removePkg(pkg) {
+      extraPackages = extraPackages.filter(p => p !== pkg);
+      renderChips();
+      updatePreview();
+    }
+
+    function renderChips() {
+      const wrapper = document.getElementById('chipsList');
+      wrapper.innerHTML = extraPackages.map(pkg => `
+        <span class="chip">
+          <span>${pkg}</span>
+          <span class="chip-remove" onclick="removePkg('${pkg}')">×</span>
+        </span>
+      `).join('');
+    }
+
+    function getSanitizedName() {
+      const raw = document.getElementById('projName').value || 'my_ai';
+      return raw.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '') || 'my_ai';
+    }
+
+    function computeDependencies() {
+      const deps = [];
+      if (currentParadigm === 'rag') {
+        if (currentChatProvider === 'ollama') deps.push('ollama');
+        else if (currentChatProvider === 'openai') deps.push('openai');
+        else if (currentChatProvider === 'anthropic') deps.push('anthropic');
+        else if (currentChatProvider === 'gemini') deps.push('google-genai');
+        else if (currentChatProvider === 'local') deps.push('transformers', 'torch');
+
+        if (currentEmbedding === 'sentence-transformers') deps.push('sentence-transformers', 'numpy');
+        else if (currentEmbedding === 'api' && currentChatProvider === 'openai') deps.push('openai');
+        if (currentVectorDb === 'postgres') deps.push('psycopg2-binary');
+      } else if (currentParadigm === 'adapter') {
+        deps.push('torch', 'transformers', 'peft', 'datasets', 'numpy');
+      }
+      for (const p of extraPackages) {
+        if (!deps.includes(p)) deps.push(p);
+      }
+      return deps;
+    }
+
+    function updatePreview() {
+      const projName = document.getElementById('projName').value || 'my_ai';
+      document.getElementById('btnProjName').textContent = projName;
+      const pkgName = getSanitizedName();
+      const clean = document.getElementById('cleanToggle').checked;
+      const createVenv = document.getElementById('venvToggle').checked;
+      const installDeps = document.getElementById('installToggle').checked;
+
+      if (currentTab === 'manifest') {
+        const manifest = {
+          name: projName,
+          version: "0.1.0",
+          entrypoint: pkgName,
+          template: currentParadigm,
+          clean: clean,
+          dependencies: computeDependencies(),
+          config: {
+            device: "auto",
+            batch_size: 32,
+          },
+          paths: {
+            data: "data",
+            models: "models",
+            experiments: "experiments",
+            artifacts: "artifacts",
+            checkpoints: "checkpoints"
+          }
+        };
+
+        if (currentParadigm === 'rag') {
+          manifest.config.rag = {
+            chat_provider: currentChatProvider,
+            model_name: document.getElementById('modelIdentifier').value,
+            vector_db: currentVectorDb,
+            embedding_engine: currentEmbedding,
+            enable_hyde: true,
+            enable_smart_chunker: true
+          };
+        } else if (currentParadigm === 'adapter') {
+          manifest.config.adapter = {
+            r: parseInt(document.getElementById('loraRank').value) || 8,
+            alpha: parseFloat(document.getElementById('loraAlpha').value) || 16.0,
+            target_modules: ["q_proj", "v_proj"],
+            base_model: document.getElementById('baseModel').value
+          };
+        }
+        document.getElementById('previewContent').textContent = JSON.stringify(manifest, null, 2);
+      } else if (currentTab === 'tree') {
+        const venvLine = createVenv ? "\n├── .venv/            (managed python venv)" : "";
+        document.getElementById('previewContent').textContent =
+`${projName}/
+├── data/             (raw & partition datasets)
+├── models/           (model checkpoints)
+├── experiments/      (metrics & benchmarks)
+├── artifacts/
+├── checkpoints/${venvLine}
+├── aimlite.json
+├── README.md
+├── .gitignore
+├── .env.example
+└── ${pkgName}/
+    ├── __init__.py
+    ├── config.py
+    ├── data.py
+    ├── model.py
+    ├── trainer.py
+    ├── evaluator.py
+    └── inference.py`;
+      } else if (currentTab === 'cli') {
+        let cmd = `aimlite init ${projName} --cli`;
+        if (currentParadigm !== 'scratch') cmd += ` --type ${currentParadigm}`;
+        if (clean) cmd += ` --clean`;
+        if (!createVenv) cmd += ` --no-venv`;
+        if (installDeps) cmd += ` --install`;
+        if (currentParadigm === 'rag') {
+          if (currentChatProvider !== 'openai') cmd += ` --chat-provider ${currentChatProvider}`;
+          if (currentVectorDb !== 'memory') cmd += ` --vector-db ${currentVectorDb}`;
+          if (currentEmbedding !== 'sentence-transformers') cmd += ` --embedding ${currentEmbedding}`;
+        }
+        document.getElementById('previewContent').textContent =
+`# Only the flag --cli starts creating steps from the CLI terminal:
+$ ${cmd}`;
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tabManifest').classList.toggle('active', tab === 'manifest');
+      document.getElementById('tabTree').classList.toggle('active', tab === 'tree');
+      document.getElementById('tabCli').classList.toggle('active', tab === 'cli');
+      updatePreview();
+    }
+
+    function copyCurrentTab() {
+      const text = document.getElementById('previewContent').textContent;
+      navigator.clipboard.writeText(text);
+      alert('Copied preview to clipboard!');
+    }
+
+    document.getElementById('projName').addEventListener('input', updatePreview);
+
+    document.getElementById('studioForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('createBtn');
+      btn.disabled = true;
+      btn.textContent = 'Scaffolding Architecture...';
+
+      const payload = {
+        project_name: document.getElementById('projName').value || 'my_ai',
+        target_dir: document.getElementById('targetDir').value || '.',
+        template_type: currentParadigm,
+        clean: document.getElementById('cleanToggle').checked,
+        create_venv: document.getElementById('venvToggle').checked,
+        install_deps: document.getElementById('installToggle').checked,
+        extra_packages: extraPackages,
+        chat_provider: currentParadigm === 'rag' ? currentChatProvider : undefined,
+        model_name: currentParadigm === 'rag' ? document.getElementById('modelIdentifier').value : undefined,
+        vector_db: currentParadigm === 'rag' ? currentVectorDb : undefined,
+        embedding_engine: currentParadigm === 'rag' ? currentEmbedding : undefined,
+        adapter_config: currentParadigm === 'adapter' ? {
+          r: parseInt(document.getElementById('loraRank').value) || 8,
+          alpha: parseFloat(document.getElementById('loraAlpha').value) || 16.0,
+          target_modules: ["q_proj", "v_proj"],
+          base_model: document.getElementById('baseModel').value
+        } : undefined
+      };
+
+      try {
+        const res = await fetch('/api/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        const resBox = document.getElementById('resultBox');
+        if (data.status === 'success') {
+          resBox.style.display = 'block';
+          document.getElementById('resTitle').textContent = `✓ Project "${data.project_name}" scaffolded successfully!`;
+          document.getElementById('resDesc').textContent = `Scaffolded ${data.template} architecture in ${data.dest_dir}`;
+          document.getElementById('resCommands').innerHTML = data.commands.map(c => `<div class="cmd-line">$ ${c}</div>`).join('');
+        } else {
+          alert('Error: ' + (data.message || 'Scaffolding failed'));
+        }
+      } catch (err) {
+        alert('Connection error: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = `Scaffold Project (${document.getElementById('projName').value || 'my_ai'})`;
+      }
+    });
+
+    // Check status
+    fetch('/api/status').then(r => r.json()).then(d => {
+      if (d && d.cwd && document.getElementById('targetDir').value === '.') {
+        document.getElementById('targetDir').value = d.cwd;
+      }
+    }).catch(() => {});
+
+    updatePreview();
+  </script>
+</body>
+</html>

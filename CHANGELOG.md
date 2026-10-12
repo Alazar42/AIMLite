@@ -5,6 +5,46 @@ All notable changes to the AIMLite framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-10-12
+
+### Added
+- **AIMLite Studio Web-Based Project Creator (`aimlite` & `aimlite init`)**:
+  - Default behavior overhaul: bare `aimlite` and `aimlite init` now automatically boot a locally hosted, multi-threaded interactive Web Studio (`AIMLite Studio`) in the developer's default browser on port 8000 (with automatic port collision detection fallback).
+  - Terminal isolation: only the explicit flag `aimlite init --cli` triggers terminal prompts for CLI project creation steps.
+  - Added CLI flags: `--port <int>`, `--host <str>`, and `--no-browser` to both root `aimlite` parser and `init` subcommand.
+- **Full 6-Step Web Creation Flow Matching CLI Wizard**:
+  - Ported every interactive prompt and choice from the CLI wizard into the Web Studio UI:
+    - **Step 1: Project Identity**: Project Name and Target Directory inputs with real-time sanitized Python package identifier preview (`sanitize_package_name`).
+    - **Step 2: Architecture Paradigm**: Visual selector for `scratch` (Scratch / Custom ML), `rag` (RAG Knowledge Base), and `adapter` (LoRA Adapter Tuning).
+    - **Step 3: Paradigm Configurations**:
+      - *RAG*: Chat Provider selector (`openai`, `gemini`, `anthropic`, `ollama`, `local`, `mock`), Model Identifier input, Vector Database backend (`memory` vs `postgres`), Embedding Engine (`sentence-transformers`, `api`, `tfidf`), plus feature toggles for HyDE (Hypothetical Document Embeddings) and Smart Semantic Chunker.
+      - *LoRA*: Hyperparameter tuning for Rank $r$ (4, 8, 16, 32, 64), Alpha $\alpha$ (8, 16, 32, 64), Base Model Identifier, and dynamic Target Attention Modules chip manager (`q_proj`, `v_proj`, etc.).
+    - **Step 4: Code Generation Mode (`--clean`)**: Mode switch between *Starter Boilerplate* (end-to-end working baseline code) and *Clean Skeleton* (0-byte contracts and interfaces with zero sample data).
+    - **Step 5: Extra PyPI Packages Search**: Interactive PyPI package search with quick-add chips (`+pandas`, `+numpy`, `+scikit-learn`, `+torch`, `+fastapi`, `+rich`, `+matplotlib`) and tag management (`extra_packages`).
+    - **Step 6: Environment & Setup**: Checkboxes for provisioning an isolated `.venv` and immediate dependency installation (`--install`).
+- **Real-Time Live Reactive Preview Panel**:
+  - Real-time reactive preview pane with 3 synchronized tabs:
+    - `aimlite.json`: Live-generated manifest reflecting all selections, hyperparameter configurations, and resolved dependencies.
+    - `File Tree`: Visual folder and code file tree of the scaffolded directory.
+    - `CLI Equiv`: The exact equivalent command line string (e.g. `aimlite init my_ai --cli --type rag ...`) for terminal reproducibility.
+- **Dual-Mode Serving & Zipapp Executable Compatibility**:
+  - Multi-threaded HTTP server (`ThreadingStudioServer`) in `src/aimlite/cli/studio.py` with `/api/status` and `/api/init` endpoints.
+  - Dual-mode frontend serving: serves pre-built React SPA static bundle (`api_docs/dist` or `studio_dist`), with automatic fallback to self-contained single-page studio HTML (`templates/studio.html`).
+  - Packaged executable compatibility: integrated `pkgutil.get_data("aimlite.templates", "studio.html")` enabling flawless operation inside standalone zipapp binaries (`build/aimlite`).
+- **ProjectStudio React Component in Documentation & Web App**:
+  - Implemented `ProjectStudio.tsx` in `api_docs/src/components/ProjectStudio.tsx` using Tailwind CSS and Lucide icons following the dark obsidian aesthetic (`#07080a`).
+  - Added Studio mode switcher in documentation navbar, sidebar quick navigation, and URL query parameter prefilling (`?name=...&type=...`).
+- **Programmatic Package Injection in `run_init`**:
+  - Extended `run_init()` with `extra_packages: Optional[List[str]] = None`, allowing programmatic and Web Studio injection of custom PyPI dependencies into `aimlite.json`.
+
+### Changed
+- Default entrypoint routing: running `aimlite` or `aimlite init` launches the local web studio rather than printing the CLI help screen or starting interactive terminal prompts.
+- Bumped framework and CLI version to `2.2.0` across `pyproject.toml`, `src/aimlite/__init__.py`, `main.py`, `studio.py`, `ui.py`, `server.py`, `agent_assets.py`, and documentation.
+
+### Fixed
+- Ensured standalone executable packaging (`build/build_cli.py`) bundles `templates/studio.html` and `templates/studio_dist/` cleanly within the zipapp archive.
+- Added full test coverage for Web Studio routing, argument parsing, API status endpoint, and project initialization in `test/test_web_studio_init.py` (all 138 test cases passing).
+
 ## [2.1.2] - 2026-10-08
 
 ### Fixed

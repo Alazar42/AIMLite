@@ -5,11 +5,23 @@ import EndpointDoc from './components/EndpointDoc';
 import CodePlayground from './components/CodePlayground';
 import SearchModal from './components/SearchModal';
 import LandingPage from './components/LandingPage';
+import ProjectStudio from './components/ProjectStudio';
 import { DOC_SECTIONS } from './data/aimliteDocs';
 import { X, Code2 } from 'lucide-react';
 
 export default function App() {
-  const [viewMode, setViewMode] = useState<'landing' | 'docs'>('landing');
+  const [viewMode, setViewMode] = useState<'studio' | 'landing' | 'docs'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get('view');
+      if (v === 'docs') return 'docs';
+      if (v === 'landing') return 'landing';
+      if (v === 'studio' || v === 'init' || params.has('action') || params.has('name')) {
+        return 'studio';
+      }
+    }
+    return 'studio';
+  });
   const [activeSectionId, setActiveSectionId] = useState<string>('pillar-data');
   const [version, setVersion] = useState<string>('v2.1.2');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
@@ -83,8 +95,12 @@ export default function App() {
           activeSectionId={activeSectionId}
         />
 
-        {/* Main View: Landing Page or 3-Column Documentation */}
-        {viewMode === 'landing' ? (
+        {/* Main View: Studio, Landing Page or 3-Column Documentation */}
+        {viewMode === 'studio' ? (
+          <main className="flex-1 w-full flex flex-col items-center">
+            <ProjectStudio onNavigateToDocs={handleNavigateToDocs} />
+          </main>
+        ) : viewMode === 'landing' ? (
           <main className="flex-1 w-full flex flex-col items-center">
             <LandingPage onNavigateToDocs={handleNavigateToDocs} />
           </main>
@@ -101,6 +117,7 @@ export default function App() {
                 }}
                 onOpenSearch={() => setIsSearchOpen(true)}
                 onNavigateToOverview={() => setViewMode('landing')}
+                onNavigateToStudio={() => setViewMode('studio')}
                 version={version}
                 onChangeVersion={setVersion}
               />

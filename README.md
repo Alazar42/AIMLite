@@ -201,7 +201,8 @@ AIMLite provides zero-path convention-over-configuration commands:
 
 | Command | Description |
 |---|---|
-| `aimlite init [project_name \| .] [--clean]` | Scaffolds a project in a new folder or directly in the current directory (`.`). Supports `--clean` to generate a pure scratch project with zero sample code or dummy datasets (only class contracts and guiding comments). |
+| `aimlite` | Launches the locally hosted AIMLite Web Studio in your browser for visual project creation, architectural inspection, and live documentation. |
+| `aimlite init [project_name \| .] [--cli] [--clean]` | Launches the locally hosted Web Studio to visually scaffold your project. Pass `--cli` to run the interactive creation steps directly from the terminal console. |
 | `aimlite install [packages...]` | Without arguments, installs all dependencies listed in `aimlite.json`. With packages, installs them into `.venv` using `uv` (or `pip`) and adds them to `aimlite.json`. |
 | `aimlite data validate [target]` | Validates dataset schema, record count, column names, and partition readiness across all datasets in `data/`, or selectively validates by dataset class name, declared filename, path, or raw unbound data file. |
 | `aimlite train [ModelName] [--resume [path]] [--checkpoint-dir <dir>]` | Automatically discovers registered models and executes training. Supports resuming from latest or specific past checkpoints with `--resume`, and saving to custom directories with `--checkpoint-dir`. Saves weights to `models/<model_name>.pkl` and snapshots to `experiments/`. |
