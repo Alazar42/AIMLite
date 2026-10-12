@@ -2,7 +2,7 @@
 # ==============================================================================
 # AIMLite Universal Installer
 # The Django for AI & Machine Learning — zero-configuration, zero-path execution.
-#
+
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/Alazar42/AIMLite/main/install.sh | bash
 #   ./install.sh [options]
