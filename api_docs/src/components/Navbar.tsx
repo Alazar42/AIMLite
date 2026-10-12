@@ -255,10 +255,10 @@ export default function Navbar({
             onSelectSection('changelog');
           }}
           className="hidden min-[520px]:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-900/90 hover:bg-zinc-200/80 dark:hover:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono transition-all shrink-0"
-          title="Release Changelog (v2.1.2 Latest Stable)"
+          title="Release Changelog (v2.2.1 Latest Stable)"
         >
           <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500 animate-pulse" />
-          <span>v2.1.2</span>
+          <span>v2.2.1</span>
         </button>
 
         {/* llms.txt Agent Specification Link */}

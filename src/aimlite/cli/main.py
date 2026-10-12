@@ -20,7 +20,7 @@ from aimlite.cli.commands import (
 from aimlite.cli.studio import run_studio
 from aimlite.cli.ui import C, vite_header
 
-VERSION = "2.2.0"
+VERSION = "2.2.1"
 
 
 def print_custom_help() -> None:

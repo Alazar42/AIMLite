@@ -120,7 +120,7 @@ def create_studio_handler(dist_dir: Optional[Path] = None):
                     200,
                     {
                         "status": "ok",
-                        "version": "2.2.0",
+                        "version": "2.2.1",
                         "cwd": str(Path.cwd()),
                         "python_version": sys.version,
                         "platform": sys.platform,
@@ -312,7 +312,7 @@ def run_studio(
     network_url = f"http://localhost:{actual_port}/?{query_str}"
 
     print(vite_header())
-    print(f"  {C.BOLD}{C.GREEN}AIMLite Studio{C.RESET} {C.DIM}v2.2.0 — Locally Hosted Web Interface{C.RESET}\n")
+    print(f"  {C.BOLD}{C.GREEN}AIMLite Studio{C.RESET} {C.DIM}v2.2.1 — Locally Hosted Web Interface{C.RESET}\n")
     print(f"  {C.CYAN}➜{C.RESET}  {C.BOLD}Local:{C.RESET}   {C.UNDERLINE}{display_url}{C.RESET}")
     print(f"  {C.CYAN}➜{C.RESET}  {C.DIM}Network: use --host 0.0.0.0 to expose{C.RESET}")
     print(f"  {C.CYAN}➜{C.RESET}  {C.DIM}Mode:    Project Creator & Architectural Studio{C.RESET}\n")

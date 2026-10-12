@@ -23,7 +23,7 @@ export default function App() {
     return 'studio';
   });
   const [activeSectionId, setActiveSectionId] = useState<string>('pillar-data');
-  const [version, setVersion] = useState<string>('v2.1.2');
+  const [version, setVersion] = useState<string>('v2.2.1');
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
   const [isMobileConsoleOpen, setIsMobileConsoleOpen] = useState<boolean>(false);

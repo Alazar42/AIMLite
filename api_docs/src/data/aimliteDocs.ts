@@ -130,7 +130,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     name: 'Releases & Changelog',
     items: [
-      { id: 'changelog', label: 'Version Changelog', badge: 'v2.2.0', badgeVariant: 'util' },
+      { id: 'changelog', label: 'Version Changelog', badge: 'v2.2.1', badgeVariant: 'util' },
     ],
   },
 ];
@@ -502,7 +502,7 @@ all_datasets = get_all("dataset")            # {'CustomerDataset': <class>}
     category: 'Zero-Path CLI Commands',
     title: 'aimlite init',
     subtitle: 'Locally hosted interactive web studio by default, or use --cli for terminal execution in <50ms.',
-    badge: { label: 'CLI v2.2.0', variant: 'cli' },
+    badge: { label: 'CLI v2.2.1', variant: 'cli' },
     signatureOrPath: 'aimlite init [project_name | .] [--cli] [--type <scratch|rag|adapter>] [--clean] [--install]',
     breadcrumbs: ['CLI', 'init'],
     overview:
@@ -605,7 +605,7 @@ aimlite init . --type adapter --install`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite install',
     subtitle: 'Installs project dependencies into managed .venv directly from aimlite.json or CLI arguments.',
-    badge: { label: 'CLI v2.2.0', variant: 'cli' },
+    badge: { label: 'CLI v2.2.1', variant: 'cli' },
     signatureOrPath: 'aimlite install [package_name ...] [-r requirements.txt]',
     breadcrumbs: ['CLI', 'install'],
     overview:
@@ -692,7 +692,7 @@ aimlite train ChurnClassifier`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite serve',
     subtitle: 'Zero-path multi-model inference server with type-adaptive Web Playgrounds, Swagger UI, and headless --api mode.',
-    badge: { label: 'CLI v2.2.0', variant: 'cli' },
+    badge: { label: 'CLI v2.2.1', variant: 'cli' },
     signatureOrPath: 'aimlite serve [ModelName] [--api] [--checkpoint <path>] [--port 8000] [--host 127.0.0.1] [--frontend <dir>]',
     breadcrumbs: ['CLI', 'serve'],
     overview:
@@ -924,7 +924,7 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
     category: 'Zero-Path CLI Commands',
     title: 'aimlite update',
     subtitle: 'Cross-platform self-updater synchronizing global, user-level, or virtualenv AIMLite CLI & package directly from PyPI.',
-    badge: { label: 'CLI v2.2.0', variant: 'cli' },
+    badge: { label: 'CLI v2.2.1', variant: 'cli' },
     signatureOrPath: 'aimlite update [--user] [--global] [--force] [--version <version>]',
     breadcrumbs: ['CLI', 'update'],
     overview:
@@ -958,7 +958,7 @@ aimlite benchmark experiments/benchmark.py --iterations 100 --batch-size 16`,
         name: '--version, --target-version',
         type: 'string (optional)',
         required: false,
-        description: 'Install a specific release version (e.g. 2.1.2).',
+        description: 'Install a specific release version (e.g. 2.2.1).',
       },
     ],
     snippets: {
@@ -969,14 +969,14 @@ aimlite update
 aimlite update --force
 
 # Install specific version:
-aimlite update --version 2.1.2`,
+aimlite update --version 2.2.1`,
     },
     defaultPayload: '{\n  "command": "aimlite update"\n}',
     defaultResponse: {
       status: 'up_to_date',
-      installed_version: '2.1.2',
-      latest_version: '2.1.2',
-      message: 'AIMLite is already up to date (v2.1.2).',
+      installed_version: '2.2.1',
+      latest_version: '2.2.1',
+      message: 'AIMLite is already up to date (v2.2.1).',
     },
   },
 
@@ -2072,15 +2072,19 @@ docker logs -f aimlite-srv`,
     id: 'changelog',
     category: 'Releases & Changelog',
     title: 'Framework Changelog & Releases',
-    subtitle: 'Release history and upgrade guide for AIMLite (v2.2.0 latest).',
-    badge: { label: 'v2.2.0', variant: 'util' },
-    signatureOrPath: 'pip install --upgrade aimlite==2.2.0',
-    breadcrumbs: ['Releases', 'v2.2.0'],
+    subtitle: 'Release history and upgrade guide for AIMLite (v2.2.1 latest).',
+    badge: { label: 'v2.2.1', variant: 'util' },
+    signatureOrPath: 'pip install --upgrade aimlite==2.2.1',
+    breadcrumbs: ['Releases', 'v2.2.1'],
     overview:
-      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.2.0, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
+      'AIMLite adheres strictly to Semantic Versioning (SemVer). The latest stable release is v2.2.1, published live on PyPI. Below is the full chronological record of changes, new features, and upgrade instructions across all releases.',
     djangoAnalogy:
       'Comprehensive release notes detailing architectural improvements and new lifecycle hooks.',
     conventions: [
+      {
+        title: 'Release [2.2.1] - 2026-10-12 (Project Studio Enhancements & Documentation Synchronization)',
+        description: 'Documentation Suite & Changelog Synchronization: Synchronized documentation web application (api_docs), landing page terminal demos, release badges, and live interactive docs to reflect the new 2.2.0 Web Studio release and 2.2.1 updates. Updated latest version references and dynamic version pills across App.tsx, Navbar.tsx, LandingPage.tsx, EndpointDoc.tsx, index.html, and chat.html. Rebuilt static distribution bundle (studio_dist) and standalone CLI executable (build/aimlite). Bumped framework and CLI version to 2.2.1 across pyproject.toml, src/aimlite/__init__.py, main.py, studio.py, ui.py, server.py, agent_assets.py, and agent skill guides.',
+      },
       {
         title: 'Release [2.2.0] - 2026-10-12 (AIMLite Studio Web Project Creator & 6-Step Architecture Flow)',
         description: 'AIMLite Studio Web Interface: Bare aimlite and aimlite init boot a locally hosted, multi-threaded Web Studio in the browser (default port 8000 with auto-port detection), featuring dark obsidian aesthetics. Terminal Isolation: aimlite init --cli is exclusively dedicated to terminal prompts. Complete 6-Step Project Creation: Web interface includes every CLI prompt—Project Name/Directory with package sanitization, System Paradigm (scratch, rag, adapter), Paradigm Hyperparameters (RAG chat providers, model, vector DB, embedding engine, HyDE, chunker; LoRA rank, alpha, target modules, base model), Code Generation Mode (--clean vs boilerplate), Extra Packages search with quick-add chips, and Environment/Install setup (.venv, --install). Reactive Live Preview: Real-time aimlite.json manifest, file tree, and equivalent CLI command. Dual-Mode Serving: Built React SPA with single-page studio.html fallback and zipapp pkgutil compatibility.',
@@ -2145,11 +2149,11 @@ pip install --upgrade aimlite
 # Verify installation & diagnostic health:
 aimlite doctor`,
     },
-    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.2.0",\n  "channel": "pypi"\n}',
+    defaultPayload: '{\n  "package": "aimlite",\n  "version": "2.2.1",\n  "channel": "pypi"\n}',
     defaultResponse: {
       package: 'aimlite',
-      installed_version: '2.2.0',
-      latest_pypi_version: '2.2.0',
+      installed_version: '2.2.1',
+      latest_pypi_version: '2.2.1',
       release_date: '2026-10-12',
       status: 'up_to_date',
       highlights: [

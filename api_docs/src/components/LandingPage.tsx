@@ -204,7 +204,7 @@ const renderTerminalLine = (line: string, idx: number) => {
     return (
       <div key={idx} className="flex items-center gap-2 py-1 text-xs font-mono">
         <span className="text-[#00d8ff] font-extrabold tracking-wider">AIMLITE</span>
-        <span className="text-zinc-500">{parts[1] || 'v2.1.2'}</span>
+        <span className="text-zinc-500">{parts[1] || 'v2.2.1'}</span>
         <span className="text-emerald-400 font-semibold">{parts[2]}</span>
         <span className="text-zinc-400">{parts.slice(3).join(' ')}</span>
       </div>
@@ -213,7 +213,7 @@ const renderTerminalLine = (line: string, idx: number) => {
   if (line.includes('The Django for AI & Machine Learning')) {
     return (
       <div key={idx} className="flex items-center gap-2 pt-1 pb-0.5 text-xs font-mono">
-        <span className="text-zinc-500">v2.1.2</span>
+        <span className="text-zinc-500">v2.2.1</span>
         <span className="text-[#00d8ff] font-bold">❯</span>
         <span className="text-zinc-100 font-bold">The Django for AI & Machine Learning</span>
       </div>
@@ -495,7 +495,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
   88   88   .88.   88  88  88 88booo.   .88.      88    88.     
   YP   YP Y888888P YP  YP  YP Y88888P Y888888P    YP    Y88888P
 
-  v2.1.2  ❯  The Django for AI & Machine Learning
+  v2.2.1  ❯  The Django for AI & Machine Learning
   create project
 
   ✔  Project name    my_knowledge_base
@@ -516,7 +516,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     train: `$ aimlite train SupportDocRAG
 
-  AIMLITE v2.1.2 train  SupportDocRAG
+  AIMLITE v2.2.1 train  SupportDocRAG
 
 ❯ Discovering project root: /workspace/my_knowledge_base
 ❯ Inspecting data/: found 14 knowledge articles (.md, .txt)
@@ -527,7 +527,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     serve: `$ aimlite serve --port 8000
 
-  AIMLITE v2.1.2 serve
+  AIMLITE v2.2.1 serve
 
   ➜  Primary Model:    ChurnClassifier (ML)
   ➜  Registered:       ChurnClassifier [ml], SupportDocRAG [rag]
@@ -540,7 +540,7 @@ export default function LandingPage({ onNavigateToDocs }: LandingPageProps) {
 
     benchmark: `$ aimlite benchmark experiments/benchmark.py
 
-  AIMLITE v2.1.2 benchmark  experiments/benchmark.py
+  AIMLITE v2.2.1 benchmark  experiments/benchmark.py
 
 ❯ Project Root: /workspace/my_knowledge_base
 ❯ Extended PYTHONPATH with project root
@@ -582,14 +582,14 @@ $ docker run -d -p 8000:8000 my-aimlite-app
       <section className="relative w-full max-w-6xl px-4 sm:px-6 pt-12 sm:pt-24 pb-14 sm:pb-20 flex flex-col items-center text-center">
         {/* Floating Release Banner */}
         <button
-          onClick={() => onNavigateToDocs('deployment-docker')}
+          onClick={() => onNavigateToDocs('changelog')}
           className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-zinc-900/80 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800/90 text-zinc-800 dark:text-zinc-200 text-xs font-medium transition-all mb-7 shadow-xs backdrop-blur-md max-w-full hover:scale-105 active:scale-95"
         >
-          <span className="flex h-2 w-2 rounded-full bg-zinc-400 dark:bg-zinc-500 animate-pulse shrink-0" />
-          <span className="font-bold text-zinc-950 dark:text-white shrink-0 font-mono">v2.1.2 Live</span>
+          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span className="font-bold text-zinc-950 dark:text-white shrink-0 font-mono">v2.2.1 Live</span>
           <span className="text-zinc-300 dark:text-zinc-700 shrink-0">•</span>
           <span className="text-zinc-600 dark:text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-white transition-colors truncate">
-            Now with 1-Click Production Docker & Cloud Deploy
+            Interactive Project Studio Web Interface & 6-Step Visual Scaffolding
           </span>
           <ArrowRight size={13} className="text-zinc-400 group-hover:text-zinc-950 dark:group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
         </button>
@@ -1281,7 +1281,7 @@ $ docker run -d -p 8000:8000 my-aimlite-app
             <span>•</span>
             <span>Apache 2.0 Open Source</span>
             <span>•</span>
-            <span>v2.1.2</span>
+            <span>v2.2.1</span>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-medium">

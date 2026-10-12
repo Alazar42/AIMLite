@@ -122,7 +122,7 @@ def test_studio_api_status(test_studio_server):
         assert resp.status == 200
         data = json.loads(resp.read().decode("utf-8"))
         assert data["status"] == "ok"
-        assert data["version"] == "2.2.0"
+        assert data["version"] == "2.2.1"
         assert "cwd" in data
         assert "python_version" in data
 

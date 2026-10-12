@@ -405,14 +405,14 @@ export default function EndpointDoc({
               </div>
             </div>
             <span className="text-xs text-zinc-900 dark:text-zinc-100 font-mono bg-zinc-200/80 dark:bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-300 dark:border-zinc-700 font-semibold">
-              Latest: v2.1.2
+              Latest: v2.2.1
             </span>
           </div>
 
           {section.conventions && (
             <div className="space-y-4">
-              {section.conventions.map((release) => {
-                const isLatest = release.title.includes('2.1.2');
+              {section.conventions.map((release, index) => {
+                const isLatest = index === 0 || release.title.includes('2.2.1');
                 return (
                   <div
                     key={release.title}

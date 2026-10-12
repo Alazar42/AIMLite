@@ -5,6 +5,15 @@ All notable changes to the AIMLite framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-10-12
+
+### Changed
+- **Documentation Suite & Changelog Synchronization**:
+  - Synchronized documentation web application (`api_docs`), landing page terminal demos, release badges, and live interactive docs to reflect the new 2.2.0 Web Studio release and 2.2.1 updates.
+  - Updated latest version references and dynamic version pills across `App.tsx`, `Navbar.tsx`, `LandingPage.tsx`, `EndpointDoc.tsx`, `index.html`, and `chat.html`.
+  - Rebuilt static distribution bundle (`studio_dist`) and standalone CLI executable (`build/aimlite`).
+- Bumped framework and CLI version to `2.2.1` across `pyproject.toml`, `src/aimlite/__init__.py`, `main.py`, `studio.py`, `ui.py`, `server.py`, `agent_assets.py`, and agent skill guides.
+
 ## [2.2.0] - 2026-10-12
 
 ### Added
